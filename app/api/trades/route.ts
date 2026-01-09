@@ -1,7 +1,7 @@
 // API Route: POST /api/trades - Add a new trade
 
 import { NextRequest, NextResponse } from 'next/server';
-import { addTrade } from '@/lib/sheets';
+import { addTrade } from '@/lib/db';
 
 export async function POST(request: NextRequest) {
     try {

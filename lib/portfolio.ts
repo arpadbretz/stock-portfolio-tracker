@@ -58,6 +58,8 @@ export function aggregateHoldings(trades: Trade[], prices: Map<string, PriceData
             unrealizedGain,
             unrealizedGainPercent,
             allocation: 0, // Will be calculated in summary
+            sector: priceData?.sector,
+            industry: priceData?.industry,
         });
     }
 

@@ -24,6 +24,8 @@ export interface Holding {
   unrealizedGain: number;
   unrealizedGainPercent: number;
   allocation: number;
+  sector?: string;
+  industry?: string;
 }
 
 export interface PriceData {
@@ -32,6 +34,8 @@ export interface PriceData {
   change: number;
   changePercent: number;
   lastUpdated: string;
+  sector?: string;
+  industry?: string;
 }
 
 export interface PortfolioSummary {

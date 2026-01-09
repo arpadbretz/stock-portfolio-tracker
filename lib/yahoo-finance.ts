@@ -16,8 +16,12 @@ export async function getCurrentPrice(ticker: string): Promise<PriceData | null>
 
     try {
         const symbol = ticker.trim().toUpperCase();
-        // Use the instantiated client to fetch the quote
-        const quote = await yf.quote(symbol);
+
+        // Fetch both quote and summary to get price and asset details
+        const [quote, summary] = await Promise.all([
+            yf.quote(symbol),
+            yf.quoteSummary(symbol, { modules: ['assetProfile'] }).catch(() => null)
+        ]);
 
         if (!quote || !quote.regularMarketPrice) {
             console.warn(`No price data found for ${symbol}`);
@@ -30,6 +34,8 @@ export async function getCurrentPrice(ticker: string): Promise<PriceData | null>
             change: quote.regularMarketChange || 0,
             changePercent: quote.regularMarketChangePercent || 0,
             lastUpdated: new Date().toISOString(),
+            sector: summary?.assetProfile?.sector,
+            industry: summary?.assetProfile?.industry,
         };
     } catch (error) {
         console.error(`Error fetching price for ${ticker}:`, error);

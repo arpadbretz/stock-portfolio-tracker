@@ -21,6 +21,7 @@ import {
 import AddTradeForm from '@/components/AddTradeForm';
 import HoldingsTable from '@/components/HoldingsTable';
 import PerformanceChart from '@/components/PerformanceChart';
+import SectorAllocationChart from '@/components/SectorAllocationChart';
 import TradeHistory from '@/components/TradeHistory';
 
 export default function Home() {
@@ -230,6 +231,13 @@ export default function Home() {
           />
 
           <PerformanceChart
+            holdings={summary?.holdings || []}
+            currency={currency}
+            exchangeRates={rates}
+            isLoading={isLoading}
+          />
+
+          <SectorAllocationChart
             holdings={summary?.holdings || []}
             currency={currency}
             exchangeRates={rates}

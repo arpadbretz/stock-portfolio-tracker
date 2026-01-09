@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { deleteTrade, updateTrade } from '@/lib/sheets';
+import { deleteTrade, updateTrade } from '@/lib/db';
 
 export async function PATCH(
     request: Request,

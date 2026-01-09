@@ -1,7 +1,7 @@
 // API Route: GET /api/portfolio - Fetch all trades and calculate holdings
 
 import { NextResponse } from 'next/server';
-import { getAllTrades } from '@/lib/sheets';
+import { getAllTrades } from '@/lib/db';
 import { getBatchPrices } from '@/lib/yahoo-finance';
 import { aggregateHoldings, calculatePortfolioSummary } from '@/lib/portfolio';
 
