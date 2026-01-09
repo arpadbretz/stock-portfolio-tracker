@@ -56,6 +56,7 @@ export async function GET() {
         }
 
 
+        console.log('Step 2: Fetching trades for portfolio:', portfolio.id);
         // 2. FETCH TRADES DIRECTLY
         // We fetch directly here to ensure we get trades for THIS specific portfolio
         const { data: dbTrades, error: tradesError } = await supabase
@@ -64,7 +65,11 @@ export async function GET() {
             .eq('portfolio_id', portfolio.id)
             .order('date_traded', { ascending: false });
 
-        if (tradesError) throw tradesError;
+        if (tradesError) {
+            console.error('Trades fetch error:', tradesError);
+            throw tradesError;
+        }
+        console.log('Trades fetched:', dbTrades?.length || 0, 'trades');
 
         // 3. MAP DATABASE TRADES TO YOUR APP'S FORMAT
         // Your helper functions expect camelCase (pricePerShare), DB returns snake_case (price_per_share)
@@ -84,23 +89,31 @@ export async function GET() {
 
         // 4. YOUR EXISTING LOGIC (Unchanged)
         const tickers = [...new Set(trades.map(t => t.ticker.toUpperCase()))];
+        console.log('Step 4: Fetching prices for tickers:', tickers);
 
         // Fetch current prices 
         const prices = await getCachedBatchPrices(tickers);
+        console.log('Prices fetched for', prices.size, 'tickers');
 
         // Fetch exchange rates
+        console.log('Step 5: Fetching exchange rates');
         const ratesData = await getCachedBatchPrices(['USDEUR=X', 'USDHUF=X']);
         const exchangeRates = {
             USD: 1,
             EUR: ratesData.get('USDEUR=X')?.currentPrice || 0.92,
             HUF: ratesData.get('USDHUF=X')?.currentPrice || 350,
         };
+        console.log('Exchange rates:', exchangeRates);
 
         // Aggregate trades into holdings (using your existing function)
+        console.log('Step 6: Aggregating holdings');
         const holdings = aggregateHoldings(trades, prices);
+        console.log('Holdings aggregated:', holdings.length);
 
         // Calculate portfolio summary (using your existing function)
+        console.log('Step 7: Calculating portfolio summary');
         const summary = calculatePortfolioSummary(holdings, exchangeRates);
+        console.log('Summary calculated successfully');
 
         return NextResponse.json({
             success: true,
@@ -114,11 +127,21 @@ export async function GET() {
             },
         });
     } catch (error) {
-        console.error('Error fetching portfolio:', error);
+        console.error('=== PORTFOLIO API ERROR ===');
+        console.error('Error details:', error);
+        console.error('Error type:', error instanceof Error ? error.constructor.name : typeof error);
+        if (error instanceof Error) {
+            console.error('Error message:', error.message);
+            console.error('Error stack:', error.stack);
+        }
+        console.error('========================');
+
         return NextResponse.json(
             {
                 success: false,
                 error: error instanceof Error ? error.message : 'Unknown error occurred',
+                errorType: error instanceof Error ? error.constructor.name : typeof error,
+                details: error instanceof Error ? error.stack : String(error)
             },
             { status: 500 }
         );
