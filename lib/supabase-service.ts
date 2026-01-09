@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 import { Trade } from '@/types/portfolio';
 
 export async function getAllTrades(): Promise<Trade[]> {
+    if (!supabase) return [];
     const { data, error } = await supabase
         .from('trades')
         .select('*')
@@ -27,6 +28,7 @@ export async function getAllTrades(): Promise<Trade[]> {
 }
 
 export async function addTrade(trade: Omit<Trade, 'id' | 'timestamp' | 'totalCost'>): Promise<Trade | null> {
+    if (!supabase) return null;
     const totalCost = trade.quantity * trade.pricePerShare + trade.fees;
 
     const { data, error } = await supabase
@@ -77,6 +79,7 @@ export async function updateTrade(id: string, updates: Partial<Trade>): Promise<
     delete dbUpdates.pricePerShare;
     delete dbUpdates.totalCost;
 
+    if (!supabase) return null;
     const { data, error } = await supabase
         .from('trades')
         .update(dbUpdates)
@@ -103,6 +106,7 @@ export async function updateTrade(id: string, updates: Partial<Trade>): Promise<
 }
 
 export async function deleteTrade(id: string): Promise<boolean> {
+    if (!supabase) return false;
     const { error } = await supabase
         .from('trades')
         .delete()
