@@ -110,13 +110,18 @@ export default function LoginPage() {
                         Continue with Google
                     </button>
                 </div>
-
                 <p className="mt-8 text-center text-slate-400">
                     Don't have an account?{' '}
                     <Link href="/register" className="text-blue-500 hover:underline">
                         Register
                     </Link>
                 </p>
+
+                <div className="mt-8 pt-6 border-t border-slate-700/50 flex justify-center gap-4 text-xs text-slate-500">
+                    <Link href="/legal/privacy" className="hover:text-slate-300 transition-colors">Privacy Policy</Link>
+                    <span>•</span>
+                    <span className="cursor-default text-slate-600">GDPR Compliant</span>
+                </div>
             </div>
         </div>
     );

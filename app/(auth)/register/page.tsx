@@ -10,12 +10,19 @@ export default function RegisterPage() {
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+    const [consent, setConsent] = useState(false);
     const supabase = createClient();
     const router = useRouter();
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
+        if (!consent) {
+            setError('Please accept the privacy policy to continue.');
+            setLoading(false);
+            return;
+        }
+
         setError(null);
 
         const { error } = await supabase.auth.signUp({
@@ -69,10 +76,28 @@ export default function RegisterPage() {
 
                     {error && <p className={`text-sm ${error.includes('Check your email') ? 'text-emerald-500' : 'text-rose-500'}`}>{error}</p>}
 
+                    <div className="flex items-start gap-3 mt-4">
+                        <input
+                            type="checkbox"
+                            id="consent"
+                            checked={consent}
+                            onChange={(e) => setConsent(e.target.checked)}
+                            className="mt-1 w-4 h-4 rounded border-slate-700 bg-slate-900/50 text-blue-600 focus:ring-blue-500"
+                            required
+                        />
+                        <label htmlFor="consent" className="text-sm text-slate-400 leading-snug cursor-pointer">
+                            I agree to the processing of my personal data according to the{' '}
+                            <Link href="/legal/privacy" className="text-blue-500 hover:underline">
+                                Privacy Policy
+                            </Link>{' '}
+                            (GDPR compliant).
+                        </label>
+                    </div>
+
                     <button
                         type="submit"
-                        disabled={loading}
-                        className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-blue-500/20 transition-all disabled:opacity-50"
+                        disabled={loading || !consent}
+                        className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-blue-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {loading ? 'Creating account...' : 'Register'}
                     </button>
