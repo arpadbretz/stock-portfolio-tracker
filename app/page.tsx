@@ -16,7 +16,8 @@ import {
   PlusCircle,
   Clock,
   LayoutDashboard,
-  History
+  History,
+  Upload
 } from 'lucide-react';
 import AddTradeForm from '@/components/AddTradeForm';
 import HoldingsTable from '@/components/HoldingsTable';
@@ -28,6 +29,7 @@ import UserButton from '@/components/auth/UserButton';
 import Footer from '@/components/Footer';
 import MobileNav from '@/components/MobileNav';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import PortfolioSwitcher from '@/components/PortfolioSwitcher';
 
 export default function Home() {
@@ -146,6 +148,15 @@ export default function Home() {
                 </button>
               ))}
             </div>
+
+            <Link
+              href="/import"
+              className="hidden md:flex p-2.5 rounded-xl bg-slate-800 border border-slate-700 hover:bg-slate-700 transition-all text-slate-300 items-center gap-2"
+              title="Import CSV"
+            >
+              <Upload size={20} />
+              <span className="hidden lg:inline font-medium text-sm">Import</span>
+            </Link>
 
             <button
               onClick={() => fetchPortfolio(true)}
