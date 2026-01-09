@@ -4,7 +4,7 @@
 -- 1. Update portfolios table
 ALTER TABLE portfolios 
 ADD COLUMN IF NOT EXISTS is_public BOOLEAN DEFAULT FALSE,
-ADD COLUMN IF NOT EXISTS share_token UUID DEFAULT custom_access_token_hook.gen_random_uuid(); -- or just uuid_generate_v4()
+ADD COLUMN IF NOT EXISTS share_token UUID DEFAULT gen_random_uuid();
 
 -- Ensure share_token is unique
 CREATE UNIQUE INDEX IF NOT EXISTS idx_portfolios_share_token ON portfolios(share_token);
@@ -31,7 +31,7 @@ AS $$
 DECLARE
     v_new_token UUID;
 BEGIN
-    v_new_token := uuid_generate_v4();
+    v_new_token := gen_random_uuid();
     
     UPDATE portfolios
     SET share_token = v_new_token

@@ -1,13 +1,13 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { deleteTrade, updateTrade } from '@/lib/db';
 import { createClient } from '@/lib/supabase/server';
 
 export async function PATCH(
-    request: Request,
-    { params }: { params: Promise<{ id: string }> }
+    request: NextRequest,
+    context: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { id } = await params;
+        const { id } = await context.params;
         const body = await request.json();
         const supabase = await createClient();
         const { data: { user } } = await supabase.auth.getUser();
@@ -36,11 +36,11 @@ export async function PATCH(
 }
 
 export async function DELETE(
-    request: Request,
-    { params }: { params: Promise<{ id: string }> }
+    request: NextRequest,
+    context: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { id } = await params;
+        const { id } = await context.params;
         const supabase = await createClient();
         const { data: { user } } = await supabase.auth.getUser();
 

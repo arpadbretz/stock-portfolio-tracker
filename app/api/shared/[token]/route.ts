@@ -1,16 +1,16 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getCachedBatchPrices } from '@/lib/yahoo-finance/cached';
 import { aggregateHoldings, calculatePortfolioSummary } from '@/lib/portfolio';
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
 export async function GET(
-    request: Request,
-    props: { params: Promise<{ token: string }> }
+    request: NextRequest,
+    context: { params: Promise<{ token: string }> }
 ) {
-    const params = await props.params;
     try {
+        const { token } = await context.params;
         const supabase = await createClient();
-        const token = params.token;
 
         if (!token) {
             return NextResponse.json({ error: 'Token is required' }, { status: 400 });
@@ -55,7 +55,6 @@ export async function GET(
         // Let's check `lib/supabase/server.ts` - usually it's just cookie auth.
         // I'll manually create a simple supabase client here using process.env
 
-        const { createClient: createSupabaseClient } = require('@supabase/supabase-js');
         const adminSupabase = createSupabaseClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
             process.env.SUPABASE_SERVICE_ROLE_KEY!
