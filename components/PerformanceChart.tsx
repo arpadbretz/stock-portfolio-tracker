@@ -76,7 +76,7 @@ export default function PerformanceChart({ holdings, currency, exchangeRates, is
                                 borderRadius: '8px',
                                 color: '#f8fafc',
                             }}
-                            formatter={(value: number) => formatCurrency(value, currency)}
+                            formatter={(value: number | undefined) => value !== undefined ? formatCurrency(value, currency) : ''}
                         />
                         <Legend
                             verticalAlign="bottom"
