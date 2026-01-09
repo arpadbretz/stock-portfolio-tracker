@@ -177,7 +177,7 @@ export default function DashboardPage() {
             className="p-10 bg-card border border-border/80 rounded-[48px] shadow-2xl shadow-black/5 relative overflow-hidden group"
           >
             <div className="flex items-center justify-between mb-8">
-              <div className="w-12 h-12 bg-muted rounded-2xl flex items-center justify-center shadow-inner">
+              <div className="w-12 h-12 bg-primary/20 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/10 border border-primary/20">
                 <Wallet size={20} className="text-primary" />
               </div>
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Net Asset Value</span>
@@ -202,7 +202,7 @@ export default function DashboardPage() {
             className="p-10 bg-card border border-border/80 rounded-[48px] shadow-2xl shadow-black/5 relative overflow-hidden group"
           >
             <div className="flex items-center justify-between mb-8">
-              <div className="w-12 h-12 bg-muted rounded-2xl flex items-center justify-center shadow-inner">
+              <div className="w-12 h-12 bg-accent/20 rounded-2xl flex items-center justify-center shadow-lg shadow-accent/10 border border-accent/20">
                 <BarChart3 size={20} className="text-accent" />
               </div>
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Total Deployed</span>
@@ -332,9 +332,9 @@ export default function DashboardPage() {
             )}
           </AnimatePresence>
 
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-12">
-            {/* Primary Analysis Column */}
-            <div className="xl:col-span-8 space-y-20">
+          <div className="grid grid-cols-1 gap-20">
+            {/* Primary Analysis - Full Width */}
+            <div className="space-y-20">
               <section>
                 <div className="flex items-center gap-4 mb-10 pl-2">
                   <div className="w-1.5 h-8 bg-primary rounded-full shadow-[0_0_15px_rgba(16,185,129,0.5)]" />
@@ -346,6 +346,37 @@ export default function DashboardPage() {
                   exchangeRates={rates}
                 />
               </section>
+
+              {/* Data Visualization Grid - Moving here from sidebar */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <div className="p-10 bg-card border border-border/60 rounded-[48px] shadow-2xl shadow-black/5 backdrop-blur-3xl overflow-hidden">
+                  <h3 className="text-xl font-black mb-10 flex items-center gap-4 px-2">
+                    <div className="p-2 bg-primary/10 rounded-xl">
+                      <PieChartIcon className="text-primary" size={20} />
+                    </div>
+                    Performance Attribution
+                  </h3>
+                  <PerformanceChart
+                    holdings={summary?.holdings || []}
+                    currency={currency}
+                    exchangeRates={rates}
+                  />
+                </div>
+
+                <div className="p-10 bg-card border border-border/60 rounded-[48px] shadow-2xl shadow-black/5 backdrop-blur-3xl overflow-hidden">
+                  <h3 className="text-xl font-black mb-10 flex items-center gap-4 px-2">
+                    <div className="p-2 bg-accent/10 rounded-xl">
+                      <LayersIcon className="text-accent" size={20} />
+                    </div>
+                    Fundamental Allocation
+                  </h3>
+                  <SectorAllocationChart
+                    holdings={summary?.holdings || []}
+                    currency={currency}
+                    exchangeRates={rates}
+                  />
+                </div>
+              </div>
 
               <section>
                 <div className="flex items-center gap-4 mb-10 pl-2">
@@ -362,59 +393,35 @@ export default function DashboardPage() {
               </section>
             </div>
 
-            {/* Secondary Intel Column */}
-            <div className="xl:col-span-4 space-y-12">
-              <div className="p-8 bg-card border border-border/60 rounded-[48px] shadow-2xl shadow-black/5 backdrop-blur-3xl overflow-hidden">
-                <h3 className="text-xl font-black mb-8 flex items-center gap-4 px-2">
-                  <div className="p-2 bg-primary/10 rounded-xl">
-                    <PieChartIcon className="text-primary" size={20} />
-                  </div>
-                  Performance Attribution
-                </h3>
-                <PerformanceChart
-                  holdings={summary?.holdings || []}
-                  currency={currency}
-                  exchangeRates={rates}
-                />
-              </div>
-
-              <div className="p-8 bg-card border border-border/60 rounded-[48px] shadow-2xl shadow-black/5 backdrop-blur-3xl overflow-hidden">
-                <h3 className="text-xl font-black mb-8 flex items-center gap-4 px-2">
-                  <div className="p-2 bg-accent/10 rounded-xl">
-                    <LayersIcon className="text-accent" size={20} />
-                  </div>
-                  Fundamental Allocation
-                </h3>
-                <SectorAllocationChart
-                  holdings={summary?.holdings || []}
-                  currency={currency}
-                  exchangeRates={rates}
-                />
-              </div>
-
-              <motion.div
-                whileHover={{ scale: 1.01 }}
-                className="p-10 bg-gradient-to-br from-primary/5 via-accent/5 to-transparent border border-white/5 rounded-[64px] relative overflow-hidden group shadow-2xl"
-              >
-                <div className="relative z-10">
-                  <div className="p-4 bg-primary/20 rounded-3xl w-fit mb-8 shadow-inner">
-                    <Database className="text-primary" size={28} />
-                  </div>
-                  <h3 className="text-3xl font-black tracking-tighter mb-4 leading-none">Valuation<br />Neural Hub</h3>
-                  <p className="text-muted-foreground text-sm font-medium mb-8 leading-relaxed">
-                    Institutional-grade DCF and comparative valuation models launching in Q1.
+            {/* Neural Hub - Full Width Footer style */}
+            <motion.div
+              whileHover={{ scale: 1.01 }}
+              className="p-12 bg-gradient-to-br from-primary/5 via-accent/5 to-transparent border border-white/5 rounded-[64px] relative overflow-hidden group shadow-2xl"
+            >
+              <div className="relative z-10 flex flex-col md:flex-row items-center gap-12">
+                <div className="p-6 bg-primary/20 rounded-3xl shadow-inner shrink-0">
+                  <Database className="text-primary" size={40} />
+                </div>
+                <div className="flex-1 text-center md:text-left">
+                  <h3 className="text-4xl font-black tracking-tighter mb-4 leading-none">Valuation Neural Hub</h3>
+                  <p className="text-muted-foreground text-lg font-medium max-w-2xl leading-relaxed">
+                    Institutional-grade DCF and comparative valuation models launching in Q1. Unified alpha discovery for sophisticated capital management.
                   </p>
-                  <div className="flex items-center gap-3">
-                    <span className="px-3 py-1 bg-muted rounded-full text-[8px] font-black uppercase tracking-widest text-muted-foreground">Operational Alpha</span>
-                    <span className="h-1 w-1 bg-muted-foreground rounded-full" />
-                    <span className="text-[8px] font-black uppercase tracking-widest text-primary animate-pulse">Encoding</span>
+                </div>
+                <div className="flex items-center gap-6">
+                  <div className="flex flex-col items-end">
+                    <span className="px-4 py-1.5 bg-muted rounded-full text-[10px] font-black uppercase tracking-widest text-muted-foreground">Operational Alpha</span>
+                    <div className="flex items-center gap-2 mt-2">
+                      <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-primary">System Encoding</span>
+                    </div>
                   </div>
                 </div>
-                <div className="absolute -bottom-10 -right-10 opacity-5 rotate-12">
-                  <Database size={200} className="text-primary" />
-                </div>
-              </motion.div>
-            </div>
+              </div>
+              <div className="absolute -bottom-20 -right-20 opacity-5 rotate-12">
+                <Database size={300} className="text-primary" />
+              </div>
+            </motion.div>
           </div>
         </div>
       </main>

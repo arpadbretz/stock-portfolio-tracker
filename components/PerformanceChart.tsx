@@ -100,19 +100,19 @@ export default function PerformanceChart({ holdings, currency, exchangeRates, is
                 </div>
             </div>
 
-            <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-4 custom-scrollbar">
                 {data.map((item, index) => (
-                    <div key={item.name} className="flex items-center justify-between p-3 rounded-2xl bg-muted/30 border border-transparent hover:border-border transition-all group/item">
-                        <div className="flex items-center gap-4">
+                    <div key={item.name} className="flex items-center justify-between p-4 rounded-[24px] bg-muted/20 border border-transparent hover:border-border/50 hover:bg-muted/40 transition-all group/item shadow-sm">
+                        <div className="flex items-center gap-5">
                             <div
-                                className="w-3 h-3 rounded-full flex-shrink-0 shadow-[0_0_10px_rgba(0,0,0,0.2)]"
+                                className="w-4 h-4 rounded-full flex-shrink-0 shadow-lg"
                                 style={{ backgroundColor: COLORS[index % COLORS.length] }}
                             />
-                            <span className="text-foreground font-black text-sm uppercase tracking-tight group-hover/item:text-primary transition-colors">{item.name}</span>
+                            <span className="text-foreground font-black text-sm uppercase tracking-wider group-hover/item:text-primary transition-colors">{item.name}</span>
                         </div>
                         <div className="text-right">
-                            <div className="text-sm font-black text-foreground">{formatCurrency(item.value, currency)}</div>
-                            <div className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">{(item.percentage).toFixed(1)}%</div>
+                            <div className="text-sm font-black text-foreground mb-0.5">{formatCurrency(item.value, currency)}</div>
+                            <div className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.1em]">{(item.percentage).toFixed(1)}% Weight</div>
                         </div>
                     </div>
                 ))}

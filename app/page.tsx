@@ -185,7 +185,7 @@ export default function LandingPage() {
                         <div className="absolute -inset-4 bg-primary/20 rounded-[64px] blur-[100px] opacity-30 animate-pulse"></div>
                         <div className="relative bg-card border-[3px] border-border/80 rounded-[48px] overflow-hidden shadow-[0_0_100px_-20px_rgba(0,0,0,0.5)] ring-1 ring-white/10">
                             <img
-                                src="https://images.unsplash.com/photo-1644659510777-49dfc3fbc3df?q=75&w=1200&auto=format&fit=crop"
+                                src="/images/dashboard-mockup.png"
                                 alt="Next Gen Dashboard"
                                 className="w-full h-auto object-cover opacity-90"
                                 loading="eager"
