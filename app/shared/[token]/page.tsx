@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useParams } from 'next/navigation';
 import { PortfolioSummary, CurrencyCode, Trade } from '@/types/portfolio';
 import {
     convertCurrency,
@@ -34,7 +35,10 @@ interface SharedPortfolioData {
     lastUpdated: string;
 }
 
-export default function SharedPortfolioPage({ params }: { params: { token: string } }) {
+export default function SharedPortfolioPage() {
+    const params = useParams();
+    const token = typeof params.token === 'string' ? params.token : '';
+
     const [data, setData] = useState<SharedPortfolioData | null>(null);
     const [currency, setCurrency] = useState<CurrencyCode>('USD');
     const [exchangeRates, setExchangeRates] = useState<Record<CurrencyCode, number>>({ USD: 1, EUR: 0.92, HUF: 350 });
@@ -42,13 +46,14 @@ export default function SharedPortfolioPage({ params }: { params: { token: strin
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        fetchSharedPortfolio();
-    }, [params.token]);
+        if (token) fetchSharedPortfolio();
+    }, [token]);
 
     const fetchSharedPortfolio = async () => {
+        if (!token) return;
         try {
             setIsLoading(true);
-            const response = await fetch(`/api/shared/${params.token}`);
+            const response = await fetch(`/api/shared/${token}`);
 
             if (!response.ok) {
                 if (response.status === 404) {

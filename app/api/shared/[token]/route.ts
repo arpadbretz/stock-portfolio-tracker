@@ -5,8 +5,9 @@ import { createClient } from '@/lib/supabase/server';
 
 export async function GET(
     request: Request,
-    { params }: { params: { token: string } }
+    props: { params: Promise<{ token: string }> }
 ) {
+    const params = await props.params;
     try {
         const supabase = await createClient();
         const token = params.token;
