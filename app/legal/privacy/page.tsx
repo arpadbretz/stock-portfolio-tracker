@@ -39,13 +39,16 @@ export default function PrivacyPolicyPage() {
                                 <h2 className="text-2xl font-semibold text-white">1. Data Controller (Adatkezelő)</h2>
                             </div>
                             <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-700">
-                                <p className="mb-2"><strong>Name:</strong> [Your Name or Company Name]</p>
-                                <p className="mb-2"><strong>Address:</strong> [Your Address]</p>
-                                <p className="mb-2"><strong>Email:</strong> [Your Email]</p>
-                                <p><strong>Registration:</strong> [Company Registration Number if applicable]</p>
+                                <p className="mb-2"><strong>Cégnév:</strong> Prometheus Digital Kft.</p>
+                                <p className="mb-2"><strong>Székhely:</strong> 1125 Budapest, Hableány utca 6/A</p>
+                                <p className="mb-2"><strong>Cégjegyzékszám:</strong> 01-09-434076</p>
+                                <p className="mb-2"><strong>Adószám:</strong> 32910128-2-43</p>
+                                <p className="mb-2"><strong>Képviseli:</strong> Bretz Árpád, ügyvezető</p>
+                                <p className="mb-2"><strong>E-mail:</strong> info@prometheusdigital.hu</p>
+                                <p><strong>Telefon:</strong> +36 30 922 2042</p>
                             </div>
                             <p className="mt-4 italic text-slate-400 text-sm">
-                                (Adatkezelő: [Az Ön neve vagy cég neve], székhely: [Cím], e-mail: [Email])
+                                (Adatkezelő: Prometheus Digital Kft., székhely: 1125 Budapest, Hableány utca 6/A, e-mail: info@prometheusdigital.hu)
                             </p>
                         </section>
 
@@ -125,6 +128,19 @@ export default function PrivacyPolicyPage() {
                                     <p className="text-sm mb-2">Location: EU (Frankfurt) | Purpose: Data storage, user authentication</p>
                                     <a href="https://supabase.com/privacy" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline text-sm">
                                         View Supabase Privacy Policy →
+                                    </a>
+                                </div>
+                                <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-700">
+                                    <p className="font-semibold mb-2">Netlify (Hosting & Deployment)</p>
+                                    <p className="text-sm mb-2">
+                                        Location: USA (with EU data centers) | Purpose: Web hosting, CDN
+                                    </p>
+                                    <p className="text-sm mb-2">
+                                        Netlify may collect: Server logs (IP addresses, browser info, request URLs) for security and performance monitoring.
+                                        Data is logged temporarily and used solely for operational purposes.
+                                    </p>
+                                    <a href="https://www.netlify.com/privacy/" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline text-sm">
+                                        View Netlify Privacy Policy →
                                     </a>
                                 </div>
                                 <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-700">
@@ -229,13 +245,17 @@ export default function PrivacyPolicyPage() {
                             <h2 className="text-2xl font-semibold text-white mb-4">10. Contact Information</h2>
                             <p className="mb-4">For any questions about this Privacy Policy or to exercise your rights:</p>
                             <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-700">
-                                <p className="mb-2"><strong>Data Protection Officer:</strong> [Your Name]</p>
-                                <p className="mb-2"><strong>Email:</strong> [Your Email]</p>
-                                <p><strong>Address:</strong> [Your Address]</p>
+                                <p className="mb-2"><strong>Data Protection Officer:</strong> Bretz Árpád</p>
+                                <p className="mb-2"><strong>E-mail:</strong> info@prometheusdigital.hu</p>
+                                <p className="mb-2"><strong>Telefon:</strong> +36 30 922 2042</p>
+                                <p><strong>Cím:</strong> 1125 Budapest, Hableány utca 6/A</p>
                             </div>
                             <p className="mt-4 text-sm text-slate-400">
                                 If you are not satisfied with our response, you have the right to lodge a complaint with the Hungarian
-                                National Authority for Data Protection and Freedom of Information (NAIH).
+                                National Authority for Data Protection and Freedom of Information (NAIH) at{' '}
+                                <a href="https://naih.hu" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                                    naih.hu
+                                </a>
                             </p>
                         </section>
 

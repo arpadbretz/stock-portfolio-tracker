@@ -25,6 +25,7 @@ import SectorAllocationChart from '@/components/SectorAllocationChart';
 import TradeHistory from '@/components/TradeHistory';
 import { useAuth } from '@/components/auth/AuthProvider';
 import UserButton from '@/components/auth/UserButton';
+import Footer from '@/components/Footer';
 import { useRouter } from 'next/navigation';
 
 export default function Home() {
@@ -314,11 +315,7 @@ export default function Home() {
         </div>
       </main>
 
-      <footer className="container mx-auto px-4 py-12 border-t border-slate-800/50 mt-12 text-center">
-        <p className="text-slate-500 text-sm">
-          Personal Stock Portfolio Tracker • Built with Next.js & Supabase
-        </p>
-      </footer>
+      <Footer />
     </div>
   );
 }

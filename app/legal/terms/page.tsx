@@ -142,8 +142,10 @@ export default function TermsOfServicePage() {
                                 If you have any questions about these Terms of Service, please contact us at:
                             </p>
                             <div className="mt-4 p-4 bg-slate-900/50 rounded-xl border border-slate-700">
-                                <p className="font-medium">Email: [Your Email]</p>
-                                <p className="font-medium">Address: [Your Address]</p>
+                                <p className="font-medium">Prometheus Digital Kft.</p>
+                                <p className="font-medium">E-mail: info@prometheusdigital.hu</p>
+                                <p className="font-medium">Telefon: +36 30 922 2042</p>
+                                <p className="font-medium">Cím: 1125 Budapest, Hableány utca 6/A</p>
                             </div>
                         </section>
 
