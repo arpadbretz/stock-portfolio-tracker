@@ -1,9 +1,9 @@
 import { supabase } from './supabase';
 import { Trade } from '@/types/portfolio';
 
-export async function getAllTrades(): Promise<Trade[]> {
-    if (!supabase) return [];
-    const { data, error } = await supabase
+export async function getAllTrades(client = supabase): Promise<Trade[]> {
+    if (!client) return [];
+    const { data, error } = await client
         .from('trades')
         .select('*')
         .order('timestamp', { ascending: false });
@@ -23,15 +23,17 @@ export async function getAllTrades(): Promise<Trade[]> {
         fees: Number(t.fees),
         totalCost: Number(t.total_cost),
         timestamp: t.timestamp,
-        notes: t.notes
+        notes: t.notes,
+        user_id: t.user_id,
+        portfolio_id: t.portfolio_id
     }));
 }
 
-export async function addTrade(trade: Omit<Trade, 'id' | 'timestamp' | 'totalCost'>): Promise<Trade | null> {
-    if (!supabase) return null;
+export async function addTrade(trade: Omit<Trade, 'id' | 'timestamp' | 'totalCost'>, client = supabase): Promise<Trade | null> {
+    if (!client) return null;
     const totalCost = trade.quantity * trade.pricePerShare + trade.fees;
 
-    const { data, error } = await supabase
+    const { data, error } = await client
         .from('trades')
         .insert([{
             ticker: trade.ticker.toUpperCase(),
@@ -40,7 +42,8 @@ export async function addTrade(trade: Omit<Trade, 'id' | 'timestamp' | 'totalCos
             price_per_share: trade.pricePerShare,
             fees: trade.fees,
             total_cost: totalCost,
-            notes: trade.notes
+            notes: trade.notes,
+            user_id: (await client.auth.getUser()).data.user?.id
         }])
         .select()
         .single();
@@ -59,11 +62,13 @@ export async function addTrade(trade: Omit<Trade, 'id' | 'timestamp' | 'totalCos
         fees: Number(data.fees),
         totalCost: Number(data.total_cost),
         timestamp: data.timestamp,
-        notes: data.notes
+        notes: data.notes,
+        user_id: data.user_id,
+        portfolio_id: data.portfolio_id
     };
 }
 
-export async function updateTrade(id: string, updates: Partial<Trade>): Promise<Trade | null> {
+export async function updateTrade(id: string, updates: Partial<Trade>, client = supabase): Promise<Trade | null> {
     // If quantity/price/fees change, we need to recalculate totalCost
     // Since we don't have the full previous trade, this is tricky.
     // Best to fetch it first or use a triggered function in DB.
@@ -79,8 +84,8 @@ export async function updateTrade(id: string, updates: Partial<Trade>): Promise<
     delete dbUpdates.pricePerShare;
     delete dbUpdates.totalCost;
 
-    if (!supabase) return null;
-    const { data, error } = await supabase
+    if (!client) return null;
+    const { data, error } = await client
         .from('trades')
         .update(dbUpdates)
         .eq('id', id)
@@ -101,13 +106,15 @@ export async function updateTrade(id: string, updates: Partial<Trade>): Promise<
         fees: Number(data.fees),
         totalCost: Number(data.total_cost),
         timestamp: data.timestamp,
-        notes: data.notes
+        notes: data.notes,
+        user_id: data.user_id,
+        portfolio_id: data.portfolio_id
     };
 }
 
-export async function deleteTrade(id: string): Promise<boolean> {
-    if (!supabase) return false;
-    const { error } = await supabase
+export async function deleteTrade(id: string, client = supabase): Promise<boolean> {
+    if (!client) return false;
+    const { error } = await client
         .from('trades')
         .delete()
         .eq('id', id);

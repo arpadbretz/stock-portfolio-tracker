@@ -12,6 +12,8 @@ export interface Trade {
   fees: number;
   totalCost: number;
   notes?: string;
+  user_id?: string;
+  portfolio_id?: string;
 }
 
 export interface Holding {

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { deleteTrade, updateTrade } from '@/lib/db';
+import { createClient } from '@/lib/supabase/server';
 
 export async function PATCH(
     request: Request,
@@ -8,7 +9,14 @@ export async function PATCH(
     try {
         const { id } = await params;
         const body = await request.json();
-        const updatedTrade = await updateTrade(id, body);
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const updatedTrade = await updateTrade(id, body, supabase);
 
         if (!updatedTrade) {
             return NextResponse.json(
@@ -33,7 +41,14 @@ export async function DELETE(
 ) {
     try {
         const { id } = await params;
-        const success = await deleteTrade(id);
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const success = await deleteTrade(id, supabase);
 
         if (!success) {
             return NextResponse.json(

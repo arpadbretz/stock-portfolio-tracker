@@ -23,6 +23,9 @@ import HoldingsTable from '@/components/HoldingsTable';
 import PerformanceChart from '@/components/PerformanceChart';
 import SectorAllocationChart from '@/components/SectorAllocationChart';
 import TradeHistory from '@/components/TradeHistory';
+import { useAuth } from '@/components/auth/AuthProvider';
+import UserButton from '@/components/auth/UserButton';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
   const [portfolio, setPortfolio] = useState<{
@@ -35,6 +38,15 @@ export default function Home() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
+
+  const { user, isLoading: authLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
 
   const fetchPortfolio = useCallback(async (background = false) => {
     if (!background) setIsLoading(true);
@@ -129,6 +141,7 @@ export default function Home() {
               <PlusCircle size={20} />
               <span>Add Trade</span>
             </button>
+            <UserButton />
           </div>
         </header>
 
@@ -277,7 +290,7 @@ export default function Home() {
                   <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Database</span>
                   <div className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
-                    <span className="text-slate-200 text-sm font-medium">Local JSON Storage</span>
+                    <span className="text-slate-200 text-sm font-medium">Supabase Cloud Database</span>
                   </div>
                 </div>
                 <div className="space-y-1 hidden lg:block">

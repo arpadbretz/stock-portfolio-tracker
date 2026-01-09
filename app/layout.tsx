@@ -18,6 +18,8 @@ export const metadata: Metadata = {
   keywords: ["stock tracker", "portfolio", "google sheets mcp", "finance", "nextjs"],
 };
 
+import { AuthProvider } from "@/components/auth/AuthProvider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -28,7 +30,9 @@ export default function RootLayout({
       <body
         className={`${outfit.variable} ${inter.variable} font-inter antialiased bg-[#0f172a] text-slate-200`}
       >
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

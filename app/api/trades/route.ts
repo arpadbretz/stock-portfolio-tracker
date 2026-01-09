@@ -2,10 +2,17 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { addTrade } from '@/lib/db';
+import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+        }
 
         // Validate required fields
         const { ticker, action, quantity, pricePerShare, fees = 0, notes = '' } = body;
@@ -38,7 +45,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Add the trade to Google Sheets
+        // Add the trade to Supabase
         const trade = await addTrade({
             ticker: ticker.toUpperCase(),
             action,
@@ -46,7 +53,7 @@ export async function POST(request: NextRequest) {
             pricePerShare,
             fees: fees || 0,
             notes: notes || '',
-        });
+        }, supabase);
 
         return NextResponse.json({
             success: true,

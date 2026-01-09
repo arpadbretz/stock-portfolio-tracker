@@ -2,22 +2,30 @@
 
 import { NextResponse } from 'next/server';
 import { getAllTrades } from '@/lib/db';
-import { getBatchPrices } from '@/lib/yahoo-finance';
+import { getCachedBatchPrices } from '@/lib/yahoo-finance/cached';
 import { aggregateHoldings, calculatePortfolioSummary } from '@/lib/portfolio';
+import { createClient } from '@/lib/supabase/server';
 
 export async function GET() {
     try {
-        // Fetch all trades from Google Sheets
-        const trades = await getAllTrades();
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // Fetch all trades filtered by user (handled by RLS if supabase client passed)
+        const trades = await getAllTrades(supabase);
 
         // Get unique tickers
         const tickers = [...new Set(trades.map(t => t.ticker.toUpperCase()))];
 
-        // Fetch current prices for all tickers
-        const prices = await getBatchPrices(tickers);
+        // Fetch current prices for all tickers (cached for 15m)
+        const prices = await getCachedBatchPrices(tickers);
 
-        // Fetch real-time exchange rates
-        const ratesData = await getBatchPrices(['USDEUR=X', 'USDHUF=X']);
+        // Fetch real-time exchange rates (cached)
+        const ratesData = await getCachedBatchPrices(['USDEUR=X', 'USDHUF=X']);
         const exchangeRates = {
             USD: 1,
             EUR: ratesData.get('USDEUR=X')?.currentPrice || 0.92,
