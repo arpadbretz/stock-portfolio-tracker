@@ -86,11 +86,24 @@ export async function POST(request: NextRequest) {
 
         if (error) {
             console.error('Supabase insertion error:', error);
+            console.error('Error details:', {
+                message: error.message,
+                details: error.details,
+                hint: error.hint,
+                code: error.code
+            });
             return NextResponse.json(
-                { success: false, error: error.message },
+                {
+                    success: false,
+                    error: error.message,
+                    details: error.details,
+                    hint: error.hint
+                },
                 { status: 500 }
             );
         }
+
+        console.log('Trade inserted successfully:', trade);
 
         return NextResponse.json({
             success: true,
