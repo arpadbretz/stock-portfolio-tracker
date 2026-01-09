@@ -16,7 +16,7 @@ function ensureDataFile() {
     }
 }
 
-import { crypto } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 
 // Fetch all trades from the local JSON file
 export async function getAllTrades(): Promise<Trade[]> {
@@ -30,7 +30,7 @@ export async function getAllTrades(): Promise<Trade[]> {
         const processedTrades = trades.map(t => {
             if (!t.id) {
                 migrated = true;
-                return { ...t, id: (crypto as any).randomUUID() };
+                return { ...t, id: randomUUID() };
             }
             return t;
         });
@@ -53,7 +53,7 @@ export async function addTrade(trade: Omit<Trade, 'id' | 'timestamp' | 'totalCos
     const trades = await getAllTrades();
     const timestamp = new Date().toISOString();
     const totalCost = trade.quantity * trade.pricePerShare + trade.fees;
-    const id = (crypto as any).randomUUID();
+    const id = randomUUID();
 
     const newTrade: Trade = {
         ...trade,
