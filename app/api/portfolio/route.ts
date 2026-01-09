@@ -13,24 +13,48 @@ export async function GET() {
             return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
         }
 
+
         // 1. GET OR CREATE PORTFOLIO ID
         // We need this ID to filter trades and to send it to the frontend for the "Add" button
-        let { data: portfolio } = await supabase
+        let { data: portfolio, error: portfolioError } = await supabase
             .from('portfolios')
             .select('id, name')
             .eq('user_id', user.id)
             .single();
 
+        if (portfolioError && portfolioError.code !== 'PGRST116') {
+            // PGRST116 is "no rows returned", which is fine - we'll create one
+            console.error('Error fetching portfolio:', portfolioError);
+            throw portfolioError;
+        }
+
         if (!portfolio) {
+            console.log('No portfolio found, creating one for user:', user.id);
             const { data: newPortfolio, error: createError } = await supabase
                 .from('portfolios')
-                .insert({ user_id: user.id, name: 'My Portfolio' })
+                .insert({
+                    user_id: user.id,
+                    name: 'My Portfolio',
+                    is_default: true
+                })
                 .select('id, name')
                 .single();
 
-            if (createError) throw createError;
+            if (createError) {
+                console.error('Error creating portfolio:', createError);
+                console.error('Create error details:', {
+                    message: createError.message,
+                    details: createError.details,
+                    hint: createError.hint,
+                    code: createError.code
+                });
+                throw createError;
+            }
+
+            console.log('Portfolio created successfully:', newPortfolio);
             portfolio = newPortfolio;
         }
+
 
         // 2. FETCH TRADES DIRECTLY
         // We fetch directly here to ensure we get trades for THIS specific portfolio
