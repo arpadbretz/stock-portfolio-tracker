@@ -1,12 +1,156 @@
 [
   {
-    "ticker": "AAPL",
+    "ticker": "GOOG",
     "action": "BUY",
     "quantity": 10,
-    "pricePerShare": 150,
-    "fees": 1.5,
-    "notes": "",
-    "timestamp": "2026-01-09T12:03:46.438Z",
-    "totalCost": 1501.5
+    "pricePerShare": 155.45,
+    "fees": 0,
+    "notes": "IBKR",
+    "id": "faea765a-e38d-4c14-8462-db47b55952a4",
+    "timestamp": "2026-01-09T12:58:59.053Z",
+    "totalCost": 1554.5
+  },
+  {
+    "ticker": "NVO",
+    "action": "BUY",
+    "quantity": 100,
+    "pricePerShare": 56.41,
+    "fees": 0,
+    "notes": "IBKR",
+    "id": "9b6cb3e3-35db-482c-aa0d-f34d0e44dc07",
+    "timestamp": "2026-01-09T12:59:46.814Z",
+    "totalCost": 5641
+  },
+  {
+    "ticker": "UNH",
+    "action": "BUY",
+    "quantity": 10,
+    "pricePerShare": 278.15,
+    "fees": 0,
+    "notes": "IBKR",
+    "id": "6e4f36f6-3d95-4a5f-a5e9-daa5c4987446",
+    "timestamp": "2026-01-09T13:00:30.495Z",
+    "totalCost": 2781.5
+  },
+  {
+    "ticker": "PYPL",
+    "action": "BUY",
+    "quantity": 12,
+    "pricePerShare": 64.61,
+    "fees": 0,
+    "notes": "IBKR",
+    "id": "ba9c7201-59cb-4ab8-9b6e-8585c993d925",
+    "timestamp": "2026-01-09T13:01:06.683Z",
+    "totalCost": 775.3199999999999
+  },
+  {
+    "ticker": "CRM",
+    "action": "BUY",
+    "quantity": 5,
+    "pricePerShare": 236.96,
+    "fees": 0,
+    "notes": "IBKR",
+    "id": "1f8b837f-2222-4fe5-b048-be5b44e4a5b4",
+    "timestamp": "2026-01-09T13:01:40.811Z",
+    "totalCost": 1184.8
+  },
+  {
+    "ticker": "YALA",
+    "action": "BUY",
+    "quantity": 150,
+    "pricePerShare": 5.05,
+    "fees": 0,
+    "notes": "IBKR",
+    "id": "6c61a19f-aec9-4a04-848f-e40c6590b326",
+    "timestamp": "2026-01-09T13:03:47.891Z",
+    "totalCost": 757.5
+  },
+  {
+    "ticker": "AMZN",
+    "action": "BUY",
+    "quantity": 10,
+    "pricePerShare": 220.91,
+    "fees": 0,
+    "notes": "IBKR",
+    "id": "20c940bb-08a4-4bf9-90d6-eb6b92122c8b",
+    "timestamp": "2026-01-09T13:04:21.900Z",
+    "totalCost": 2209.1
+  },
+  {
+    "ticker": "SONY",
+    "action": "BUY",
+    "quantity": 40,
+    "pricePerShare": 27.32,
+    "fees": 0,
+    "notes": "IBKR",
+    "id": "e04c1904-0a53-4234-892f-3d493ec984ad",
+    "timestamp": "2026-01-09T13:05:06.771Z",
+    "totalCost": 1092.8
+  },
+  {
+    "ticker": "GOOG",
+    "action": "BUY",
+    "quantity": 1,
+    "pricePerShare": 152.49,
+    "fees": 0,
+    "notes": "Lightyear TBSZ 2025",
+    "id": "02244060-ab76-4fbf-ae1b-3b6ba9ab8cdd",
+    "timestamp": "2026-01-09T13:06:35.841Z",
+    "totalCost": 152.49
+  },
+  {
+    "ticker": "PYPL",
+    "action": "BUY",
+    "quantity": 3,
+    "pricePerShare": 62.89,
+    "fees": 0,
+    "notes": "Lightyear TBSZ 2025",
+    "id": "a974389b-4b0a-4be0-83ee-183ab3ec143a",
+    "timestamp": "2026-01-09T13:06:56.038Z",
+    "totalCost": 188.67000000000002
+  },
+  {
+    "ticker": "NVO",
+    "action": "BUY",
+    "quantity": 100,
+    "pricePerShare": 52.07,
+    "fees": 0,
+    "notes": "Trading212",
+    "id": "9eb45085-446e-4d7c-a8fe-0802b4a71113",
+    "timestamp": "2026-01-09T13:07:51.074Z",
+    "totalCost": 5207
+  },
+  {
+    "ticker": "GOOG",
+    "action": "BUY",
+    "quantity": 14,
+    "pricePerShare": 159.67,
+    "fees": 0,
+    "notes": "Trading212",
+    "id": "426495d6-184d-4c9d-bdef-3acc4cd9b590",
+    "timestamp": "2026-01-09T13:08:21.965Z",
+    "totalCost": 2235.3799999999997
+  },
+  {
+    "ticker": "ASML",
+    "action": "BUY",
+    "quantity": 3,
+    "pricePerShare": 718.58,
+    "fees": 0,
+    "notes": "Trading212",
+    "id": "d1876ef6-c60f-4340-a07f-a2014bf65bb4",
+    "timestamp": "2026-01-09T13:08:51.091Z",
+    "totalCost": 2155.7400000000002
+  },
+  {
+    "ticker": "PYPL",
+    "action": "BUY",
+    "quantity": 50,
+    "pricePerShare": 70.58,
+    "fees": 0,
+    "notes": "Trading212",
+    "id": "d8338aee-3af7-4fca-8cd0-7a611d09db37",
+    "timestamp": "2026-01-09T13:10:24.777Z",
+    "totalCost": 3529
   }
 ]
