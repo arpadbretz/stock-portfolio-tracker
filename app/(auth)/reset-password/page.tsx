@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import { Lock, Check } from 'lucide-react';
+import { Lock, Check, AlertCircle } from 'lucide-react';
+import Link from 'next/link';
 
 export default function ResetPasswordPage() {
     const [password, setPassword] = useState('');
@@ -11,8 +12,25 @@ export default function ResetPasswordPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
+    const [sessionChecked, setSessionChecked] = useState(false);
+    const [hasSession, setHasSession] = useState(false);
     const supabase = createClient();
     const router = useRouter();
+
+    useEffect(() => {
+        // Check if user has a valid session from password reset email
+        const checkSession = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            setHasSession(!!session);
+            setSessionChecked(true);
+
+            if (!session) {
+                setError('Invalid or expired password reset link. Please request a new one.');
+            }
+        };
+
+        checkSession();
+    }, [supabase]);
 
     const handleResetPassword = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -45,6 +63,45 @@ export default function ResetPasswordPage() {
             }, 2000);
         }
     };
+
+    if (!sessionChecked) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-[#0f172a]">
+                <div className="w-full max-w-md p-8 bg-slate-800/40 backdrop-blur-md border border-slate-700/50 rounded-3xl text-center">
+                    <p className="text-slate-400">Verifying reset link...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!hasSession) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-[#0f172a]">
+                <div className="w-full max-w-md p-8 bg-slate-800/40 backdrop-blur-md border border-slate-700/50 rounded-3xl text-center">
+                    <div className="mb-6 flex justify-center">
+                        <div className="p-4 bg-red-500/10 rounded-full">
+                            <AlertCircle className="text-red-400" size={48} />
+                        </div>
+                    </div>
+
+                    <h1 className="text-2xl font-bold text-white mb-3">
+                        Invalid Reset Link
+                    </h1>
+
+                    <p className="text-slate-400 mb-6">
+                        {error || 'This password reset link is invalid or has expired.'}
+                    </p>
+
+                    <Link
+                        href="/forgot-password"
+                        className="block w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-blue-500/20 transition-all"
+                    >
+                        Request New Reset Link
+                    </Link>
+                </div>
+            </div>
+        );
+    }
 
     if (success) {
         return (

@@ -57,8 +57,19 @@ export default function CookieBanner() {
 
     return (
         <>
+            {/* Floating Cookie Settings Button (Always visible after consent) */}
+            {!showBanner && (
+                <button
+                    onClick={() => setShowSettings(true)}
+                    className="fixed bottom-4 right-4 z-40 p-3 bg-slate-800 border border-slate-600 rounded-full shadow-lg hover:bg-slate-700 transition-all hover:scale-110 group"
+                    title="Cookie Settings"
+                >
+                    <Cookie className="text-slate-400 group-hover:text-white transition-colors" size={20} />
+                </button>
+            )}
+
             {/* Main Banner */}
-            {!showSettings && (
+            {showBanner && (
                 <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-slate-900/95 backdrop-blur-lg border-t border-slate-700 shadow-2xl">
                     <div className="container mx-auto max-w-6xl">
                         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
