@@ -1,0 +1,12 @@
+[
+  {
+    "ticker": "AAPL",
+    "action": "BUY",
+    "quantity": 10,
+    "pricePerShare": 150,
+    "fees": 1.5,
+    "notes": "",
+    "timestamp": "2026-01-09T12:03:46.438Z",
+    "totalCost": 1501.5
+  }
+]
