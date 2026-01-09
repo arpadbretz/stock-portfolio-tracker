@@ -10,8 +10,8 @@ export default function Footer() {
                     <div>
                         <h3 className="text-lg font-bold text-white mb-4">Prometheus Digital Kft.</h3>
                         <p className="text-sm text-slate-400 mb-2">1125 Budapest, Hableány utca 6/A</p>
-                        <p className="text-sm text-slate-400 mb-2">Adószám: 32910128-2-43</p>
-                        <p className="text-sm text-slate-400">Cégjegyzékszám: 01-09-434076</p>
+                        <p className="text-sm text-slate-400 mb-2">Tax Number: 32910128-2-43</p>
+                        <p className="text-sm text-slate-400">Company Reg. No.: 01-09-434076</p>
                     </div>
 
                     {/* Legal Links */}
