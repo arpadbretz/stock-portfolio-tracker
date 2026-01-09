@@ -231,6 +231,13 @@ export default function Home() {
               isLoading={isLoading}
             />
 
+            <PerformanceChart
+              holdings={summary?.holdings || []}
+              currency={currency}
+              exchangeRates={rates}
+              isLoading={isLoading}
+            />
+
             <TradeHistory
               trades={trades}
               currency={currency}
@@ -242,12 +249,6 @@ export default function Home() {
 
           {/* Sidebar */}
           <div className="space-y-8">
-            <PerformanceChart
-              holdings={summary?.holdings || []}
-              currency={currency}
-              exchangeRates={rates}
-              isLoading={isLoading}
-            />
 
             {/* Quick Stats / Info */}
             <div className="bg-slate-800/40 backdrop-blur-md border border-slate-700/50 p-6 rounded-3xl">

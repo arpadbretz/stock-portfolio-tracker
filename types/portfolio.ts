@@ -23,6 +23,7 @@ export interface Holding {
   marketValue: number;
   unrealizedGain: number;
   unrealizedGainPercent: number;
+  allocation: number;
 }
 
 export interface PriceData {

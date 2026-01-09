@@ -152,5 +152,60 @@
     "id": "d8338aee-3af7-4fca-8cd0-7a611d09db37",
     "timestamp": "2026-01-09T13:10:24.777Z",
     "totalCost": 3529
+  },
+  {
+    "ticker": "AMZN",
+    "action": "BUY",
+    "quantity": 7,
+    "pricePerShare": 214.49,
+    "fees": 0,
+    "notes": "Trading212",
+    "id": "74c178d3-799d-4ad0-afed-0ba7faaf9207",
+    "timestamp": "2026-01-09T13:11:43.205Z",
+    "totalCost": 1501.43
+  },
+  {
+    "ticker": "NFLX",
+    "action": "BUY",
+    "quantity": 14,
+    "pricePerShare": 95.5,
+    "fees": 0,
+    "notes": "Trading212",
+    "id": "2989ee7c-6b16-4a8a-9685-857b65314b0f",
+    "timestamp": "2026-01-09T13:12:14.109Z",
+    "totalCost": 1337
+  },
+  {
+    "ticker": "CRM",
+    "action": "BUY",
+    "quantity": 4,
+    "pricePerShare": 237.65,
+    "fees": 0,
+    "notes": "Trading212",
+    "id": "0ca0d3a9-afa1-4e35-bd73-0f9f2a1a56f5",
+    "timestamp": "2026-01-09T13:12:35.524Z",
+    "totalCost": 950.6
+  },
+  {
+    "ticker": "MC.PA",
+    "action": "BUY",
+    "quantity": 1,
+    "pricePerShare": 453.5,
+    "fees": 0,
+    "notes": "Trading212",
+    "id": "c977031c-c568-4fa1-8211-421be523ed7e",
+    "timestamp": "2026-01-09T13:13:25.407Z",
+    "totalCost": 453.5
+  },
+  {
+    "ticker": "NOA3.DE",
+    "action": "BUY",
+    "quantity": 250,
+    "pricePerShare": 5,
+    "fees": 0,
+    "notes": "george",
+    "id": "252e7b1b-c9d3-4e05-bbe6-007b623144cd",
+    "timestamp": "2026-01-09T13:16:16.088Z",
+    "totalCost": 1250
   }
 ]

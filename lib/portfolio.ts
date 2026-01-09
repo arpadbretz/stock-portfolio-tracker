@@ -57,6 +57,7 @@ export function aggregateHoldings(trades: Trade[], prices: Map<string, PriceData
             marketValue,
             unrealizedGain,
             unrealizedGainPercent,
+            allocation: 0, // Will be calculated in summary
         });
     }
 
@@ -76,12 +77,18 @@ export function calculatePortfolioSummary(
         ? (totalGain / totalInvested) * 100
         : 0;
 
+    // Calculate allocation percentages
+    const holdingsWithAllocation = holdings.map(h => ({
+        ...h,
+        allocation: totalMarketValue > 0 ? (h.marketValue / totalMarketValue) * 100 : 0
+    }));
+
     return {
         totalInvested,
         totalMarketValue,
         totalGain,
         totalGainPercent,
-        holdings,
+        holdings: holdingsWithAllocation,
         exchangeRates: exchangeRates as any,
     };
 }
