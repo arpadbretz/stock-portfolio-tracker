@@ -263,10 +263,10 @@ export default function PrivacyPolicyPage() {
                         <section className="border-t border-slate-700 pt-6">
                             <h3 className="text-lg font-semibold text-white mb-3">Magyar nyelvű összefoglaló</h3>
                             <p className="text-sm text-slate-400 leading-relaxed">
-                                Adatkezelő: [Az Ön neve vagy cég neve]. Az adatkezelés célja a portfólió nyilvántartó szolgáltatás nyújtása.
+                                Adatkezelő: Prometheus Digital Kft. (1125 Budapest, Hableány utca 6/A, info@prometheusdigital.hu). Az adatkezelés célja a portfólió nyilvántartó szolgáltatás nyújtása.
                                 Kezelt adatok: email cím, jelszó (titkosítva), portfólió adatok. Jogalap: szerződés teljesítése (GDPR 6. cikk (1) b).
-                                Adattárolás helye: Supabase (EU régió, Frankfurt). Jogai: hozzáférés, helyesbítés, törlés, adathordozhatóság.
-                                Felügyeleti hatóság: NAIH. További információ: [Email].
+                                Adattárolás helye: Supabase (EU régió, Frankfurt), Netlify (USA/EU). Jogai: hozzáférés, helyesbítés, törlés, adathordozhatóság.
+                                Felügyeleti hatóság: NAIH (naih.hu). További információ: info@prometheusdigital.hu, +36 30 922 2042.
                             </p>
                         </section>
                     </div>
