@@ -36,20 +36,17 @@ export default function PrivacyPolicyPage() {
                         <section>
                             <div className="flex items-center gap-2 mb-4">
                                 <FileText className="text-blue-400" size={24} />
-                                <h2 className="text-2xl font-semibold text-white">1. Data Controller (Adatkezelő)</h2>
+                                <h2 className="text-2xl font-semibold text-white">1. Data Controller</h2>
                             </div>
                             <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-700">
-                                <p className="mb-2"><strong>Cégnév:</strong> Prometheus Digital Kft.</p>
-                                <p className="mb-2"><strong>Székhely:</strong> 1125 Budapest, Hableány utca 6/A</p>
-                                <p className="mb-2"><strong>Cégjegyzékszám:</strong> 01-09-434076</p>
-                                <p className="mb-2"><strong>Adószám:</strong> 32910128-2-43</p>
-                                <p className="mb-2"><strong>Képviseli:</strong> Bretz Árpád, ügyvezető</p>
-                                <p className="mb-2"><strong>E-mail:</strong> info@prometheusdigital.hu</p>
-                                <p><strong>Telefon:</strong> +36 30 922 2042</p>
+                                <p className="mb-2"><strong>Company Name:</strong> Prometheus Digital Kft.</p>
+                                <p className="mb-2"><strong>Address:</strong> 1125 Budapest, Hableány utca 6/A, Hungary</p>
+                                <p className="mb-2"><strong>Company Registration Number:</strong> 01-09-434076</p>
+                                <p className="mb-2"><strong>Tax Number:</strong> 32910128-2-43</p>
+                                <p className="mb-2"><strong>Represented by:</strong> Bretz Árpád, Managing Director</p>
+                                <p className="mb-2"><strong>Email:</strong> info@prometheusdigital.hu</p>
+                                <p><strong>Phone:</strong> +36 30 922 2042</p>
                             </div>
-                            <p className="mt-4 italic text-slate-400 text-sm">
-                                (Adatkezelő: Prometheus Digital Kft., székhely: 1125 Budapest, Hableány utca 6/A, e-mail: info@prometheusdigital.hu)
-                            </p>
                         </section>
 
                         {/* What Data We Collect */}
@@ -246,9 +243,9 @@ export default function PrivacyPolicyPage() {
                             <p className="mb-4">For any questions about this Privacy Policy or to exercise your rights:</p>
                             <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-700">
                                 <p className="mb-2"><strong>Data Protection Officer:</strong> Bretz Árpád</p>
-                                <p className="mb-2"><strong>E-mail:</strong> info@prometheusdigital.hu</p>
-                                <p className="mb-2"><strong>Telefon:</strong> +36 30 922 2042</p>
-                                <p><strong>Cím:</strong> 1125 Budapest, Hableány utca 6/A</p>
+                                <p className="mb-2"><strong>Email:</strong> info@prometheusdigital.hu</p>
+                                <p className="mb-2"><strong>Phone:</strong> +36 30 922 2042</p>
+                                <p><strong>Address:</strong> 1125 Budapest, Hableány utca 6/A, Hungary</p>
                             </div>
                             <p className="mt-4 text-sm text-slate-400">
                                 If you are not satisfied with our response, you have the right to lodge a complaint with the Hungarian
@@ -259,16 +256,6 @@ export default function PrivacyPolicyPage() {
                             </p>
                         </section>
 
-                        {/* Hungarian Summary */}
-                        <section className="border-t border-slate-700 pt-6">
-                            <h3 className="text-lg font-semibold text-white mb-3">Magyar nyelvű összefoglaló</h3>
-                            <p className="text-sm text-slate-400 leading-relaxed">
-                                Adatkezelő: Prometheus Digital Kft. (1125 Budapest, Hableány utca 6/A, info@prometheusdigital.hu). Az adatkezelés célja a portfólió nyilvántartó szolgáltatás nyújtása.
-                                Kezelt adatok: email cím, jelszó (titkosítva), portfólió adatok. Jogalap: szerződés teljesítése (GDPR 6. cikk (1) b).
-                                Adattárolás helye: Supabase (EU régió, Frankfurt), Netlify (USA/EU). Jogai: hozzáférés, helyesbítés, törlés, adathordozhatóság.
-                                Felügyeleti hatóság: NAIH (naih.hu). További információ: info@prometheusdigital.hu, +36 30 922 2042.
-                            </p>
-                        </section>
                     </div>
                 </div>
             </div>

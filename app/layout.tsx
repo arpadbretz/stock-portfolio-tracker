@@ -28,6 +28,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+        <meta name="theme-color" content="#0f172a" />
+      </head>
       <body
         className={`${outfit.variable} ${inter.variable} font-inter antialiased bg-[#0f172a] text-slate-200`}
       >

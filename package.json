@@ -13,6 +13,7 @@
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.90.1",
     "dotenv": "^17.2.3",
+    "framer-motion": "^12.25.0",
     "googleapis": "^170.0.0",
     "lucide-react": "^0.562.0",
     "next": "16.1.1",

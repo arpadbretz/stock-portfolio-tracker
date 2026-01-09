@@ -53,8 +53,6 @@ export default function CookieBanner() {
         saveConsent(consent);
     };
 
-    if (!showBanner) return null;
-
     return (
         <>
             {/* Floating Cookie Settings Button (Always visible after consent) */}
@@ -63,6 +61,7 @@ export default function CookieBanner() {
                     onClick={() => setShowSettings(true)}
                     className="fixed bottom-4 right-4 z-40 p-3 bg-slate-800 border border-slate-600 rounded-full shadow-lg hover:bg-slate-700 transition-all hover:scale-110 group"
                     title="Cookie Settings"
+                    aria-label="Cookie Settings"
                 >
                     <Cookie className="text-slate-400 group-hover:text-white transition-colors" size={20} />
                 </button>
