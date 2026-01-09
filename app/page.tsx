@@ -28,6 +28,7 @@ import UserButton from '@/components/auth/UserButton';
 import Footer from '@/components/Footer';
 import MobileNav from '@/components/MobileNav';
 import { useRouter } from 'next/navigation';
+import PortfolioSwitcher from '@/components/PortfolioSwitcher';
 
 export default function Home() {
   // 1. UPDATED: Added 'id' to the state definition
@@ -53,12 +54,16 @@ export default function Home() {
     }
   }, [user, authLoading, router]);
 
-  const fetchPortfolio = useCallback(async (background = false) => {
+  const fetchPortfolio = useCallback(async (background = false, specificPortfolioId?: string) => {
     if (!background) setIsLoading(true);
     else setIsRefreshing(true);
 
     try {
-      const response = await fetch('/api/portfolio');
+      // Use specific ID if provided, otherwise if we already have one loaded, keep using it
+      const queryId = specificPortfolioId || (portfolio?.id ? portfolio.id : '');
+      const url = `/api/portfolio${queryId ? `?id=${queryId}` : ''}`;
+
+      const response = await fetch(url);
       const result = await response.json();
 
       if (result.success) {
@@ -70,7 +75,7 @@ export default function Home() {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, []);
+  }, [portfolio?.id]);
 
   useEffect(() => {
     if (user) {
@@ -80,6 +85,10 @@ export default function Home() {
     const interval = setInterval(() => fetchPortfolio(true), 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, [fetchPortfolio, user]);
+
+  const handlePortfolioChange = (newPortfolioId: string) => {
+    fetchPortfolio(false, newPortfolioId);
+  };
 
   const summary = portfolio?.summary;
   const trades = portfolio?.trades || [];
@@ -113,7 +122,15 @@ export default function Home() {
             </h1>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap md:flex-nowrap">
+            {/* Portfolio Switcher */}
+            {portfolio && (
+              <PortfolioSwitcher
+                currentPortfolioId={portfolio.id}
+                onPortfolioChange={handlePortfolioChange}
+              />
+            )}
+
             {/* Currency Selector */}
             <div className="flex bg-slate-800 p-1 rounded-xl border border-slate-700 overflow-x-auto max-w-[200px] md:max-w-none">
               {(['USD', 'EUR', 'HUF'] as CurrencyCode[]).map((c) => (

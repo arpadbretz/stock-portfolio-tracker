@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
-// We remove getAllTrades because we need to fetch by Portfolio ID explicitly now
 import { getCachedBatchPrices } from '@/lib/yahoo-finance/cached';
 import { aggregateHoldings, calculatePortfolioSummary } from '@/lib/portfolio';
 import { createClient } from '@/lib/supabase/server';
 
-export async function GET() {
+export async function GET(request: Request) {
     try {
         const supabase = await createClient();
         const { data: { user } } = await supabase.auth.getUser();
@@ -13,52 +12,91 @@ export async function GET() {
             return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
         }
 
+        const { searchParams } = new URL(request.url);
+        const requestedPortfolioId = searchParams.get('id');
 
-        // 1. GET OR CREATE PORTFOLIO ID
-        // We need this ID to filter trades and to send it to the frontend for the "Add" button
-        let { data: portfolio, error: portfolioError } = await supabase
-            .from('portfolios')
-            .select('id, name')
-            .eq('user_id', user.id)
-            .single();
+        // 1. DETERMINE WHICH PORTFOLIO TO FETCH
+        let portfolioId = requestedPortfolioId;
+        let portfolioName = 'My Portfolio';
 
-        if (portfolioError && portfolioError.code !== 'PGRST116') {
-            // PGRST116 is "no rows returned", which is fine - we'll create one
-            console.error('Error fetching portfolio:', portfolioError);
-            throw portfolioError;
+        if (!portfolioId) {
+            // If no ID provided, try to get default from preferences
+            const { data: preference } = await supabase
+                .from('user_preferences')
+                .select('default_portfolio_id')
+                .eq('user_id', user.id)
+                .single();
+
+            if (preference?.default_portfolio_id) {
+                portfolioId = preference.default_portfolio_id;
+            } else {
+                // If no preference, get the first created portfolio
+                const { data: firstPortfolio } = await supabase
+                    .from('portfolios')
+                    .select('id')
+                    .eq('user_id', user.id)
+                    .order('created_at', { ascending: true })
+                    .limit(1)
+                    .single();
+
+                if (firstPortfolio) {
+                    portfolioId = firstPortfolio.id;
+                }
+            }
         }
 
+        // If we still don't have a portfolio ID, or if we need to verify the requested one
+        // and get its details (name, color, etc.)
+        let portfolio;
+
+        if (portfolioId) {
+            const { data: existingPortfolio, error: fetchError } = await supabase
+                .from('portfolios')
+                .select('*')
+                .eq('id', portfolioId)
+                .eq('user_id', user.id)
+                .single();
+
+            if (!fetchError && existingPortfolio) {
+                portfolio = existingPortfolio;
+            }
+        }
+
+        // If still no portfolio (either didn't exist, invalid ID, or user has none), create one
         if (!portfolio) {
+            // Only create if we weren't just looking for a specific invalid ID
+            // If user explicitly asked for ID X and it doesn't exist, return 404
+            if (requestedPortfolioId) {
+                return NextResponse.json({ success: false, error: 'Portfolio not found' }, { status: 404 });
+            }
+
             console.log('No portfolio found, creating one for user:', user.id);
             const { data: newPortfolio, error: createError } = await supabase
                 .from('portfolios')
                 .insert({
                     user_id: user.id,
                     name: 'My Portfolio',
-                    is_default: true
+                    color: '#10b981'
                 })
-                .select('id, name')
+                .select()
                 .single();
 
             if (createError) {
                 console.error('Error creating portfolio:', createError);
-                console.error('Create error details:', {
-                    message: createError.message,
-                    details: createError.details,
-                    hint: createError.hint,
-                    code: createError.code
-                });
                 throw createError;
             }
 
-            console.log('Portfolio created successfully:', newPortfolio);
+            // Set as default since it's the only one
+            await supabase
+                .from('user_preferences')
+                .upsert({ user_id: user.id, default_portfolio_id: newPortfolio.id });
+
             portfolio = newPortfolio;
         }
 
-
         console.log('Step 2: Fetching trades for portfolio:', portfolio.id);
+
         // 2. FETCH TRADES DIRECTLY
-        // We fetch directly here to ensure we get trades for THIS specific portfolio
         const { data: dbTrades, error: tradesError } = await supabase
             .from('trades')
             .select('*')
@@ -69,15 +107,13 @@ export async function GET() {
             console.error('Trades fetch error:', tradesError);
             throw tradesError;
         }
-        console.log('Trades fetched:', dbTrades?.length || 0, 'trades');
 
-        // 3. MAP DATABASE TRADES TO YOUR APP'S FORMAT
-        // Your helper functions expect camelCase (pricePerShare), DB returns snake_case (price_per_share)
+        // 3. MAP DATABASE TRADES TO APP FORMAT
         const trades = (dbTrades || []).map((t) => ({
             id: t.id,
             portfolioId: t.portfolio_id,
             ticker: t.ticker,
-            action: t.action, // 'BUY' or 'SELL'
+            action: t.action,
             quantity: Number(t.quantity),
             pricePerShare: Number(t.price_per_share),
             fees: Number(t.fees),
@@ -87,60 +123,44 @@ export async function GET() {
             date: t.date_traded,
         }));
 
-        // 4. YOUR EXISTING LOGIC (Unchanged)
+        // 4. FETCH PRICES AND CALCULATE SUMMARY
         const tickers = [...new Set(trades.map(t => t.ticker.toUpperCase()))];
-        console.log('Step 4: Fetching prices for tickers:', tickers);
+        console.log('Fetching prices for tickers:', tickers);
 
-        // Fetch current prices 
         const prices = await getCachedBatchPrices(tickers);
-        console.log('Prices fetched for', prices.size, 'tickers');
 
         // Fetch exchange rates
-        console.log('Step 5: Fetching exchange rates');
         const ratesData = await getCachedBatchPrices(['USDEUR=X', 'USDHUF=X']);
         const exchangeRates = {
             USD: 1,
             EUR: ratesData.get('USDEUR=X')?.currentPrice || 0.92,
             HUF: ratesData.get('USDHUF=X')?.currentPrice || 350,
         };
-        console.log('Exchange rates:', exchangeRates);
 
-        // Aggregate trades into holdings (using your existing function)
-        console.log('Step 6: Aggregating holdings');
+        // Aggregate and calculate
         const holdings = aggregateHoldings(trades, prices);
-        console.log('Holdings aggregated:', holdings.length);
-
-        // Calculate portfolio summary (using your existing function)
-        console.log('Step 7: Calculating portfolio summary');
         const summary = calculatePortfolioSummary(holdings, exchangeRates);
-        console.log('Summary calculated successfully');
 
         return NextResponse.json({
             success: true,
             data: {
-                id: portfolio.id, // <--- VITAL: This allows the frontend to Add Trades
+                id: portfolio.id,
                 name: portfolio.name,
+                description: portfolio.description,
+                color: portfolio.color,
                 trades,
                 holdings,
                 summary,
                 lastUpdated: new Date().toISOString(),
             },
         });
-    } catch (error) {
-        console.error('=== PORTFOLIO API ERROR ===');
-        console.error('Error details:', error);
-        console.error('Error type:', error instanceof Error ? error.constructor.name : typeof error);
-        if (error instanceof Error) {
-            console.error('Error message:', error.message);
-            console.error('Error stack:', error.stack);
-        }
-        console.error('========================');
 
+    } catch (error) {
+        console.error('=== PORTFOLIO API ERROR ===', error);
         return NextResponse.json(
             {
                 success: false,
                 error: error instanceof Error ? error.message : 'Unknown error occurred',
-                errorType: error instanceof Error ? error.constructor.name : typeof error,
                 details: error instanceof Error ? error.stack : String(error)
             },
             { status: 500 }
