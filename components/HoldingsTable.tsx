@@ -9,6 +9,7 @@ import {
 } from '@/lib/portfolio';
 import { TrendingUp, TrendingDown, Minus, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 
 interface HoldingsTableProps {
     holdings: Holding[];
@@ -186,10 +187,13 @@ export default function HoldingsTable({ holdings, currency, exchangeRates, isLoa
             </div>
 
             <div className="p-8 pt-4 border-t border-border/50 text-center">
-                <button className="text-xs text-muted-foreground hover:text-primary font-bold uppercase tracking-widest transition-colors flex items-center gap-2 mx-auto">
+                <Link
+                    href="/dashboard/report"
+                    className="text-xs text-muted-foreground hover:text-primary font-bold uppercase tracking-widest transition-colors flex items-center gap-2 mx-auto w-fit"
+                >
                     View Comprehensive Report
                     <ChevronRight size={14} />
-                </button>
+                </Link>
             </div>
         </div>
     );
