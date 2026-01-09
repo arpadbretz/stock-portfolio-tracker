@@ -263,7 +263,7 @@ export default function ManagePortfolios() {
     }
 
     return (
-        <div className="min-h-screen bg-background text-foreground p-6 md:p-10">
+        <div className="p-6 md:p-10">
             <div className="max-w-5xl mx-auto">
                 <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>

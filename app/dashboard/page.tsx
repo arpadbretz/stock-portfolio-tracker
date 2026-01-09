@@ -18,7 +18,10 @@ import {
   LayoutDashboard,
   History,
   Upload,
-  Database
+  Database,
+  PieChart as PieChartIcon,
+  Layers as LayersIcon,
+  ChevronRight
 } from 'lucide-react';
 import AddTradeForm from '@/components/AddTradeForm';
 import HoldingsTable from '@/components/HoldingsTable';
@@ -94,10 +97,10 @@ export default function DashboardPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  if (authLoading || isLoading && !portfolio) {
+  if (authLoading || (isLoading && !portfolio)) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      <div className="flex items-center justify-center min-h-screen bg-background text-foreground">
+        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -108,162 +111,208 @@ export default function DashboardPage() {
   const rates = summary?.exchangeRates || { USD: 1, EUR: 0.92, HUF: 350 };
 
   return (
-    <div className="min-h-screen bg-background text-foreground scroll-smooth">
-      <main className="container mx-auto px-4 py-8 lg:px-10 max-w-7xl">
-
-        {/* Responsive Header */}
-        <header className="flex flex-col gap-8 mb-12">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div>
-              <div className="flex items-center gap-2 text-primary mb-1">
-                <LayoutDashboard size={18} />
-                <span className="text-sm font-bold tracking-wider uppercase">Overview</span>
+    <div className="min-h-screen text-foreground scroll-smooth relative">
+      <main className="px-6 py-10 lg:px-12 max-w-[1600px] mx-auto">
+        {/* Intelligence Header */}
+        <header className="flex flex-col gap-10 mb-16">
+          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-8">
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="p-1 px-3 bg-primary/10 rounded-full border border-primary/20">
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">System Dashboard</span>
+                </div>
+                <div className="h-1 w-1 bg-border rounded-full" />
+                <div className="flex items-center gap-2 text-muted-foreground text-[10px] font-black uppercase tracking-widest">
+                  <Clock size={12} />
+                  <span>Sync: {lastUpdated ? new Date(lastUpdated).toLocaleTimeString() : '--:--'}</span>
+                </div>
               </div>
-              <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
-                Trading <span className="text-primary">Dashboard</span>
+              <h1 className="text-4xl md:text-5xl font-black tracking-tighter leading-none">
+                Investment <span className="text-primary text-glow-primary">Protocol.</span>
               </h1>
             </div>
 
-            <div className="flex items-center gap-4 self-end md:self-auto">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="bg-card/40 backdrop-blur-xl border border-border/50 p-1.5 rounded-[22px] flex items-center shadow-xl shadow-black/5">
+                {(['USD', 'EUR', 'HUF'] as CurrencyCode[]).map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => setCurrency(c)}
+                    className={`px-6 py-2.5 rounded-[18px] text-[10px] font-black uppercase tracking-widest transition-all ${currency === c
+                      ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+                      : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+
               {portfolio && (
                 <PortfolioSwitcher
                   currentPortfolioId={portfolio.id}
                   onPortfolioChange={handlePortfolioChange}
                 />
               )}
-              <button
+
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => fetchPortfolio(true)}
                 disabled={isRefreshing}
-                className="p-3 rounded-2xl bg-card border border-border hover:bg-muted transition-all disabled:opacity-50"
+                className="p-3.5 rounded-2xl bg-card border border-border shadow-md hover:bg-muted transition-all disabled:opacity-50"
               >
-                <RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} />
-              </button>
+                <RefreshCw size={20} className={isRefreshing ? 'animate-spin text-primary' : 'text-foreground'} />
+              </motion.button>
             </div>
           </div>
 
-          {/* Action Bar */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-4 bg-card/50 rounded-3xl border border-border/50">
-            <div className="flex items-center bg-muted p-1 rounded-2xl border border-border self-start">
-              {(['USD', 'EUR', 'HUF'] as CurrencyCode[]).map((c) => (
-                <button
-                  key={c}
-                  onClick={() => setCurrency(c)}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${currency === c
-                    ? 'bg-primary text-primary-foreground shadow-lg'
-                    : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                >
-                  {c}
-                </button>
-              ))}
-            </div>
+          {/* Rapid Action Layer */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Link
+              href="/dashboard/import"
+              className="flex items-center justify-between p-6 bg-card/30 backdrop-blur-md border border-border/40 rounded-[32px] hover:border-primary/30 transition-all group overflow-hidden relative shadow-lg shadow-black/5"
+            >
+              <div className="relative z-10 flex items-center gap-6">
+                <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Upload size={24} className="text-foreground" />
+                </div>
+                <div>
+                  <h3 className="font-black text-lg tracking-tight">Bulk Import Engineering</h3>
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Batch trade CSV processing</p>
+                </div>
+              </div>
+              <ChevronRight size={24} className="text-muted-foreground group-hover:translate-x-1 group-hover:text-primary transition-all" />
+              <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                <Database size={80} />
+              </div>
+            </Link>
 
-            <div className="flex items-center gap-3">
-              <Link
-                href="/import"
-                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-card border border-border hover:bg-muted font-bold text-sm transition-all"
-              >
-                <Upload size={18} />
-                <span>Import</span>
-              </Link>
-              <button
-                onClick={() => {
-                  setIsFormOpen(!isFormOpen);
-                  if (editingTrade) setEditingTrade(null);
-                }}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-primary text-primary-foreground font-bold text-sm shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
-              >
-                <PlusCircle size={18} />
-                <span>Add Trade</span>
-              </button>
-            </div>
+            <button
+              onClick={() => {
+                setIsFormOpen(!isFormOpen);
+                if (editingTrade) setEditingTrade(null);
+              }}
+              className="flex items-center justify-between p-6 bg-primary text-primary-foreground rounded-[32px] shadow-2xl shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all group relative overflow-hidden"
+            >
+              <div className="relative z-10 flex items-center gap-6">
+                <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center group-hover:rotate-90 transition-transform duration-500">
+                  <PlusCircle size={28} />
+                </div>
+                <div className="text-left">
+                  <h3 className="font-black text-lg tracking-tight">Execute New Trade</h3>
+                  <p className="text-xs text-primary-foreground/70 font-black uppercase tracking-widest">Manual position entry</p>
+                </div>
+              </div>
+              <ChevronRight size={24} />
+              <div className="absolute bottom-0 right-0 p-4 opacity-10">
+                <TrendingUp size={100} />
+              </div>
+            </button>
           </div>
         </header>
 
-        {/* Global Summary Cards */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          {/* Market Value */}
+        {/* Global Metric Clusters */}
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-20">
+          {/* Card: Portfolio Valuation */}
           <motion.div
-            whileHover={{ y: -5 }}
-            className="bg-card border border-border p-8 rounded-[40px] relative overflow-hidden group shadow-lg shadow-black/5"
+            whileHover={{ y: -8 }}
+            className="p-10 bg-card border border-border/80 rounded-[48px] shadow-2xl shadow-black/5 relative overflow-hidden group"
           >
-            <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
-              <Wallet size={80} className="text-primary" />
+            <div className="flex items-center justify-between mb-8">
+              <div className="w-12 h-12 bg-muted rounded-2xl flex items-center justify-center shadow-inner">
+                <Wallet size={20} className="text-primary" />
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Net Asset Value</span>
             </div>
-            <p className="text-muted-foreground text-xs font-bold uppercase tracking-widest mb-2">Portfolio Value</p>
-            <h2 className="text-3xl font-extrabold mb-4">
+            <h2 className="text-4xl font-black tracking-tighter mb-4">
               {formatCurrency(convertCurrency(summary?.totalMarketValue || 0, currency, rates), currency)}
             </h2>
-            <div className="flex items-center gap-2 text-[10px] text-muted-foreground bg-muted w-fit px-3 py-1 rounded-full">
-              <Clock size={12} />
-              <span>{lastUpdated ? new Date(lastUpdated).toLocaleTimeString() : '--:--'}</span>
+            <div className="flex items-center gap-2">
+              <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden shadow-inner">
+                <motion.div initial={{ width: 0 }} animate={{ width: "100%" }} className="h-full bg-primary" />
+              </div>
+            </div>
+            <div className="mt-6 flex items-center justify-between">
+              <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Operational Capacity</span>
+              <span className="text-[8px] font-black text-primary">100% SECURE</span>
             </div>
           </motion.div>
 
-          {/* Invested */}
+          {/* Card: Capital Distribution */}
           <motion.div
-            whileHover={{ y: -5 }}
-            className="bg-card border border-border p-8 rounded-[40px] relative overflow-hidden group shadow-lg shadow-black/5"
+            whileHover={{ y: -8 }}
+            className="p-10 bg-card border border-border/80 rounded-[48px] shadow-2xl shadow-black/5 relative overflow-hidden group"
           >
-            <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
-              <BarChart3 size={80} className="text-secondary" />
+            <div className="flex items-center justify-between mb-8">
+              <div className="w-12 h-12 bg-muted rounded-2xl flex items-center justify-center shadow-inner">
+                <BarChart3 size={20} className="text-accent" />
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Total Deployed</span>
             </div>
-            <p className="text-muted-foreground text-xs font-bold uppercase tracking-widest mb-2">Total Invested</p>
-            <h2 className="text-3xl font-extrabold mb-4">
+            <h2 className="text-4xl font-black tracking-tighter mb-4">
               {formatCurrency(convertCurrency(summary?.totalInvested || 0, currency, rates), currency)}
             </h2>
-            <div className="text-[10px] text-muted-foreground bg-muted w-fit px-3 py-1 rounded-full uppercase font-bold tracking-tighter">
-              Net Cost Basis
+            <div className="text-[10px] font-black text-muted-foreground flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-accent" />
+              CORE COST BASIS
             </div>
           </motion.div>
 
-          {/* Profit Loss - Double Span */}
+          {/* Card: Performance Yield */}
           <motion.div
-            whileHover={{ y: -5 }}
-            className={`col-span-1 sm:col-span-2 bg-card border border-border p-8 rounded-[40px] relative overflow-hidden group shadow-lg shadow-black/5`}
+            whileHover={{ y: -8 }}
+            className={`md:col-span-2 p-10 bg-card/40 backdrop-blur-2xl border border-border/80 rounded-[48px] shadow-2xl shadow-black/10 relative overflow-hidden group`}
           >
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 h-full">
-              <div className="flex-1">
-                <p className="text-muted-foreground text-xs font-bold uppercase tracking-widest mb-2">Cumulative Return</p>
-                <div className="flex items-baseline gap-4 mb-4">
-                  <h2 className={`text-4xl font-extrabold ${(summary?.totalGain || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+            <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-10 h-full">
+              <div className="flex-1 w-full xl:w-auto">
+                <div className="flex items-center gap-4 mb-8">
+                  <div className={`p-3 rounded-2xl ${(summary?.totalGain || 0) >= 0 ? 'bg-emerald-500/10' : 'bg-rose-500/10'}`}>
+                    {(summary?.totalGain || 0) >= 0 ? (
+                      <TrendingUp className="text-emerald-500" size={24} />
+                    ) : (
+                      <TrendingDown className="text-rose-500" size={24} />
+                    )}
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Portfolio Yield Metrics</span>
+                </div>
+
+                <div className="flex flex-wrap items-baseline gap-6 mb-8">
+                  <h2 className={`text-6xl font-black tracking-tighter ${(summary?.totalGain || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
                     {formatCurrency(convertCurrency(summary?.totalGain || 0, currency, rates), currency)}
                   </h2>
-                  <div className={`px-4 py-1.5 rounded-2xl text-sm font-black border ${(summary?.totalGain || 0) >= 0 ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border-rose-500/20'}`}>
+                  <div className={`px-5 py-2 rounded-2xl text-lg font-black border ${(summary?.totalGain || 0) >= 0 ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border-rose-500/20'}`}>
                     {formatPercentage(summary?.totalGainPercent || 0)}
                   </div>
                 </div>
-                <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+
+                <div className="h-2.5 w-full bg-muted rounded-full overflow-hidden shadow-inner">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${Math.min(100, Math.abs(summary?.totalGainPercent || 0) * 2)}%` }}
-                    className={`h-full ${(summary?.totalGain || 0) >= 0 ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]'}`}
+                    className={`h-full ${(summary?.totalGain || 0) >= 0 ? 'bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.4)]' : 'bg-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.4)]'}`}
                   />
                 </div>
               </div>
 
-              <div className={`w-20 h-20 rounded-3xl flex items-center justify-center shrink-0 ${(summary?.totalGain || 0) >= 0 ? 'bg-emerald-500/5' : 'bg-rose-500/5'}`}>
-                {(summary?.totalGain || 0) >= 0 ? (
-                  <TrendingUp className="text-emerald-500" size={40} />
-                ) : (
-                  <TrendingDown className="text-rose-500" size={40} />
-                )}
+              <div className="hidden xl:flex w-32 h-32 rounded-[40px] bg-muted/30 border border-border/50 items-center justify-center shrink-0">
+                <PieChartIcon className={(summary?.totalGain || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'} size={60} />
               </div>
             </div>
           </motion.div>
         </section>
 
-        {/* Dashboard Components */}
-        <div className="space-y-12">
+        {/* Central Terminal Display */}
+        <div className="space-y-20">
           <AnimatePresence>
             {(isFormOpen || editingTrade) && (
               <motion.div
-                initial={{ opacity: 0, height: 0, y: -20 }}
+                initial={{ opacity: 0, height: 0, y: -40 }}
                 animate={{ opacity: 1, height: 'auto', y: 0 }}
-                exit={{ opacity: 0, height: 0, y: -20 }}
+                exit={{ opacity: 0, height: 0, y: -40 }}
                 className="overflow-hidden"
               >
-                <div className="mb-8">
+                <div className="pb-16 pt-4">
                   <AddTradeForm
                     portfolioId={portfolio?.id || ''}
                     editTrade={editingTrade}
@@ -282,77 +331,102 @@ export default function DashboardPage() {
             )}
           </AnimatePresence>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-8">
-              <HoldingsTable
-                holdings={summary?.holdings || []}
-                currency={currency}
-                exchangeRates={rates}
-              />
-              <TradeHistory
-                trades={trades}
-                currency={currency}
-                exchangeRates={rates}
-                onTradeDeleted={() => fetchPortfolio(true)}
-                onTradeEdit={handleEditTrade}
-              />
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-12">
+            {/* Primary Analysis Column */}
+            <div className="xl:col-span-8 space-y-20">
+              <section>
+                <div className="flex items-center gap-4 mb-10 pl-2">
+                  <div className="w-1.5 h-8 bg-primary rounded-full shadow-[0_0_15px_rgba(16,185,129,0.5)]" />
+                  <h3 className="text-3xl font-black tracking-tight">Active Holdings</h3>
+                </div>
+                <HoldingsTable
+                  holdings={summary?.holdings || []}
+                  currency={currency}
+                  exchangeRates={rates}
+                />
+              </section>
+
+              <section>
+                <div className="flex items-center gap-4 mb-10 pl-2">
+                  <div className="w-1.5 h-8 bg-accent rounded-full shadow-[0_0_15px_rgba(96,165,250,0.5)]" />
+                  <h3 className="text-3xl font-black tracking-tight">Log History</h3>
+                </div>
+                <TradeHistory
+                  trades={trades}
+                  currency={currency}
+                  exchangeRates={rates}
+                  onTradeDeleted={() => fetchPortfolio(true)}
+                  onTradeEdit={handleEditTrade}
+                />
+              </section>
             </div>
 
-            <div className="space-y-8">
-              <div className="bg-card border border-border rounded-[40px] p-8 shadow-sm">
-                <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                  <PieChart className="text-primary" size={20} />
-                  Performance
+            {/* Secondary Intel Column */}
+            <div className="xl:col-span-4 space-y-12">
+              <div className="p-8 bg-card border border-border/60 rounded-[48px] shadow-2xl shadow-black/5 backdrop-blur-3xl">
+                <h3 className="text-xl font-black mb-10 flex items-center gap-4">
+                  <div className="p-2 bg-primary/10 rounded-xl">
+                    <PieChartIcon className="text-primary" size={20} />
+                  </div>
+                  Performance Attribution
                 </h3>
-                <PerformanceChart
-                  holdings={summary?.holdings || []}
-                  currency={currency}
-                  exchangeRates={rates}
-                />
+                <div className="px-2">
+                  <PerformanceChart
+                    holdings={summary?.holdings || []}
+                    currency={currency}
+                    exchangeRates={rates}
+                  />
+                </div>
               </div>
 
-              <div className="bg-card border border-border rounded-[40px] p-8 shadow-sm">
-                <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                  <Layers size={20} className="text-accent" />
-                  Allocation
+              <div className="p-8 bg-card border border-border/60 rounded-[48px] shadow-2xl shadow-black/5 backdrop-blur-3xl">
+                <h3 className="text-xl font-black mb-10 flex items-center gap-4">
+                  <div className="p-2 bg-accent/10 rounded-xl">
+                    <LayersIcon className="text-accent" size={20} />
+                  </div>
+                  Fundamental Allocation
                 </h3>
-                <SectorAllocationChart
-                  holdings={summary?.holdings || []}
-                  currency={currency}
-                  exchangeRates={rates}
-                />
+                <div className="px-2">
+                  <SectorAllocationChart
+                    holdings={summary?.holdings || []}
+                    currency={currency}
+                    exchangeRates={rates}
+                  />
+                </div>
               </div>
 
               <motion.div
-                whileHover={{ scale: 1.02 }}
-                className="bg-gradient-to-br from-primary/10 to-accent/10 border border-primary/20 p-8 rounded-[40px] relative overflow-hidden group"
+                whileHover={{ scale: 1.01 }}
+                className="p-10 bg-gradient-to-br from-primary/5 via-accent/5 to-transparent border border-white/5 rounded-[64px] relative overflow-hidden group shadow-2xl"
               >
                 <div className="relative z-10">
-                  <div className="p-3 bg-primary/20 rounded-2xl w-fit mb-4">
-                    <Database className="text-primary" size={24} />
+                  <div className="p-4 bg-primary/20 rounded-3xl w-fit mb-8 shadow-inner">
+                    <Database className="text-primary" size={28} />
                   </div>
-                  <h3 className="text-xl font-bold mb-2">DCF Models</h3>
-                  <p className="text-muted-foreground text-sm mb-6">
-                    Professional valuation tools are coming soon to your dashboard.
+                  <h3 className="text-3xl font-black tracking-tighter mb-4 leading-none">Valuation<br />Neural Hub</h3>
+                  <p className="text-muted-foreground text-sm font-medium mb-8 leading-relaxed">
+                    Institutional-grade DCF and comparative valuation models launching in Q1.
                   </p>
-                  <button className="px-5 py-2.5 bg-card border border-border rounded-xl text-xs font-bold cursor-not-allowed opacity-50">
-                    Not Available Yet
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <span className="px-3 py-1 bg-muted rounded-full text-[8px] font-black uppercase tracking-widest text-muted-foreground">Operational Alpha</span>
+                    <span className="h-1 w-1 bg-muted-foreground rounded-full" />
+                    <span className="text-[8px] font-black uppercase tracking-widest text-primary animate-pulse">Encoding</span>
+                  </div>
                 </div>
-                <div className="absolute top-0 right-0 -mr-8 -mt-8 opacity-10 blur-2xl w-40 h-40 bg-primary/40 rounded-full"></div>
+                <div className="absolute -bottom-10 -right-10 opacity-5 rotate-12">
+                  <Database size={200} className="text-primary" />
+                </div>
               </motion.div>
             </div>
           </div>
         </div>
       </main>
+
+      <style jsx global>{`
+        .text-glow-primary {
+          text-shadow: 0 0 40px rgba(16, 185, 129, 0.4);
+        }
+      `}</style>
     </div>
   );
-}
-
-// Mock PieChart and Layers icon if not imported
-function PieChart({ className, size }: { className?: string, size?: number }) {
-  return <TrendingUp className={className} size={size} />;
-}
-function Layers({ className, size }: { className?: string, size?: number }) {
-  return <BarChart3 className={className} size={size} />;
 }

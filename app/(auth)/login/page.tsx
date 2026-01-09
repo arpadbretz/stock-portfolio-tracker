@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { TrendingUp, Mail, Lock, CheckCircle2, ArrowRight, Github } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -27,92 +29,137 @@ export default function LoginPage() {
             setError(error.message);
             setLoading(false);
         } else {
-            router.refresh(); // Refresh to update AuthProvider state
+            router.refresh();
             router.push('/dashboard');
         }
     };
 
-    const handleGithubLogin = async () => {
-        const { error } = await supabase.auth.signInWithOAuth({
-            provider: 'github',
-            options: {
-                redirectTo: `${window.location.origin}/auth/callback`,
-            },
-        });
-        if (error) setError(error.message);
-    };
-
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background">
-            <div className="w-full max-w-md p-8 bg-card border border-border rounded-3xl shadow-xl">
-                <div className="mb-8 text-center">
-                    <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
-                    <p className="text-slate-400">Log in to your portfolio tracker</p>
-                </div>
-
-                <form onSubmit={handleLogin} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-1">Email</label>
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="w-full p-3 bg-slate-900/50 border border-slate-700 rounded-xl text-white outline-none focus:border-blue-500 transition-colors"
-                            placeholder="you@example.com"
-                            required
-                        />
-                    </div>
-                    <div>
-                        <div className="flex justify-between items-center mb-1">
-                            <label className="block text-sm font-medium text-slate-300">Password</label>
-                            <Link href="/forgot-password" className="text-xs text-blue-500 hover:underline">
-                                Forgot password?
-                            </Link>
-                        </div>
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="w-full p-3 bg-slate-900/50 border border-slate-700 rounded-xl text-white outline-none focus:border-blue-500 transition-colors"
-                            placeholder="••••••••"
-                            required
-                        />
-                    </div>
-
-                    {error && <p className="text-rose-500 text-sm">{error}</p>}
-
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-blue-500/20 transition-all disabled:opacity-50"
-                    >
-                        {loading ? 'Logging in...' : 'Log In'}
-                    </button>
-                </form>
-
-                <div className="mt-6">
-                    <button
-                        onClick={handleGithubLogin}
-                        className="w-full py-3 bg-[#24292e] text-white font-bold rounded-xl hover:bg-[#2b3137] transition-all flex items-center justify-center gap-2 border border-slate-600"
-                    >
-                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
-                        </svg>
-                        Continue with GitHub
-                    </button>
-                </div>
-                <p className="mt-8 text-center text-slate-400">
-                    Don't have an account?{' '}
-                    <Link href="/register" className="text-blue-500 hover:underline">
-                        Register
-                    </Link>
-                </p>
-                <div className="mt-8 pt-6 border-t border-slate-700/50 flex justify-center gap-4 text-xs text-slate-500">
-                    <Link href="/legal/privacy" className="hover:text-slate-300 transition-colors">Privacy Policy</Link>
-                    <span>•</span>
-                    <span className="cursor-default text-slate-600">GDPR Compliant</span>
-                </div>
+        <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-6 relative overflow-hidden">
+            {/* Architectural Background */}
+            <div className="absolute top-0 left-0 w-full h-full pointer-events-none -z-10">
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 blur-[120px] rounded-full" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-accent/10 blur-[120px] rounded-full" />
             </div>
+
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="w-full max-w-[440px]"
+            >
+                {/* Brand Header */}
+                <div className="text-center mb-10">
+                    <Link href="/" className="inline-flex items-center gap-3 mb-8 group">
+                        <div className="p-2 bg-primary/20 rounded-xl group-hover:scale-110 transition-transform">
+                            <TrendingUp className="text-primary" size={32} />
+                        </div>
+                        <span className="text-3xl font-black tracking-tighter">StockTrackr<span className="text-primary">.eu</span></span>
+                    </Link>
+                    <h1 className="text-4xl font-black tracking-tight mb-3">Secure Login.</h1>
+                    <p className="text-muted-foreground font-medium uppercase tracking-widest text-[10px]">Access your intelligence dashboard</p>
+                </div>
+
+                <div className="bg-card/40 backdrop-blur-3xl border border-border/50 p-10 rounded-[48px] shadow-2xl shadow-black/20">
+                    <form onSubmit={handleLogin} className="space-y-6">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Email Terminal</label>
+                            <div className="relative group">
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">
+                                    <Mail size={18} />
+                                </div>
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="w-full pl-12 pr-4 py-4 bg-muted border border-border rounded-2xl text-foreground font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                                    placeholder="operator@stocktrackr.eu"
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <div className="flex justify-between items-center px-1">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Access Key</label>
+                                <Link href="/forgot-password" opacity-60 className="text-[10px] font-black uppercase tracking-widest text-primary hover:opacity-100 transition-opacity">
+                                    Reset Protocol
+                                </Link>
+                            </div>
+                            <div className="relative group">
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">
+                                    <Lock size={18} />
+                                </div>
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full pl-12 pr-4 py-4 bg-muted border border-border rounded-2xl text-foreground font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-mono"
+                                    placeholder="••••••••"
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        {error && (
+                            <motion.div
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-500 text-xs font-bold text-center"
+                            >
+                                {error}
+                            </motion.div>
+                        )}
+
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full py-5 bg-primary text-primary-foreground rounded-[24px] font-black text-lg shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+                        >
+                            {loading ? (
+                                <div className="w-6 h-6 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                                <>
+                                    <span>Execute Login</span>
+                                    <ArrowRight size={20} />
+                                </>
+                            )}
+                        </button>
+                    </form>
+
+                    <div className="mt-8">
+                        <div className="relative flex items-center justify-center mb-8">
+                            <div className="w-full border-t border-border/50"></div>
+                            <span className="absolute bg-card px-4 text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground/50">OAuth Sync</span>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={() => { }} // Placeholder for now
+                            className="w-full py-4 bg-muted border border-border rounded-[24px] font-black text-sm uppercase tracking-widest hover:bg-card transition-all flex items-center justify-center gap-3 group"
+                        >
+                            <Github size={20} className="group-hover:rotate-[360deg] transition-transform duration-500" />
+                            Continue with GitHub
+                        </button>
+                    </div>
+                </div>
+
+                <div className="mt-10 text-center space-y-4">
+                    <p className="text-muted-foreground text-xs font-medium">
+                        New investigator?{' '}
+                        <Link href="/register" className="text-primary font-black uppercase tracking-widest hover:underline underline-offset-4">
+                            Establish Identity
+                        </Link>
+                    </p>
+                    <div className="flex items-center justify-center gap-6 pt-4 border-t border-border/30">
+                        <Link href="/legal/privacy" className="text-[9px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground">Privacy Protocol</Link>
+                        <div className="w-1 h-1 bg-border rounded-full"></div>
+                        <div className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-emerald-500/70">
+                            <CheckCircle2 size={10} />
+                            <span>AES-256 Encrypted</span>
+                        </div>
+                    </div>
+                </div>
+            </motion.div>
         </div>
     );
 }

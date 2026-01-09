@@ -72,7 +72,7 @@ export default function AccountPage() {
     };
 
     return (
-        <div className="min-h-screen bg-background text-foreground p-6 md:p-10">
+        <div className="p-6 md:p-10">
             <div className="max-w-4xl mx-auto">
                 <header className="mb-10">
                     <div className="flex items-center gap-2 text-primary mb-1">
