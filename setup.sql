@@ -17,8 +17,23 @@ CREATE TABLE IF NOT EXISTS public.portfolios (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- 3. ENHANCE TRADES TABLE
--- Check if user_id and portfolio_id exist before adding
+-- 3. TRADES TABLE (Complete Definition)
+CREATE TABLE IF NOT EXISTS public.trades (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
+  portfolio_id UUID REFERENCES public.portfolios ON DELETE CASCADE NOT NULL,
+  ticker TEXT NOT NULL,
+  action TEXT NOT NULL CHECK (action IN ('BUY', 'SELL')),
+  quantity DECIMAL NOT NULL CHECK (quantity > 0),
+  price_per_share DECIMAL NOT NULL CHECK (price_per_share > 0),
+  fees DECIMAL DEFAULT 0,
+  total_cost DECIMAL,
+  notes TEXT,
+  date_traded TIMESTAMPTZ DEFAULT now(),
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Add missing columns if table already exists
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='trades' AND column_name='user_id') THEN
@@ -27,6 +42,14 @@ BEGIN
     
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='trades' AND column_name='portfolio_id') THEN
         ALTER TABLE public.trades ADD COLUMN portfolio_id UUID REFERENCES public.portfolios ON DELETE CASCADE;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='trades' AND column_name='total_cost') THEN
+        ALTER TABLE public.trades ADD COLUMN total_cost DECIMAL;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='trades' AND column_name='date_traded') THEN
+        ALTER TABLE public.trades ADD COLUMN date_traded TIMESTAMPTZ DEFAULT now();
     END IF;
 END $$;
 
@@ -55,11 +78,30 @@ BEGIN
     END IF;
 END $$;
 
--- Trades
+-- Trades (Separate policies for each operation to ensure INSERT works)
 DO $$
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can only manage their own trades') THEN
-        CREATE POLICY "Users can only manage their own trades" ON trades FOR ALL USING (auth.uid() = user_id);
+    -- Drop the old combined policy if it exists
+    DROP POLICY IF EXISTS "Users can only manage their own trades" ON trades;
+    
+    -- SELECT: Users can only see their own trades
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can select their own trades') THEN
+        CREATE POLICY "Users can select their own trades" ON trades FOR SELECT USING (auth.uid() = user_id);
+    END IF;
+    
+    -- INSERT: Users can only insert trades for themselves
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can insert their own trades') THEN
+        CREATE POLICY "Users can insert their own trades" ON trades FOR INSERT WITH CHECK (auth.uid() = user_id);
+    END IF;
+    
+    -- UPDATE: Users can only update their own trades
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can update their own trades') THEN
+        CREATE POLICY "Users can update their own trades" ON trades FOR UPDATE USING (auth.uid() = user_id);
+    END IF;
+    
+    -- DELETE: Users can only delete their own trades
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can delete their own trades') THEN
+        CREATE POLICY "Users can delete their own trades" ON trades FOR DELETE USING (auth.uid() = user_id);
     END IF;
 END $$;
 

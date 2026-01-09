@@ -62,6 +62,9 @@ export async function POST(request: NextRequest) {
 
         // --- DATABASE INSERTION ---
 
+        // Calculate total cost for the trade
+        const totalCost = (quantity * pricePerShare) + fees;
+
         // We insert directly here to ensure column mapping is correct
         // (camelCase from form -> snake_case in DB)
         const { data: trade, error } = await supabase
@@ -73,8 +76,10 @@ export async function POST(request: NextRequest) {
                 quantity,
                 price_per_share: pricePerShare,
                 fees,
+                total_cost: totalCost,
                 notes,
-                user_id: user.id // Optional: helps with RLS and auditing
+                date_traded: new Date().toISOString(),
+                user_id: user.id // Required for RLS
             })
             .select()
             .single();
