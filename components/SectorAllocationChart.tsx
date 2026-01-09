@@ -1,5 +1,6 @@
 import { Holding, CurrencyCode } from '@/types/portfolio';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { PieChart as ChartIcon } from 'lucide-react';
 import { formatCurrency, convertCurrency } from '@/lib/portfolio';
 
 interface SectorAllocationChartProps {
@@ -34,7 +35,7 @@ export default function SectorAllocationChart({ holdings, currency, exchangeRate
         return (
             <div className="bg-slate-800/40 backdrop-blur-md border border-slate-700/50 p-8 rounded-3xl h-[400px] flex flex-col justify-center items-center text-center">
                 <div className="bg-slate-700/30 p-4 rounded-full mb-4">
-                    <PieChart size={32} className="text-slate-500" />
+                    <ChartIcon size={32} className="text-slate-500" />
                 </div>
                 <h3 className="text-lg font-semibold text-white mb-1">No Sector Data</h3>
                 <p className="text-slate-500 max-w-[200px]">Add trades to see your sector diversification.</p>
