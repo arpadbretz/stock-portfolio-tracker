@@ -52,7 +52,9 @@ export async function GET() {
             quantity: Number(t.quantity),
             pricePerShare: Number(t.price_per_share),
             fees: Number(t.fees),
+            totalCost: Number(t.total_cost || 0),
             notes: t.notes,
+            timestamp: t.date_traded,
             date: t.date_traded,
         }));
 
