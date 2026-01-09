@@ -8,10 +8,14 @@ import {
     Plus,
     Trash2,
     Edit2,
-    Check,
-    X,
     Star,
-    Palette
+    Share2,
+    Globe,
+    Lock,
+    Copy,
+    RefreshCw,
+    ExternalLink,
+    Check
 } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 
@@ -20,7 +24,9 @@ interface Portfolio {
     name: string;
     description: string;
     color: string;
-    is_default?: boolean; // We'll compute this from API response
+    is_public: boolean;
+    share_token: string;
+    is_default?: boolean;
 }
 
 const COLORS = [
@@ -43,6 +49,11 @@ export default function ManagePortfolios() {
     const [isLoading, setIsLoading] = useState(true);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [showCreate, setShowCreate] = useState(false);
+
+    // Sharing Modal State
+    const [shareModalOpen, setShareModalOpen] = useState(false);
+    const [selectedPortfolio, setSelectedPortfolio] = useState<Portfolio | null>(null);
+    const [copied, setCopied] = useState(false);
 
     // Form States
     const [formData, setFormData] = useState({
@@ -158,6 +169,71 @@ export default function ManagePortfolios() {
         }
     };
 
+    const handleToggleShare = async (portfolio: Portfolio) => {
+        try {
+            const newIsPublic = !portfolio.is_public;
+            const response = await fetch('/api/portfolios', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    portfolioId: portfolio.id,
+                    isPublic: newIsPublic
+                })
+            });
+
+            if (response.ok) {
+                // Update local state directly for speed
+                const updated = { ...portfolio, is_public: newIsPublic };
+                setPortfolios(portfolios.map(p => p.id === portfolio.id ? updated : p));
+                setSelectedPortfolio(updated);
+            }
+        } catch (error) {
+            console.error('Error toggling share:', error);
+        }
+    };
+
+    const handleRegenerateToken = async (portfolio: Portfolio) => {
+        if (!confirm('This will invalidate the previous share link. Anyone with the old link will lose access. Continue?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/portfolios', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    portfolioId: portfolio.id,
+                    regenerateToken: true
+                })
+            });
+
+            if (response.ok) {
+                // We need to fetch full list to get the new token (api returns success: true, not the object usually)
+                await fetchPortfolios();
+                // We'd need to re-select the portfolio to update the modal
+                // Since fetchPortfolios is async and we need to find the updated one:
+                // For now, let's close modal or re-fetch.
+                setShareModalOpen(false); // Close to be safe, user can reopen
+            }
+        } catch (error) {
+            console.error('Error regenerating token:', error);
+        }
+    };
+
+    // Helper to get share link
+    const getShareLink = (token: string) => {
+        if (typeof window !== 'undefined') {
+            return `${window.location.origin}/shared/${token}`;
+        }
+        return '';
+    };
+
+    const copyToClipboard = (text: string) => {
+        navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
     const startEditing = (portfolio: Portfolio) => {
         setEditingId(portfolio.id);
         setFormData({
@@ -166,6 +242,11 @@ export default function ManagePortfolios() {
             color: portfolio.color || '#10b981'
         });
         setShowCreate(false);
+    };
+
+    const openShareModal = (portfolio: Portfolio) => {
+        setSelectedPortfolio(portfolio);
+        setShareModalOpen(true);
     };
 
     const resetForm = () => {
@@ -308,6 +389,11 @@ export default function ManagePortfolios() {
                                                 DEFAULT
                                             </span>
                                         )}
+                                        {portfolio.is_public && (
+                                            <span className="px-2 py-0.5 rounded text-xs font-bold bg-blue-500/20 text-blue-400 border border-blue-500/20 flex items-center gap-1">
+                                                <Globe size={10} /> PUBLIC
+                                            </span>
+                                        )}
                                     </div>
                                     <p className="text-sm text-slate-400">
                                         {portfolio.description || 'No description'}
@@ -316,6 +402,13 @@ export default function ManagePortfolios() {
                             </div>
 
                             <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => openShareModal(portfolio)}
+                                    className="p-2 rounded-lg text-slate-400 hover:bg-slate-700 hover:text-blue-400 transition-colors"
+                                    title="Share Settings"
+                                >
+                                    <Share2 size={20} />
+                                </button>
                                 {portfolio.id !== defaultPortfolioId && (
                                     <button
                                         onClick={() => handleSetDefault(portfolio.id)}
@@ -327,7 +420,7 @@ export default function ManagePortfolios() {
                                 )}
                                 <button
                                     onClick={() => startEditing(portfolio)}
-                                    className="p-2 rounded-lg text-slate-400 hover:bg-slate-700 hover:text-blue-400 transition-colors"
+                                    className="p-2 rounded-lg text-slate-400 hover:bg-slate-700 hover:text-emerald-400 transition-colors"
                                     title="Edit"
                                 >
                                     <Edit2 size={20} />
@@ -346,6 +439,96 @@ export default function ManagePortfolios() {
                     ))}
                 </div>
             </div>
+
+            {/* Share Modal */}
+            {shareModalOpen && selectedPortfolio && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="w-full max-w-md bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl p-6 animate-in fade-in zoom-in-95">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                <Share2 size={24} className="text-emerald-400" />
+                                Share Portfolio
+                            </h3>
+                            <button
+                                onClick={() => setShareModalOpen(false)}
+                                className="p-1 rounded-lg hover:bg-slate-700 text-slate-400"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="space-y-6">
+                            {/* Toggle */}
+                            <div className="flex items-center justify-between bg-slate-900/50 p-4 rounded-xl border border-slate-700/50">
+                                <div className="flex items-center gap-3">
+                                    <div className={`p-2 rounded-lg ${selectedPortfolio.is_public ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-700 text-slate-400'}`}>
+                                        {selectedPortfolio.is_public ? <Globe size={24} /> : <Lock size={24} />}
+                                    </div>
+                                    <div>
+                                        <p className="font-semibold text-white">
+                                            {selectedPortfolio.is_public ? 'Publicly Accessible' : 'Private Portfolio'}
+                                        </p>
+                                        <p className="text-xs text-slate-400">
+                                            {selectedPortfolio.is_public ? 'Anyone with the link can view' : 'Only you can see this'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => handleToggleShare(selectedPortfolio)}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${selectedPortfolio.is_public ? 'bg-emerald-500' : 'bg-slate-600'
+                                        }`}
+                                >
+                                    <span
+                                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${selectedPortfolio.is_public ? 'translate-x-6' : 'translate-x-1'
+                                            }`}
+                                    />
+                                </button>
+                            </div>
+
+                            {/* Link Section */}
+                            {selectedPortfolio.is_public && (
+                                <div className="space-y-3">
+                                    <label className="text-sm font-medium text-slate-400">Share Link</label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            readOnly
+                                            value={getShareLink(selectedPortfolio.share_token)}
+                                            className="flex-1 px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-300 text-sm focus:outline-none"
+                                        />
+                                        <button
+                                            onClick={() => copyToClipboard(getShareLink(selectedPortfolio.share_token))}
+                                            className="p-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors border border-slate-600"
+                                            title="Copy Link"
+                                        >
+                                            {copied ? <Check size={20} className="text-emerald-400" /> : <Copy size={20} />}
+                                        </button>
+                                        <a
+                                            href={getShareLink(selectedPortfolio.share_token)}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="p-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors border border-slate-600"
+                                            title="Open Link"
+                                        >
+                                            <ExternalLink size={20} />
+                                        </a>
+                                    </div>
+
+                                    <div className="pt-4 border-t border-slate-700">
+                                        <button
+                                            onClick={() => handleRegenerateToken(selectedPortfolio)}
+                                            className="text-xs text-slate-400 hover:text-red-400 flex items-center gap-1 transition-colors"
+                                        >
+                                            <RefreshCw size={12} />
+                                            Regenerate Share Link (Revoke old links)
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

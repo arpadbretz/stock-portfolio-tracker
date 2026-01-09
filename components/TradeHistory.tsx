@@ -9,8 +9,9 @@ interface TradeHistoryProps {
     trades: Trade[];
     currency: CurrencyCode;
     exchangeRates: Record<CurrencyCode, number>;
-    onTradeDeleted: () => void;
-    onTradeEdit: (trade: Trade) => void;
+    onTradeDeleted?: () => void;
+    onTradeEdit?: (trade: Trade) => void;
+    readOnly?: boolean;
 }
 
 export default function TradeHistory({
@@ -18,11 +19,13 @@ export default function TradeHistory({
     currency,
     exchangeRates,
     onTradeDeleted,
-    onTradeEdit
+    onTradeEdit,
+    readOnly = false
 }: TradeHistoryProps) {
     const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
     const handleDelete = async (id: string) => {
+        if (readOnly || !onTradeDeleted) return;
         if (!confirm('Are you sure you want to delete this trade?')) return;
 
         setIsDeleting(id);
@@ -66,7 +69,7 @@ export default function TradeHistory({
                             <th className="text-right py-4 px-6 text-sm font-medium text-slate-400">Quantity</th>
                             <th className="text-right py-4 px-6 text-sm font-medium text-slate-400">Price</th>
                             <th className="text-right py-4 px-6 text-sm font-medium text-slate-400">Total</th>
-                            <th className="text-right py-4 px-6 text-sm font-medium text-slate-400">Actions</th>
+                            {!readOnly && <th className="text-right py-4 px-6 text-sm font-medium text-slate-400">Actions</th>}
                         </tr>
                     </thead>
                     <tbody>
@@ -109,25 +112,27 @@ export default function TradeHistory({
                                     <td className="py-4 px-6 text-right text-white font-medium">
                                         {formatCurrency(convertedTotal, currency)}
                                     </td>
-                                    <td className="py-4 px-6 text-right">
-                                        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button
-                                                onClick={() => onTradeEdit(trade)}
-                                                className="p-1.5 rounded-lg bg-slate-700 text-slate-300 hover:text-blue-400 hover:bg-blue-400/10 transition-all"
-                                                title="Edit trade"
-                                            >
-                                                <Edit2 size={16} />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDelete(trade.id)}
-                                                disabled={isDeleting === trade.id}
-                                                className="p-1.5 rounded-lg bg-slate-700 text-slate-300 hover:text-red-400 hover:bg-red-400/10 transition-all disabled:opacity-50"
-                                                title="Delete trade"
-                                            >
-                                                <Trash2 size={16} className={isDeleting === trade.id ? 'animate-pulse' : ''} />
-                                            </button>
-                                        </div>
-                                    </td>
+                                    {!readOnly && (
+                                        <td className="py-4 px-6 text-right">
+                                            <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={() => onTradeEdit && onTradeEdit(trade)}
+                                                    className="p-1.5 rounded-lg bg-slate-700 text-slate-300 hover:text-blue-400 hover:bg-blue-400/10 transition-all"
+                                                    title="Edit trade"
+                                                >
+                                                    <Edit2 size={16} />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(trade.id)}
+                                                    disabled={isDeleting === trade.id}
+                                                    className="p-1.5 rounded-lg bg-slate-700 text-slate-300 hover:text-red-400 hover:bg-red-400/10 transition-all disabled:opacity-50"
+                                                    title="Delete trade"
+                                                >
+                                                    <Trash2 size={16} className={isDeleting === trade.id ? 'animate-pulse' : ''} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    )}
                                 </tr>
                             );
                         })}
@@ -166,23 +171,25 @@ export default function TradeHistory({
                                 </div>
                             </div>
 
-                            <div className="flex justify-end gap-2 pt-3 border-t border-slate-700/30">
-                                <button
-                                    onClick={() => onTradeEdit(trade)}
-                                    className="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs text-blue-300 font-medium transition-colors flex items-center gap-1.5"
-                                >
-                                    <Edit2 size={12} />
-                                    Edit
-                                </button>
-                                <button
-                                    onClick={() => handleDelete(trade.id)}
-                                    disabled={isDeleting === trade.id}
-                                    className="px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-xs text-red-400 font-medium transition-colors flex items-center gap-1.5"
-                                >
-                                    {isDeleting === trade.id ? <div className="w-3 h-3 border-2 border-red-400 border-t-transparent rounded-full animate-spin"></div> : <Trash2 size={12} />}
-                                    Delete
-                                </button>
-                            </div>
+                            {!readOnly && (
+                                <div className="flex justify-end gap-2 pt-3 border-t border-slate-700/30">
+                                    <button
+                                        onClick={() => onTradeEdit && onTradeEdit(trade)}
+                                        className="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs text-blue-300 font-medium transition-colors flex items-center gap-1.5"
+                                    >
+                                        <Edit2 size={12} />
+                                        Edit
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(trade.id)}
+                                        disabled={isDeleting === trade.id}
+                                        className="px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-xs text-red-400 font-medium transition-colors flex items-center gap-1.5"
+                                    >
+                                        {isDeleting === trade.id ? <div className="w-3 h-3 border-2 border-red-400 border-t-transparent rounded-full animate-spin"></div> : <Trash2 size={12} />}
+                                        Delete
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     );
                 })}
