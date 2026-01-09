@@ -31,6 +31,18 @@ export async function getAllTrades(client = supabase): Promise<Trade[]> {
 
 export async function addTrade(trade: Omit<Trade, 'id' | 'timestamp' | 'totalCost'>, client = supabase): Promise<Trade | null> {
     if (!client) return null;
+
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) return null;
+
+    // Fetch the user's default portfolio
+    const { data: portfolio } = await client
+        .from('portfolios')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('is_default', true)
+        .single();
+
     const totalCost = trade.quantity * trade.pricePerShare + trade.fees;
 
     const { data, error } = await client
@@ -43,7 +55,8 @@ export async function addTrade(trade: Omit<Trade, 'id' | 'timestamp' | 'totalCos
             fees: trade.fees,
             total_cost: totalCost,
             notes: trade.notes,
-            user_id: (await client.auth.getUser()).data.user?.id
+            user_id: user.id,
+            portfolio_id: portfolio?.id
         }])
         .select()
         .single();
