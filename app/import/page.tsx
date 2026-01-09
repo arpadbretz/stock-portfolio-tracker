@@ -29,7 +29,7 @@ interface Portfolio {
 }
 
 export default function ImportPage() {
-    const { user, loading: authLoading } = useAuth();
+    const { user, isLoading: authLoading } = useAuth();
     const router = useRouter();
 
     const [file, setFile] = useState<File | null>(null);

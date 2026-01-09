@@ -15,7 +15,8 @@ import {
     Copy,
     RefreshCw,
     ExternalLink,
-    Check
+    Check,
+    X
 } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 
@@ -41,7 +42,7 @@ const COLORS = [
 ];
 
 export default function ManagePortfolios() {
-    const { user, loading: authLoading } = useAuth();
+    const { user, isLoading: authLoading } = useAuth();
     const router = useRouter();
 
     const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
@@ -367,8 +368,8 @@ export default function ManagePortfolios() {
                         <div
                             key={portfolio.id}
                             className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${portfolio.id === defaultPortfolioId
-                                    ? 'bg-slate-800/80 border-emerald-500/50 shadow-lg shadow-emerald-500/5'
-                                    : 'bg-slate-800/40 border-slate-700 hover:border-slate-600'
+                                ? 'bg-slate-800/80 border-emerald-500/50 shadow-lg shadow-emerald-500/5'
+                                : 'bg-slate-800/40 border-slate-700 hover:border-slate-600'
                                 }`}
                         >
                             <div className="flex items-center gap-4">
