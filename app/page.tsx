@@ -28,11 +28,14 @@ import UserButton from '@/components/auth/UserButton';
 import { useRouter } from 'next/navigation';
 
 export default function Home() {
+  // 1. UPDATED: Added 'id' to the state definition
   const [portfolio, setPortfolio] = useState<{
+    id: string;
     trades: Trade[];
     summary: PortfolioSummary;
     lastUpdated: string;
   } | null>(null);
+
   const [currency, setCurrency] = useState<CurrencyCode>('USD');
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -68,11 +71,13 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    fetchPortfolio();
+    if (user) {
+      fetchPortfolio();
+    }
     // Auto-refresh every 5 minutes
     const interval = setInterval(() => fetchPortfolio(true), 5 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [fetchPortfolio]);
+  }, [fetchPortfolio, user]);
 
   const summary = portfolio?.summary;
   const trades = portfolio?.trades || [];
@@ -136,7 +141,8 @@ export default function Home() {
                 setIsFormOpen(!isFormOpen);
                 if (editingTrade) setEditingTrade(null);
               }}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold transition-all shadow-lg shadow-emerald-500/20"
+              disabled={!portfolio}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <PlusCircle size={20} />
               <span>Add Trade</span>
@@ -221,7 +227,9 @@ export default function Home() {
         <div className="space-y-8">
           {(isFormOpen || editingTrade) && (
             <div className="animate-in fade-in slide-in-from-top-4 duration-300">
+              {/* 2. UPDATED: Passing the portfolio ID to the form */}
               <AddTradeForm
+                portfolioId={portfolio?.id || ''}
                 editTrade={editingTrade}
                 onCancel={() => {
                   setIsFormOpen(false);
@@ -265,7 +273,7 @@ export default function Home() {
             onTradeEdit={handleEditTrade}
           />
 
-          {/* Market Status - Now at bottom and full width */}
+          {/* Market Status */}
           <div className="bg-slate-800/40 backdrop-blur-md border border-slate-700/50 p-8 rounded-3xl">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="flex items-center gap-3">
@@ -308,7 +316,7 @@ export default function Home() {
 
       <footer className="container mx-auto px-4 py-12 border-t border-slate-800/50 mt-12 text-center">
         <p className="text-slate-500 text-sm">
-          Personal Stock Portfolio Tracker • Built with Next.js & Google Sheets MCP
+          Personal Stock Portfolio Tracker • Built with Next.js & Supabase
         </p>
       </footer>
     </div>

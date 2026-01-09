@@ -1,12 +1,8 @@
-// API Route: POST /api/trades - Add a new trade
-
 import { NextRequest, NextResponse } from 'next/server';
-import { addTrade } from '@/lib/db';
 import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
     try {
-        const body = await request.json();
         const supabase = await createClient();
         const { data: { user } } = await supabase.auth.getUser();
 
@@ -14,8 +10,27 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Validate required fields
-        const { ticker, action, quantity, pricePerShare, fees = 0, notes = '' } = body;
+        const body = await request.json();
+
+        // Destructure all expected fields, including portfolioId
+        const {
+            portfolioId,
+            ticker,
+            action,
+            quantity,
+            pricePerShare,
+            fees = 0,
+            notes = ''
+        } = body;
+
+        // --- VALIDATION ---
+
+        if (!portfolioId || typeof portfolioId !== 'string') {
+            return NextResponse.json(
+                { success: false, error: 'Portfolio ID is required' },
+                { status: 400 }
+            );
+        }
 
         if (!ticker || typeof ticker !== 'string') {
             return NextResponse.json(
@@ -45,20 +60,38 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Add the trade to Supabase
-        const trade = await addTrade({
-            ticker: ticker.toUpperCase(),
-            action,
-            quantity,
-            pricePerShare,
-            fees: fees || 0,
-            notes: notes || '',
-        }, supabase);
+        // --- DATABASE INSERTION ---
+
+        // We insert directly here to ensure column mapping is correct
+        // (camelCase from form -> snake_case in DB)
+        const { data: trade, error } = await supabase
+            .from('trades')
+            .insert({
+                portfolio_id: portfolioId,
+                ticker: ticker.toUpperCase(),
+                action,
+                quantity,
+                price_per_share: pricePerShare,
+                fees,
+                notes,
+                user_id: user.id // Optional: helps with RLS and auditing
+            })
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Supabase insertion error:', error);
+            return NextResponse.json(
+                { success: false, error: error.message },
+                { status: 500 }
+            );
+        }
 
         return NextResponse.json({
             success: true,
             data: trade,
         });
+
     } catch (error) {
         console.error('Error adding trade:', error);
         return NextResponse.json(

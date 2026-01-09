@@ -19,12 +19,13 @@ const tradeSchema = z.object({
 type TradeFormValues = z.infer<typeof tradeSchema>;
 
 interface AddTradeFormProps {
+    portfolioId: string;
     onTradeAdded: () => void;
     editTrade?: Trade | null;
     onCancel?: () => void;
 }
 
-export default function AddTradeForm({ onTradeAdded, editTrade, onCancel }: AddTradeFormProps) {
+export default function AddTradeForm({ portfolioId, onTradeAdded, editTrade, onCancel }: AddTradeFormProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
@@ -70,10 +71,16 @@ export default function AddTradeForm({ onTradeAdded, editTrade, onCancel }: AddT
             const url = isEditing ? `/api/trades/${editTrade.id}` : '/api/trades';
             const method = isEditing ? 'PATCH' : 'POST';
 
+            // We combine the form data with the portfolioId before sending
+            const payload = {
+                ...data,
+                portfolioId
+            };
+
             const response = await fetch(url, {
                 method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data),
+                body: JSON.stringify(payload),
             });
 
             const result = await response.json();
@@ -266,4 +273,3 @@ export default function AddTradeForm({ onTradeAdded, editTrade, onCancel }: AddT
         </div>
     );
 }
-
