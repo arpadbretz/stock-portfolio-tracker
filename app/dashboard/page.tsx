@@ -167,53 +167,10 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Rapid Action Layer */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Link
-              href="/dashboard/import"
-              className="flex items-center justify-between p-6 bg-card/30 backdrop-blur-md border border-border/40 rounded-[32px] hover:border-primary/30 transition-all group overflow-hidden relative shadow-lg shadow-black/5"
-            >
-              <div className="relative z-10 flex items-center gap-6">
-                <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Upload size={24} className="text-foreground" />
-                </div>
-                <div>
-                  <h3 className="font-black text-lg tracking-tight">Bulk Import Engineering</h3>
-                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Batch trade CSV processing</p>
-                </div>
-              </div>
-              <ChevronRight size={24} className="text-muted-foreground group-hover:translate-x-1 group-hover:text-primary transition-all" />
-              <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                <Database size={80} />
-              </div>
-            </Link>
-
-            <button
-              onClick={() => {
-                setIsFormOpen(!isFormOpen);
-                if (editingTrade) setEditingTrade(null);
-              }}
-              className="flex items-center justify-between p-6 bg-primary text-primary-foreground rounded-[32px] shadow-2xl shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all group relative overflow-hidden"
-            >
-              <div className="relative z-10 flex items-center gap-6">
-                <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center group-hover:rotate-90 transition-transform duration-500">
-                  <PlusCircle size={28} />
-                </div>
-                <div className="text-left">
-                  <h3 className="font-black text-lg tracking-tight">Execute New Trade</h3>
-                  <p className="text-xs text-primary-foreground/70 font-black uppercase tracking-widest">Manual position entry</p>
-                </div>
-              </div>
-              <ChevronRight size={24} />
-              <div className="absolute bottom-0 right-0 p-4 opacity-10">
-                <TrendingUp size={100} />
-              </div>
-            </button>
-          </div>
         </header>
 
         {/* Global Metric Clusters */}
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-20">
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-12">
           {/* Card: Portfolio Valuation */}
           <motion.div
             whileHover={{ y: -8 }}
@@ -302,6 +259,50 @@ export default function DashboardPage() {
           </motion.div>
         </section>
 
+        {/* Rapid Action Layer */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-20">
+          <Link
+            href="/dashboard/import"
+            className="flex items-center justify-between p-8 bg-card/60 backdrop-blur-md border border-border/40 rounded-[32px] hover:border-primary/30 transition-all group overflow-hidden relative shadow-lg shadow-black/5"
+          >
+            <div className="relative z-10 flex items-center gap-6">
+              <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Upload size={24} className="text-foreground" />
+              </div>
+              <div>
+                <h3 className="font-black text-lg tracking-tight">Bulk Import Engineering</h3>
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Batch trade CSV processing</p>
+              </div>
+            </div>
+            <ChevronRight size={24} className="text-muted-foreground group-hover:translate-x-1 group-hover:text-primary transition-all" />
+            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+              <Database size={80} />
+            </div>
+          </Link>
+
+          <button
+            onClick={() => {
+              setIsFormOpen(!isFormOpen);
+              if (editingTrade) setEditingTrade(null);
+            }}
+            className="flex items-center justify-between p-8 bg-primary text-primary-foreground rounded-[32px] shadow-2xl shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all group relative overflow-hidden"
+          >
+            <div className="relative z-10 flex items-center gap-6">
+              <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center group-hover:rotate-90 transition-transform duration-500">
+                <PlusCircle size={28} />
+              </div>
+              <div className="text-left">
+                <h3 className="font-black text-lg tracking-tight">Execute New Trade</h3>
+                <p className="text-xs text-primary-foreground/70 font-black uppercase tracking-widest">Manual position entry</p>
+              </div>
+            </div>
+            <ChevronRight size={24} />
+            <div className="absolute bottom-0 right-0 p-4 opacity-10">
+              <TrendingUp size={100} />
+            </div>
+          </button>
+        </div>
+
         {/* Central Terminal Display */}
         <div className="space-y-20">
           <AnimatePresence>
@@ -363,36 +364,32 @@ export default function DashboardPage() {
 
             {/* Secondary Intel Column */}
             <div className="xl:col-span-4 space-y-12">
-              <div className="p-8 bg-card border border-border/60 rounded-[48px] shadow-2xl shadow-black/5 backdrop-blur-3xl">
-                <h3 className="text-xl font-black mb-10 flex items-center gap-4">
+              <div className="p-8 bg-card border border-border/60 rounded-[48px] shadow-2xl shadow-black/5 backdrop-blur-3xl overflow-hidden">
+                <h3 className="text-xl font-black mb-8 flex items-center gap-4 px-2">
                   <div className="p-2 bg-primary/10 rounded-xl">
                     <PieChartIcon className="text-primary" size={20} />
                   </div>
                   Performance Attribution
                 </h3>
-                <div className="px-2">
-                  <PerformanceChart
-                    holdings={summary?.holdings || []}
-                    currency={currency}
-                    exchangeRates={rates}
-                  />
-                </div>
+                <PerformanceChart
+                  holdings={summary?.holdings || []}
+                  currency={currency}
+                  exchangeRates={rates}
+                />
               </div>
 
-              <div className="p-8 bg-card border border-border/60 rounded-[48px] shadow-2xl shadow-black/5 backdrop-blur-3xl">
-                <h3 className="text-xl font-black mb-10 flex items-center gap-4">
+              <div className="p-8 bg-card border border-border/60 rounded-[48px] shadow-2xl shadow-black/5 backdrop-blur-3xl overflow-hidden">
+                <h3 className="text-xl font-black mb-8 flex items-center gap-4 px-2">
                   <div className="p-2 bg-accent/10 rounded-xl">
                     <LayersIcon className="text-accent" size={20} />
                   </div>
                   Fundamental Allocation
                 </h3>
-                <div className="px-2">
-                  <SectorAllocationChart
-                    holdings={summary?.holdings || []}
-                    currency={currency}
-                    exchangeRates={rates}
-                  />
-                </div>
+                <SectorAllocationChart
+                  holdings={summary?.holdings || []}
+                  currency={currency}
+                  exchangeRates={rates}
+                />
               </div>
 
               <motion.div

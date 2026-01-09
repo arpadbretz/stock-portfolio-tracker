@@ -84,18 +84,13 @@ export default function LandingPage() {
     return (
         <div className="min-h-screen bg-background text-foreground selection:bg-primary/30 overflow-x-hidden font-inter">
             {/* Background Architecture */}
-            <div className="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden -z-10">
-                <motion.div
-                    animate={{ scale: [1, 1.2, 1], x: [0, 50, 0], y: [0, 30, 0] }}
-                    transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
-                    className="absolute -top-[10%] -left-[10%] w-[60%] h-[60%] bg-primary/10 blur-[150px] rounded-full"
+            <div className="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden -z-10 bg-background">
+                <div
+                    className="absolute -top-[10%] -left-[10%] w-[60%] h-[60%] bg-primary/5 blur-[120px] rounded-full opacity-50"
                 />
-                <motion.div
-                    animate={{ scale: [1, 1.1, 1], x: [0, -40, 0], y: [0, -20, 0] }}
-                    transition={{ duration: 20, repeat: Infinity, ease: "easeInOut", delay: 3 }}
-                    className="absolute bottom-0 -right-[10%] w-[70%] h-[70%] bg-accent/10 blur-[150px] rounded-full"
+                <div
+                    className="absolute bottom-0 -right-[10%] w-[70%] h-[70%] bg-accent/5 blur-[120px] rounded-full opacity-50"
                 />
-                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150"></div>
             </div>
 
             {/* Navigation Layer */}
@@ -190,9 +185,10 @@ export default function LandingPage() {
                         <div className="absolute -inset-4 bg-primary/20 rounded-[64px] blur-[100px] opacity-30 animate-pulse"></div>
                         <div className="relative bg-card border-[3px] border-border/80 rounded-[48px] overflow-hidden shadow-[0_0_100px_-20px_rgba(0,0,0,0.5)] ring-1 ring-white/10">
                             <img
-                                src="https://images.unsplash.com/photo-1644659510777-49dfc3fbc3df?q=80&w=2670&auto=format&fit=crop"
+                                src="https://images.unsplash.com/photo-1644659510777-49dfc3fbc3df?q=75&w=1200&auto=format&fit=crop"
                                 alt="Next Gen Dashboard"
-                                className="w-full h-auto object-cover opacity-90 scale-105"
+                                className="w-full h-auto object-cover opacity-90"
+                                loading="eager"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-transparent to-transparent"></div>
 
@@ -372,6 +368,6 @@ export default function LandingPage() {
                     perspective: 2000px;
                 }
             `}</style>
-        </div>
+        </div >
     );
 }

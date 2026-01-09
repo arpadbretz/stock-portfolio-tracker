@@ -10,16 +10,28 @@ export default function ThemeToggle() {
     return (
         <button
             onClick={toggleTheme}
-            className="p-2.5 rounded-xl bg-card border border-border hover:bg-muted transition-all text-foreground group relative overflow-hidden"
+            className="relative w-16 h-8 rounded-full bg-muted/50 border border-border/50 p-1 flex items-center shadow-inner cursor-pointer"
             aria-label="Toggle theme"
         >
             <motion.div
-                animate={{ y: theme === 'dark' ? 0 : 40 }}
-                className="flex flex-col items-center gap-10"
+                className="absolute w-6 h-6 rounded-full bg-card shadow-lg flex items-center justify-center border border-border/30"
+                initial={false}
+                animate={{
+                    x: theme === 'dark' ? 32 : 0,
+                    backgroundColor: theme === 'dark' ? '#1e293b' : '#ffffff'
+                }}
+                transition={{ type: "spring", stiffness: 500, damping: 30 }}
             >
-                <Moon size={20} className="text-blue-400" />
-                <Sun size={20} className="text-yellow-400" />
+                {theme === 'dark' ? (
+                    <Moon size={14} className="text-blue-400" />
+                ) : (
+                    <Sun size={14} className="text-amber-500" />
+                )}
             </motion.div>
+            <div className="flex justify-between w-full px-2 pointer-events-none opacity-20">
+                <Sun size={12} className="text-amber-500" />
+                <Moon size={12} className="text-blue-400" />
+            </div>
         </button>
     );
 }

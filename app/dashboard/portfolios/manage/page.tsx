@@ -369,9 +369,13 @@ export default function ManagePortfolios() {
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             whileHover={{ y: -5 }}
-                            className={`group relative p-8 rounded-[40px] border transition-all ${portfolio.id === defaultPortfolioId
+                            onClick={() => {
+                                handleSetDefault(portfolio.id);
+                                router.push('/dashboard');
+                            }}
+                            className={`group relative p-8 rounded-[40px] border transition-all cursor-pointer ${portfolio.id === defaultPortfolioId
                                 ? 'bg-card border-primary/30 shadow-2xl shadow-primary/5'
-                                : 'bg-card border-border shadow-sm'
+                                : 'bg-card border-border shadow-sm hover:border-primary/20'
                                 }`}
                         >
                             <div className="flex justify-between items-start mb-6">

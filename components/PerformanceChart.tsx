@@ -1,5 +1,5 @@
 import { Holding, CurrencyCode } from '@/types/portfolio';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { PieChart as ChartIcon } from 'lucide-react';
 import { formatCurrency, convertCurrency } from '@/lib/portfolio';
 
@@ -24,21 +24,20 @@ const COLORS = [
 export default function PerformanceChart({ holdings, currency, exchangeRates, isLoading }: PerformanceChartProps) {
     if (isLoading) {
         return (
-            <div className="bg-slate-800/40 backdrop-blur-md border border-slate-700/50 p-8 rounded-3xl h-[400px] flex flex-col justify-center items-center">
-                <div className="w-16 h-16 rounded-full border-4 border-slate-700 border-t-emerald-500 animate-spin mb-4"></div>
-                <p className="text-slate-400 animate-pulse">Calculating allocation...</p>
+            <div className="h-[300px] flex flex-col justify-center items-center">
+                <div className="w-10 h-10 border-4 border-muted border-t-primary rounded-full animate-spin mb-4"></div>
+                <p className="text-muted-foreground text-xs animate-pulse font-black uppercase tracking-widest">Calculating...</p>
             </div>
         );
     }
 
     if (holdings.length === 0) {
         return (
-            <div className="bg-slate-800/40 backdrop-blur-md border border-slate-700/50 p-8 rounded-3xl h-[400px] flex flex-col justify-center items-center text-center">
-                <div className="bg-slate-700/30 p-4 rounded-full mb-4">
-                    <ChartIcon size={32} className="text-slate-500" />
+            <div className="h-[300px] flex flex-col justify-center items-center text-center">
+                <div className="bg-muted p-4 rounded-full mb-4">
+                    <ChartIcon size={24} className="text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-semibold text-white mb-1">No Data Available</h3>
-                <p className="text-slate-500 max-w-[200px]">Add some trades to visualize your portfolio allocation.</p>
+                <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground">No Data</h3>
             </div>
         );
     }
@@ -51,90 +50,73 @@ export default function PerformanceChart({ holdings, currency, exchangeRates, is
         }))
         .sort((a, b) => b.value - a.value);
 
-    const totalValue = data.reduce((sum, item) => sum + item.value, 0);
-
     return (
-        <div className="bg-slate-800/40 backdrop-blur-md border border-slate-700/50 p-8 rounded-3xl overflow-hidden relative group">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
-                <div>
-                    <h2 className="text-2xl font-bold text-white tracking-tight mb-1">Portfolio Allocation</h2>
-                    <p className="text-slate-400 text-sm">Diversification by individual asset</p>
-                </div>
-                <div className="hidden md:block bg-slate-700/30 px-4 py-2 rounded-2xl border border-slate-600/30">
-                    <span className="text-xs text-slate-500 block uppercase font-bold tracking-wider">Total Value</span>
-                    <span className="text-emerald-400 font-bold">{formatCurrency(totalValue, currency)}</span>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center h-full min-h-[350px]">
+            <div className="h-full min-h-[300px] relative">
+                <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                        <Pie
+                            data={data}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={70}
+                            outerRadius={100}
+                            paddingAngle={6}
+                            dataKey="value"
+                            stroke="none"
+                        >
+                            {data.map((entry, index) => (
+                                <Cell
+                                    key={`cell-${index}`}
+                                    fill={COLORS[index % COLORS.length]}
+                                    className="hover:opacity-80 transition-opacity cursor-pointer"
+                                />
+                            ))}
+                        </Pie>
+                        <Tooltip
+                            content={({ active, payload }) => {
+                                if (active && payload && payload.length) {
+                                    const data = payload[0].payload;
+                                    return (
+                                        <div className="bg-card/90 backdrop-blur-xl border border-border p-4 rounded-2xl shadow-2xl">
+                                            <p className="text-foreground font-black mb-1 flex items-center gap-2">
+                                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: payload[0].color }}></div>
+                                                {data.name}
+                                            </p>
+                                            <p className="text-primary text-sm font-black">{formatCurrency(data.value, currency)}</p>
+                                            <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest mt-1">{data.percentage.toFixed(1)}% Weight</p>
+                                        </div>
+                                    );
+                                }
+                                return null;
+                            }}
+                        />
+                    </PieChart>
+                </ResponsiveContainer>
+
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span className="text-muted-foreground text-[10px] font-black uppercase tracking-widest">Assets</span>
+                    <span className="text-2xl font-black text-foreground">{data.length}</span>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-                <div className="h-[300px] relative">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                            <Pie
-                                data={data}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={75}
-                                outerRadius={105}
-                                paddingAngle={4}
-                                dataKey="value"
-                                stroke="none"
-                            >
-                                {data.map((entry, index) => (
-                                    <Cell
-                                        key={`cell-${index}`}
-                                        fill={COLORS[index % COLORS.length]}
-                                        className="hover:opacity-80 transition-opacity cursor-pointer whitespace-nowrap"
-                                    />
-                                ))}
-                            </Pie>
-                            <Tooltip
-                                content={({ active, payload }) => {
-                                    if (active && payload && payload.length) {
-                                        const data = payload[0].payload;
-                                        return (
-                                            <div className="bg-slate-900/90 backdrop-blur-xl border border-slate-700 p-4 rounded-2xl shadow-2xl">
-                                                <p className="text-white font-bold mb-1 flex items-center gap-2">
-                                                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: payload[0].color }}></span>
-                                                    {data.name}
-                                                </p>
-                                                <p className="text-emerald-400 text-sm font-bold">{formatCurrency(data.value, currency)}</p>
-                                                <p className="text-slate-500 text-xs mt-1">{data.percentage.toFixed(1)}% of portfolio</p>
-                                            </div>
-                                        );
-                                    }
-                                    return null;
-                                }}
+            <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+                {data.map((item, index) => (
+                    <div key={item.name} className="flex items-center justify-between p-3 rounded-2xl bg-muted/30 border border-transparent hover:border-border transition-all group/item">
+                        <div className="flex items-center gap-4">
+                            <div
+                                className="w-3 h-3 rounded-full flex-shrink-0 shadow-[0_0_10px_rgba(0,0,0,0.2)]"
+                                style={{ backgroundColor: COLORS[index % COLORS.length] }}
                             />
-                        </PieChart>
-                    </ResponsiveContainer>
-
-                    {/* Center Label */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                        <span className="text-slate-500 text-xs uppercase font-bold tracking-widest">Assets</span>
-                        <span className="text-2xl font-bold text-white">{data.length}</span>
-                    </div>
-                </div>
-
-                <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                    {data.map((item, index) => (
-                        <div key={item.name} className="flex items-center justify-between p-3 rounded-2xl hover:bg-white/5 transition-colors group/item">
-                            <div className="flex items-center gap-3">
-                                <div
-                                    className="w-3 h-3 rounded-full flex-shrink-0"
-                                    style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                                />
-                                <span className="text-white font-semibold group-hover/item:text-emerald-400 transition-colors uppercase tracking-wider">{item.name}</span>
-                            </div>
-                            <div className="text-right">
-                                <div className="text-sm font-bold text-slate-200">{formatCurrency(item.value, currency)}</div>
-                                <div className="text-xs text-slate-500 font-medium">{(item.percentage).toFixed(1)}%</div>
-                            </div>
+                            <span className="text-foreground font-black text-sm uppercase tracking-tight group-hover/item:text-primary transition-colors">{item.name}</span>
                         </div>
-                    ))}
-                </div>
+                        <div className="text-right">
+                            <div className="text-sm font-black text-foreground">{formatCurrency(item.value, currency)}</div>
+                            <div className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">{(item.percentage).toFixed(1)}%</div>
+                        </div>
+                    </div>
+                ))}
             </div>
         </div>
     );
 }
-
