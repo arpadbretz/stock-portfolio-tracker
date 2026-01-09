@@ -203,71 +203,81 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Dashboard Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
-            {(isFormOpen || editingTrade) && (
-              <div className="animate-in fade-in slide-in-from-top-4 duration-300">
-                <AddTradeForm
-                  editTrade={editingTrade}
-                  onCancel={() => {
-                    setIsFormOpen(false);
-                    setEditingTrade(null);
-                  }}
-                  onTradeAdded={() => {
-                    fetchPortfolio(true);
-                    setIsFormOpen(false);
-                    setEditingTrade(null);
-                  }}
-                />
-              </div>
-            )}
+        {/* Dashboard Content - Full Width */}
+        <div className="space-y-8">
+          {(isFormOpen || editingTrade) && (
+            <div className="animate-in fade-in slide-in-from-top-4 duration-300">
+              <AddTradeForm
+                editTrade={editingTrade}
+                onCancel={() => {
+                  setIsFormOpen(false);
+                  setEditingTrade(null);
+                }}
+                onTradeAdded={() => {
+                  fetchPortfolio(true);
+                  setIsFormOpen(false);
+                  setEditingTrade(null);
+                }}
+              />
+            </div>
+          )}
 
-            <HoldingsTable
-              holdings={summary?.holdings || []}
-              currency={currency}
-              exchangeRates={rates}
-              isLoading={isLoading}
-            />
+          <HoldingsTable
+            holdings={summary?.holdings || []}
+            currency={currency}
+            exchangeRates={rates}
+            isLoading={isLoading}
+          />
 
-            <PerformanceChart
-              holdings={summary?.holdings || []}
-              currency={currency}
-              exchangeRates={rates}
-              isLoading={isLoading}
-            />
+          <PerformanceChart
+            holdings={summary?.holdings || []}
+            currency={currency}
+            exchangeRates={rates}
+            isLoading={isLoading}
+          />
 
-            <TradeHistory
-              trades={trades}
-              currency={currency}
-              exchangeRates={rates}
-              onTradeDeleted={() => fetchPortfolio(true)}
-              onTradeEdit={handleEditTrade}
-            />
-          </div>
+          <TradeHistory
+            trades={trades}
+            currency={currency}
+            exchangeRates={rates}
+            onTradeDeleted={() => fetchPortfolio(true)}
+            onTradeEdit={handleEditTrade}
+          />
 
-          {/* Sidebar */}
-          <div className="space-y-8">
-
-            {/* Quick Stats / Info */}
-            <div className="bg-slate-800/40 backdrop-blur-md border border-slate-700/50 p-6 rounded-3xl">
-              <div className="flex items-center gap-2 mb-4">
-                <History className="text-blue-400" size={20} />
-                <h3 className="text-lg font-semibold text-white">Market Status</h3>
-              </div>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-slate-400">Data Source</span>
-                  <span className="text-emerald-400 font-medium">Yahoo Finance API</span>
+          {/* Market Status - Now at bottom and full width */}
+          <div className="bg-slate-800/40 backdrop-blur-md border border-slate-700/50 p-8 rounded-3xl">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-500/10 rounded-xl">
+                  <History className="text-blue-400" size={24} />
                 </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-slate-400">Database</span>
-                  <span className="text-blue-400 font-medium">Local JSON Storage</span>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">System Status</h3>
+                  <p className="text-slate-400 text-sm">Real-time data and storage connectivity</p>
                 </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-slate-400">Sync Interval</span>
-                  <span className="text-slate-300 font-medium">Manual / 5 min</span>
+              </div>
+
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-8 flex-1 max-w-2xl">
+                <div className="space-y-1">
+                  <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Data Source</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                    <span className="text-slate-200 text-sm font-medium">Yahoo Finance API</span>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Database</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                    <span className="text-slate-200 text-sm font-medium">Local JSON Storage</span>
+                  </div>
+                </div>
+                <div className="space-y-1 hidden lg:block">
+                  <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Sync Interval</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-slate-500"></div>
+                    <span className="text-slate-200 text-sm font-medium">Manual / 5 min</span>
+                  </div>
                 </div>
               </div>
             </div>
