@@ -124,7 +124,7 @@ export default function AddTradeForm({ portfolioId, onTradeAdded, editTrade, onC
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Ticker */}
                     <div>
                         <label className="block text-sm font-medium text-slate-300 mb-1.5">
@@ -158,7 +158,7 @@ export default function AddTradeForm({ portfolioId, onTradeAdded, editTrade, onC
                     </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {/* Quantity */}
                     <div>
                         <label className="block text-sm font-medium text-slate-300 mb-1.5">

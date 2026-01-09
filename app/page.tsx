@@ -26,6 +26,7 @@ import TradeHistory from '@/components/TradeHistory';
 import { useAuth } from '@/components/auth/AuthProvider';
 import UserButton from '@/components/auth/UserButton';
 import Footer from '@/components/Footer';
+import MobileNav from '@/components/MobileNav';
 import { useRouter } from 'next/navigation';
 
 export default function Home() {
@@ -99,7 +100,7 @@ export default function Home() {
         <div className="absolute top-[20%] -right-[10%] w-[50%] h-[50%] bg-blue-500/10 blur-[120px] rounded-full"></div>
       </div>
 
-      <main className="container mx-auto px-4 py-8 max-w-7xl">
+      <main className="container mx-auto px-4 py-8 max-w-7xl pb-24 md:pb-8">
         {/* Header */}
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
           <div>
@@ -114,7 +115,7 @@ export default function Home() {
 
           <div className="flex items-center gap-4">
             {/* Currency Selector */}
-            <div className="flex bg-slate-800 p-1 rounded-xl border border-slate-700">
+            <div className="flex bg-slate-800 p-1 rounded-xl border border-slate-700 overflow-x-auto max-w-[200px] md:max-w-none">
               {(['USD', 'EUR', 'HUF'] as CurrencyCode[]).map((c) => (
                 <button
                   key={c}
@@ -137,13 +138,14 @@ export default function Home() {
             >
               <RefreshCw size={20} className={isRefreshing ? 'animate-spin' : ''} />
             </button>
+
             <button
               onClick={() => {
                 setIsFormOpen(!isFormOpen);
                 if (editingTrade) setEditingTrade(null);
               }}
               disabled={!portfolio}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="hidden md:flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <PlusCircle size={20} />
               <span>Add Trade</span>
@@ -316,6 +318,13 @@ export default function Home() {
       </main>
 
       <Footer />
+      <MobileNav
+        onAddClick={() => {
+          setIsFormOpen(true);
+          setEditingTrade(null);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+      />
     </div>
   );
 }

@@ -58,7 +58,7 @@ export default function HoldingsTable({ holdings, currency, exchangeRates, isLoa
                 <p className="text-slate-400 text-sm mt-1">{holdings.length} position{holdings.length !== 1 ? 's' : ''}</p>
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto hidden md:block">
                 <table className="w-full">
                     <thead>
                         <tr className="border-b border-slate-700/50">
@@ -126,6 +126,56 @@ export default function HoldingsTable({ holdings, currency, exchangeRates, isLoa
                         })}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden">
+                {holdings.map((holding) => {
+                    const isPositive = holding.unrealizedGain > 0;
+                    const isNegative = holding.unrealizedGain < 0;
+
+                    return (
+                        <div key={holding.ticker} className="p-4 border-b border-slate-700/50 last:border-none">
+                            <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-white font-bold text-sm">
+                                        {holding.ticker.substring(0, 2)}
+                                    </div>
+                                    <div>
+                                        <span className="text-white font-bold text-lg">{holding.ticker}</span>
+                                        <div className="text-xs text-slate-400">
+                                            {formatNumber(holding.shares, holding.shares % 1 !== 0 ? 3 : 0)} shares
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-white font-bold text-lg">
+                                        {formatCurrency(convertCurrency(holding.marketValue, currency, exchangeRates), currency)}
+                                    </div>
+                                    <div className="text-xs text-slate-400">
+                                        {formatCurrency(convertCurrency(holding.currentPrice, currency, exchangeRates), currency)} / share
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center justify-between bg-slate-700/20 p-3 rounded-xl">
+                                <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Return</span>
+                                <div className="flex items-center gap-2">
+                                    {isPositive && <TrendingUp className="w-4 h-4 text-emerald-400" />}
+                                    {isNegative && <TrendingDown className="w-4 h-4 text-red-400" />}
+                                    <div className="text-right">
+                                        <div className={`text-sm font-bold ${isPositive ? 'text-emerald-400' : isNegative ? 'text-red-400' : 'text-slate-400'}`}>
+                                            {formatCurrency(convertCurrency(holding.unrealizedGain, currency, exchangeRates), currency)}
+                                        </div>
+                                        <div className={`text-[10px] ${isPositive ? 'text-emerald-400/70' : isNegative ? 'text-red-400/70' : 'text-slate-500'}`}>
+                                            {formatPercentage(holding.unrealizedGainPercent)}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
         </div>
     );

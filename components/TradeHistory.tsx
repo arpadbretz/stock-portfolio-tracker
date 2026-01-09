@@ -57,7 +57,7 @@ export default function TradeHistory({
                 </div>
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto hidden md:block">
                 <table className="w-full">
                     <thead>
                         <tr className="border-b border-slate-700/50">
@@ -134,6 +134,59 @@ export default function TradeHistory({
                     </tbody>
                 </table>
             </div>
-        </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-4 p-4">
+                {sortedTrades.map((trade) => {
+                    const isBuy = trade.action === 'BUY';
+                    const date = new Date(trade.timestamp).toLocaleDateString();
+                    const convertedTotal = convertCurrency(trade.totalCost, currency, exchangeRates);
+                    const convertedPrice = convertCurrency(trade.pricePerShare, currency, exchangeRates);
+
+                    return (
+                        <div key={trade.id} className="bg-slate-700/20 rounded-xl p-4 border border-slate-700/30">
+                            <div className="flex justify-between items-start mb-3">
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isBuy ? 'bg-emerald-500/20 text-emerald-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                                        {isBuy ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+                                    </div>
+                                    <div>
+                                        <div className="font-bold text-white tracking-wide">{trade.ticker}</div>
+                                        <div className="text-xs text-slate-500 flex items-center gap-1">
+                                            <Clock size={10} />
+                                            {date}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="font-semibold text-white">{formatCurrency(convertedTotal, currency)}</div>
+                                    <div className="text-xs text-slate-400">
+                                        {formatNumber(trade.quantity)} @ {formatCurrency(convertedPrice, currency)}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end gap-2 pt-3 border-t border-slate-700/30">
+                                <button
+                                    onClick={() => onTradeEdit(trade)}
+                                    className="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs text-blue-300 font-medium transition-colors flex items-center gap-1.5"
+                                >
+                                    <Edit2 size={12} />
+                                    Edit
+                                </button>
+                                <button
+                                    onClick={() => handleDelete(trade.id)}
+                                    disabled={isDeleting === trade.id}
+                                    className="px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-xs text-red-400 font-medium transition-colors flex items-center gap-1.5"
+                                >
+                                    {isDeleting === trade.id ? <div className="w-3 h-3 border-2 border-red-400 border-t-transparent rounded-full animate-spin"></div> : <Trash2 size={12} />}
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        </div >
     );
 }
