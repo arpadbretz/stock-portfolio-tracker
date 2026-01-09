@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 // GET /api/portfolios - Get all portfolios for the current user
 export async function GET() {
     try {
-        const supabase = createClient();
+        const supabase = await createClient();
 
         const { data: { user }, error: userError } = await supabase.auth.getUser();
 
@@ -54,7 +54,7 @@ export async function GET() {
 // POST /api/portfolios - Create a new portfolio
 export async function POST(request: Request) {
     try {
-        const supabase = createClient();
+        const supabase = await createClient();
 
         const { data: { user }, error: userError } = await supabase.auth.getUser();
 
@@ -109,7 +109,7 @@ export async function POST(request: Request) {
 // PUT /api/portfolios - Update a portfolio or set default
 export async function PUT(request: Request) {
     try {
-        const supabase = createClient();
+        const supabase = await createClient();
 
         const { data: { user }, error: userError } = await supabase.auth.getUser();
 
@@ -227,7 +227,7 @@ export async function PUT(request: Request) {
 // DELETE /api/portfolios - Delete a portfolio
 export async function DELETE(request: Request) {
     try {
-        const supabase = createClient();
+        const supabase = await createClient();
 
         const { data: { user }, error: userError } = await supabase.auth.getUser();
 
