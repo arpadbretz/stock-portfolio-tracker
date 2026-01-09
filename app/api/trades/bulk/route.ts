@@ -50,12 +50,13 @@ export async function POST(request: Request) {
         // We assume frontend has normalized the keys
         const tradesToInsert = trades.map((t: any) => ({
             portfolio_id: portfolioId,
+            user_id: user.id,
             ticker: t.ticker.toUpperCase(),
             action: t.action.toUpperCase(), // BUY or SELL
             quantity: Number(t.quantity),
             price_per_share: Number(t.price),
             fees: Number(t.fees || 0),
-            total_cost: Number(t.quantity) * Number(t.price) + Number(t.fees || 0), // Basic calc, trusting inputs or should we recalc?
+            total_cost: Number(t.quantity) * Number(t.price) + Number(t.fees || 0),
             date_traded: new Date(t.date).toISOString(),
             notes: t.notes || 'Imported via CSV'
         }));

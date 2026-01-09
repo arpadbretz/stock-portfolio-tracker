@@ -28,7 +28,7 @@ export default function LoginPage() {
             setLoading(false);
         } else {
             router.refresh(); // Refresh to update AuthProvider state
-            router.push('/');
+            router.push('/dashboard');
         }
     };
 
@@ -43,8 +43,8 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-[#0f172a]">
-            <div className="w-full max-w-md p-8 bg-slate-800/40 backdrop-blur-md border border-slate-700/50 rounded-3xl">
+        <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background">
+            <div className="w-full max-w-md p-8 bg-card border border-border rounded-3xl shadow-xl">
                 <div className="mb-8 text-center">
                     <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
                     <p className="text-slate-400">Log in to your portfolio tracker</p>

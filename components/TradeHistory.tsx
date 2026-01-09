@@ -2,8 +2,9 @@
 
 import { Trade, CurrencyCode } from '@/types/portfolio';
 import { formatCurrency, formatNumber, convertCurrency } from '@/lib/portfolio';
-import { Trash2, Edit2, Clock, Tag, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Trash2, Edit2, Clock, Tag, ArrowUpRight, ArrowDownRight, MoreHorizontal } from 'lucide-react';
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface TradeHistoryProps {
     trades: Trade[];
@@ -52,88 +53,90 @@ export default function TradeHistory({
     }
 
     return (
-        <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 overflow-hidden">
-            <div className="p-6 border-b border-slate-700/50 flex justify-between items-center">
+        <div className="bg-card rounded-[32px] md:rounded-[40px] border border-border overflow-hidden shadow-sm">
+            <div className="p-8 pb-4 flex justify-between items-center">
                 <div>
-                    <h2 className="text-xl font-semibold text-white">Trade History</h2>
-                    <p className="text-slate-400 text-sm mt-1">All processed transactions</p>
+                    <h2 className="text-2xl font-black tracking-tight">Trade History</h2>
+                    <p className="text-muted-foreground text-xs font-bold uppercase tracking-widest mt-1">Transaction Ledger</p>
                 </div>
             </div>
 
+            {/* Desktop Table View */}
             <div className="overflow-x-auto hidden md:block">
                 <table className="w-full">
                     <thead>
-                        <tr className="border-b border-slate-700/50">
-                            <th className="text-left py-4 px-6 text-sm font-medium text-slate-400">Date & Ticker</th>
-                            <th className="text-left py-4 px-6 text-sm font-medium text-slate-400">Type</th>
-                            <th className="text-right py-4 px-6 text-sm font-medium text-slate-400">Quantity</th>
-                            <th className="text-right py-4 px-6 text-sm font-medium text-slate-400">Price</th>
-                            <th className="text-right py-4 px-6 text-sm font-medium text-slate-400">Total</th>
-                            {!readOnly && <th className="text-right py-4 px-6 text-sm font-medium text-slate-400">Actions</th>}
+                        <tr className="border-b border-border/50">
+                            <th className="text-left py-5 px-8 text-xs font-black text-muted-foreground uppercase tracking-wider">Asset & Date</th>
+                            <th className="text-left py-5 px-8 text-xs font-black text-muted-foreground uppercase tracking-wider">Action</th>
+                            <th className="text-right py-5 px-8 text-xs font-black text-muted-foreground uppercase tracking-wider">Quantity</th>
+                            <th className="text-right py-5 px-8 text-xs font-black text-muted-foreground uppercase tracking-wider">Price</th>
+                            <th className="text-right py-5 px-8 text-xs font-black text-muted-foreground uppercase tracking-wider">Total Value</th>
+                            {!readOnly && <th className="text-right py-5 px-8 text-xs font-black text-muted-foreground uppercase tracking-wider">Actions</th>}
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-border/30">
                         {sortedTrades.map((trade) => {
                             const isBuy = trade.action === 'BUY';
-                            const date = new Date(trade.timestamp).toLocaleDateString();
+                            const date = new Date(trade.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
                             const convertedTotal = convertCurrency(trade.totalCost, currency, exchangeRates);
                             const convertedPrice = convertCurrency(trade.pricePerShare, currency, exchangeRates);
 
                             return (
-                                <tr
+                                <motion.tr
                                     key={trade.id}
-                                    className="border-b border-slate-700/30 hover:bg-slate-700/20 transition-colors group"
+                                    whileHover={{ backgroundColor: 'var(--muted)' }}
+                                    className="transition-colors group"
                                 >
-                                    <td className="py-4 px-6">
+                                    <td className="py-5 px-8">
                                         <div className="flex flex-col">
-                                            <span className="text-white font-semibold flex items-center gap-1.5">
-                                                <Tag size={12} className="text-slate-500" />
+                                            <span className="text-foreground font-black flex items-center gap-2">
+                                                <div className={`w-2 h-2 rounded-full ${isBuy ? 'bg-emerald-500' : 'bg-blue-500'}`}></div>
                                                 {trade.ticker}
                                             </span>
-                                            <span className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                                            <span className="text-[10px] text-muted-foreground font-bold flex items-center gap-1 mt-1 uppercase tracking-tighter">
                                                 <Clock size={10} />
                                                 {date}
                                             </span>
                                         </div>
                                     </td>
-                                    <td className="py-4 px-6">
-                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold ${isBuy ? 'bg-emerald-500/10 text-emerald-400' : 'bg-blue-500/10 text-blue-400'
+                                    <td className="py-5 px-8">
+                                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase ${isBuy ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-blue-500/10 text-blue-500 border border-blue-500/20'
                                             }`}>
                                             {isBuy ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
                                             {trade.action}
                                         </span>
                                     </td>
-                                    <td className="py-4 px-6 text-right text-slate-300">
+                                    <td className="py-5 px-8 text-right font-bold text-sm">
                                         {formatNumber(trade.quantity, trade.quantity % 1 !== 0 ? 3 : 0)}
                                     </td>
-                                    <td className="py-4 px-6 text-right text-slate-300">
+                                    <td className="py-5 px-8 text-right text-muted-foreground text-sm">
                                         {formatCurrency(convertedPrice, currency)}
                                     </td>
-                                    <td className="py-4 px-6 text-right text-white font-medium">
+                                    <td className="py-5 px-8 text-right font-black text-foreground">
                                         {formatCurrency(convertedTotal, currency)}
                                     </td>
                                     {!readOnly && (
-                                        <td className="py-4 px-6 text-right">
+                                        <td className="py-5 px-8 text-right">
                                             <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button
                                                     onClick={() => onTradeEdit && onTradeEdit(trade)}
-                                                    className="p-1.5 rounded-lg bg-slate-700 text-slate-300 hover:text-blue-400 hover:bg-blue-400/10 transition-all"
+                                                    className="p-2 rounded-xl bg-muted border border-border text-muted-foreground hover:text-primary hover:border-primary/50 transition-all shadow-sm"
                                                     title="Edit trade"
                                                 >
-                                                    <Edit2 size={16} />
+                                                    <Edit2 size={14} />
                                                 </button>
                                                 <button
                                                     onClick={() => handleDelete(trade.id)}
                                                     disabled={isDeleting === trade.id}
-                                                    className="p-1.5 rounded-lg bg-slate-700 text-slate-300 hover:text-red-400 hover:bg-red-400/10 transition-all disabled:opacity-50"
+                                                    className="p-2 rounded-xl bg-muted border border-border text-muted-foreground hover:text-rose-500 hover:border-rose-500/50 transition-all shadow-sm disabled:opacity-50"
                                                     title="Delete trade"
                                                 >
-                                                    <Trash2 size={16} className={isDeleting === trade.id ? 'animate-pulse' : ''} />
+                                                    <Trash2 size={14} className={isDeleting === trade.id ? 'animate-pulse' : ''} />
                                                 </button>
                                             </div>
                                         </td>
                                     )}
-                                </tr>
+                                </motion.tr>
                             );
                         })}
                     </tbody>
@@ -141,58 +144,69 @@ export default function TradeHistory({
             </div>
 
             {/* Mobile Card View */}
-            <div className="md:hidden space-y-4 p-4">
+            <div className="md:hidden divide-y divide-border/50">
                 {sortedTrades.map((trade) => {
                     const isBuy = trade.action === 'BUY';
-                    const date = new Date(trade.timestamp).toLocaleDateString();
+                    const date = new Date(trade.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                     const convertedTotal = convertCurrency(trade.totalCost, currency, exchangeRates);
                     const convertedPrice = convertCurrency(trade.pricePerShare, currency, exchangeRates);
 
                     return (
-                        <div key={trade.id} className="bg-slate-700/20 rounded-xl p-4 border border-slate-700/30">
-                            <div className="flex justify-between items-start mb-3">
-                                <div className="flex items-center gap-3">
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isBuy ? 'bg-emerald-500/20 text-emerald-400' : 'bg-blue-500/20 text-blue-400'}`}>
-                                        {isBuy ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+                        <div key={trade.id} className="p-6">
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="flex items-center gap-4">
+                                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${isBuy ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-blue-500/10 text-blue-500 border border-blue-500/20'}`}>
+                                        {isBuy ? <ArrowUpRight size={18} /> : <ArrowDownRight size={18} />}
                                     </div>
                                     <div>
-                                        <div className="font-bold text-white tracking-wide">{trade.ticker}</div>
-                                        <div className="text-xs text-slate-500 flex items-center gap-1">
+                                        <div className="font-black text-base flex items-center gap-1.5">
+                                            {trade.ticker}
+                                            <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border ${isBuy ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-blue-500/10 text-blue-500 border-blue-500/20'}`}>
+                                                {trade.action}
+                                            </span>
+                                        </div>
+                                        <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter flex items-center gap-1 mt-0.5">
                                             <Clock size={10} />
                                             {date}
                                         </div>
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <div className="font-semibold text-white">{formatCurrency(convertedTotal, currency)}</div>
-                                    <div className="text-xs text-slate-400">
-                                        {formatNumber(trade.quantity)} @ {formatCurrency(convertedPrice, currency)}
+                                    <div className="font-black text-white">{formatCurrency(convertedTotal, currency)}</div>
+                                    <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1">
+                                        {formatNumber(trade.quantity)} Total
                                     </div>
                                 </div>
                             </div>
 
                             {!readOnly && (
-                                <div className="flex justify-end gap-2 pt-3 border-t border-slate-700/30">
+                                <div className="flex justify-end gap-2 pt-4">
                                     <button
                                         onClick={() => onTradeEdit && onTradeEdit(trade)}
-                                        className="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs text-blue-300 font-medium transition-colors flex items-center gap-1.5"
+                                        className="px-4 py-2 rounded-xl bg-muted border border-border text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 flex items-center gap-2"
                                     >
                                         <Edit2 size={12} />
-                                        Edit
+                                        Modfn
                                     </button>
                                     <button
                                         onClick={() => handleDelete(trade.id)}
                                         disabled={isDeleting === trade.id}
-                                        className="px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-xs text-red-400 font-medium transition-colors flex items-center gap-1.5"
+                                        className="px-4 py-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 flex items-center gap-2"
                                     >
-                                        {isDeleting === trade.id ? <div className="w-3 h-3 border-2 border-red-400 border-t-transparent rounded-full animate-spin"></div> : <Trash2 size={12} />}
-                                        Delete
+                                        <Trash2 size={12} />
+                                        Rm
                                     </button>
                                 </div>
                             )}
                         </div>
                     );
                 })}
+            </div>
+
+            <div className="p-8 text-center bg-muted/30">
+                <button className="text-[10px] text-muted-foreground hover:text-foreground font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 mx-auto">
+                    Export Ledger to Spreadsheet (CSV)
+                </button>
             </div>
         </div >
     );

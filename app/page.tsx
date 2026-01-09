@@ -1,358 +1,377 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { PortfolioSummary, CurrencyCode, Trade } from '@/types/portfolio';
-import {
-  convertCurrency,
-  formatCurrency,
-  formatPercentage
-} from '@/lib/portfolio';
-import {
-  TrendingUp,
-  TrendingDown,
-  Wallet,
-  BarChart3,
-  RefreshCw,
-  PlusCircle,
-  Clock,
-  LayoutDashboard,
-  History,
-  Upload
-} from 'lucide-react';
-import AddTradeForm from '@/components/AddTradeForm';
-import HoldingsTable from '@/components/HoldingsTable';
-import PerformanceChart from '@/components/PerformanceChart';
-import SectorAllocationChart from '@/components/SectorAllocationChart';
-import TradeHistory from '@/components/TradeHistory';
-import { useAuth } from '@/components/auth/AuthProvider';
-import UserButton from '@/components/auth/UserButton';
-import Footer from '@/components/Footer';
-import MobileNav from '@/components/MobileNav';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import PortfolioSwitcher from '@/components/PortfolioSwitcher';
+import { motion, useScroll, useTransform } from 'framer-motion';
+import {
+    TrendingUp,
+    PieChart,
+    Shield,
+    Layers,
+    ArrowRight,
+    LineChart,
+    Zap,
+    Globe,
+    Database,
+    Search,
+    ChevronRight,
+    Lock,
+    BarChart3
+} from 'lucide-react';
+import { useAuth } from '@/components/auth/AuthProvider';
 
-export default function Home() {
-  // 1. UPDATED: Added 'id' to the state definition
-  const [portfolio, setPortfolio] = useState<{
-    id: string;
-    trades: Trade[];
-    summary: PortfolioSummary;
-    lastUpdated: string;
-  } | null>(null);
+export default function LandingPage() {
+    const { user, isLoading } = useAuth();
+    const router = useRouter();
+    const { scrollYProgress } = useScroll();
+    const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
+    const scale = useTransform(scrollYProgress, [0, 0.2], [1, 0.95]);
 
-  const [currency, setCurrency] = useState<CurrencyCode>('USD');
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
+    useEffect(() => {
+        if (!isLoading && user) {
+            router.push('/dashboard');
+        }
+    }, [user, isLoading, router]);
 
-  const { user, isLoading: authLoading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login');
-    }
-  }, [user, authLoading, router]);
-
-  const fetchPortfolio = useCallback(async (background = false, specificPortfolioId?: string) => {
-    if (!background) setIsLoading(true);
-    else setIsRefreshing(true);
-
-    try {
-      // Use specific ID if provided, otherwise if we already have one loaded, keep using it
-      const queryId = specificPortfolioId || (portfolio?.id ? portfolio.id : '');
-      const url = `/api/portfolio${queryId ? `?id=${queryId}` : ''}`;
-
-      const response = await fetch(url);
-      const result = await response.json();
-
-      if (result.success) {
-        setPortfolio(result.data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch portfolio:', error);
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  }, [portfolio?.id]);
-
-  useEffect(() => {
-    if (user) {
-      fetchPortfolio();
-    }
-    // Auto-refresh every 5 minutes
-    const interval = setInterval(() => fetchPortfolio(true), 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [fetchPortfolio, user]);
-
-  const handlePortfolioChange = (newPortfolioId: string) => {
-    fetchPortfolio(false, newPortfolioId);
-  };
-
-  const summary = portfolio?.summary;
-  const trades = portfolio?.trades || [];
-  const lastUpdated = portfolio?.lastUpdated;
-  const rates = summary?.exchangeRates || { USD: 1, EUR: 0.92, HUF: 350 };
-
-  const handleEditTrade = (trade: Trade) => {
-    setEditingTrade(trade);
-    setIsFormOpen(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  return (
-    <div className="min-h-screen bg-[#0f172a] text-slate-200 selection:bg-emerald-500/30">
-      {/* Background Glow */}
-      <div className="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden -z-10">
-        <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-emerald-500/10 blur-[120px] rounded-full"></div>
-        <div className="absolute top-[20%] -right-[10%] w-[50%] h-[50%] bg-blue-500/10 blur-[120px] rounded-full"></div>
-      </div>
-
-      <main className="container mx-auto px-4 py-8 max-w-7xl pb-24 md:pb-8">
-        {/* Header */}
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
-          <div>
-            <div className="flex items-center gap-2 text-emerald-400 mb-1">
-              <LayoutDashboard size={18} />
-              <span className="text-sm font-semibold tracking-wider uppercase">Dashboard</span>
+    if (isLoading || user) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-background text-foreground">
+                <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
             </div>
-            <h1 className="text-4xl font-bold text-white tracking-tight">
-              Stock <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400">Portfolio</span>
-            </h1>
-          </div>
+        );
+    }
 
-          <div className="flex items-center gap-4 flex-wrap md:flex-nowrap">
-            {/* Portfolio Switcher */}
-            {portfolio && (
-              <PortfolioSwitcher
-                currentPortfolioId={portfolio.id}
-                onPortfolioChange={handlePortfolioChange}
-              />
-            )}
+    const features = [
+        {
+            title: 'Real-time Intelligence',
+            description: 'Live precision data for global equities. Sync your portfolio across every device instantly.',
+            icon: <Zap className="text-emerald-400" />,
+            status: 'Operational'
+        },
+        {
+            title: 'Visual Core',
+            description: 'Stunning sector heatmaps and performance distribution metrics for deep insight.',
+            icon: <PieChart className="text-blue-400" />,
+            status: 'Operational'
+        },
+        {
+            title: 'Intrinsic Valuation',
+            description: 'Institutional-grade DCF models to identify undervaluation and margin of safety.',
+            icon: <Database className="text-indigo-400" />,
+            status: 'Coming Soon'
+        },
+        {
+            title: 'Neural Watchlists',
+            description: 'Intelligent alerts and automated tracking for your highest conviction ideas.',
+            icon: <LineChart className="text-violet-400" />,
+            status: 'Coming Soon'
+        },
+        {
+            title: 'Collaborative Alpha',
+            description: 'Securely share your investment thesis with private or public read-only links.',
+            icon: <Globe className="text-teal-400" />,
+            status: 'Operational'
+        },
+        {
+            title: 'Fundamental Engine',
+            description: 'Direct integration with financial filings and real-time news aggregation.',
+            icon: <Search className="text-pink-400" />,
+            status: 'Coming Soon'
+        }
+    ];
 
-            {/* Currency Selector */}
-            <div className="flex bg-slate-800 p-1 rounded-xl border border-slate-700 overflow-x-auto max-w-[200px] md:max-w-none">
-              {(['USD', 'EUR', 'HUF'] as CurrencyCode[]).map((c) => (
-                <button
-                  key={c}
-                  onClick={() => setCurrency(c)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${currency === c
-                    ? 'bg-emerald-500 text-white shadow-lg'
-                    : 'text-slate-400 hover:text-slate-200'
-                    }`}
+    return (
+        <div className="min-h-screen bg-background text-foreground selection:bg-primary/30 overflow-x-hidden font-inter">
+            {/* Background Architecture */}
+            <div className="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden -z-10">
+                <motion.div
+                    animate={{ scale: [1, 1.2, 1], x: [0, 50, 0], y: [0, 30, 0] }}
+                    transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute -top-[10%] -left-[10%] w-[60%] h-[60%] bg-primary/10 blur-[150px] rounded-full"
+                />
+                <motion.div
+                    animate={{ scale: [1, 1.1, 1], x: [0, -40, 0], y: [0, -20, 0] }}
+                    transition={{ duration: 20, repeat: Infinity, ease: "easeInOut", delay: 3 }}
+                    className="absolute bottom-0 -right-[10%] w-[70%] h-[70%] bg-accent/10 blur-[150px] rounded-full"
+                />
+                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150"></div>
+            </div>
+
+            {/* Navigation Layer */}
+            <nav className="fixed top-0 w-full z-50 backdrop-blur-xl border-b border-border/40 bg-background/50">
+                <div className="container mx-auto px-6 h-20 flex items-center justify-between">
+                    <div className="flex items-center gap-10">
+                        <div className="flex items-center gap-2.5">
+                            <div className="p-1.5 bg-primary/20 rounded-xl shadow-lg shadow-primary/10">
+                                <TrendingUp className="text-primary" size={26} />
+                            </div>
+                            <span className="text-2xl font-black tracking-tighter text-foreground">StockTrackr<span className="text-primary">.eu</span></span>
+                        </div>
+
+                        {/* Desktop Marketing Menu */}
+                        <div className="hidden md:flex items-center gap-8">
+                            <Link href="#features" className="text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors">Platform</Link>
+                            <div className="flex items-center gap-2 group cursor-pointer">
+                                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground group-hover:text-foreground transition-colors">Valuation</span>
+                                <span className="text-[8px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-black">BETA</span>
+                            </div>
+                            <div className="flex items-center gap-2 group cursor-pointer">
+                                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground group-hover:text-foreground transition-colors">Watchlist</span>
+                                <span className="text-[8px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-black">SOON</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-6">
+                        <Link href="/login" className="hidden sm:block text-xs font-black uppercase tracking-widest text-foreground hover:text-primary transition-colors">
+                            Client Login
+                        </Link>
+                        <Link
+                            href="/register"
+                            className="px-6 py-3 bg-primary text-primary-foreground rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+                        >
+                            Open Free Account
+                        </Link>
+                    </div>
+                </div>
+            </nav>
+
+            {/* Hero Deployment */}
+            <section className="pt-48 pb-32 relative px-6">
+                <motion.div
+                    style={{ opacity, scale }}
+                    className="container mx-auto text-center"
                 >
-                  {c}
-                </button>
-              ))}
-            </div>
+                    <motion.div
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.8, ease: "easeOut" }}
+                    >
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50 border border-border/50 text-muted-foreground mb-10 backdrop-blur-sm">
+                            <Lock size={14} className="text-primary" />
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Institutional Grade Security Protocol</span>
+                        </div>
 
-            <Link
-              href="/import"
-              className="hidden md:flex p-2.5 rounded-xl bg-slate-800 border border-slate-700 hover:bg-slate-700 transition-all text-slate-300 items-center gap-2"
-              title="Import CSV"
-            >
-              <Upload size={20} />
-              <span className="hidden lg:inline font-medium text-sm">Import</span>
-            </Link>
+                        <h1 className="text-6xl md:text-8xl lg:text-9xl font-black text-foreground mb-10 tracking-tighter leading-[0.85]">
+                            Evolve your <br />
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_auto] animate-gradient text-glow-primary">Investments.</span>
+                        </h1>
 
-            <button
-              onClick={() => fetchPortfolio(true)}
-              disabled={isRefreshing}
-              className="p-2.5 rounded-xl bg-slate-800 border border-slate-700 hover:bg-slate-700 transition-all text-slate-300 disabled:opacity-50"
-              title="Refresh prices"
-            >
-              <RefreshCw size={20} className={isRefreshing ? 'animate-spin' : ''} />
-            </button>
+                        <p className="text-lg md:text-2xl text-muted-foreground max-w-3xl mx-auto mb-16 leading-relaxed font-medium">
+                            Automate your tracking, analyze with deep fundamental intelligence, and master
+                            valuation models. <span className="text-foreground font-black">StockTrackr.eu</span> is built for the professional mindset.
+                        </p>
 
-            <button
-              onClick={() => {
-                setIsFormOpen(!isFormOpen);
-                if (editingTrade) setEditingTrade(null);
-              }}
-              disabled={!portfolio}
-              className="hidden md:flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <PlusCircle size={20} />
-              <span>Add Trade</span>
-            </button>
-            <UserButton />
-          </div>
-        </header>
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+                            <Link
+                                href="/register"
+                                className="group w-full sm:w-auto px-10 py-5 bg-primary text-primary-foreground rounded-[24px] font-black text-sm uppercase tracking-widest shadow-2xl shadow-primary/30 flex items-center justify-center gap-3 hover:scale-[1.03] active:scale-[0.98] transition-all"
+                            >
+                                Start Building Your Portfolio
+                                <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                            </Link>
+                            <Link
+                                href="/login"
+                                className="w-full sm:w-auto px-10 py-5 bg-card hover:bg-muted/80 text-foreground rounded-[24px] font-black text-sm uppercase tracking-widest border border-border shadow-sm transition-all"
+                            >
+                                Exploration Mode
+                            </Link>
+                        </div>
+                    </motion.div>
 
-        {/* Portfolio Overview */}
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          {/* Market Value Card */}
-          <div className="bg-slate-800/40 backdrop-blur-md border border-slate-700/50 p-6 rounded-3xl relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-              <Wallet size={64} className="text-emerald-400" />
-            </div>
-            <p className="text-slate-400 text-sm font-medium mb-1">Total Market Value</p>
-            <h2 className="text-3xl font-bold text-white mb-2">
-              {isLoading ? (
-                <div className="h-9 w-32 bg-slate-700 animate-pulse rounded"></div>
-              ) : (
-                formatCurrency(convertCurrency(summary?.totalMarketValue || 0, currency, rates), currency)
-              )}
-            </h2>
-            <div className="text-xs text-slate-500 flex items-center gap-1.5">
-              <Clock size={12} />
-              <span>Last updated: {lastUpdated ? new Date(lastUpdated).toLocaleTimeString() : 'Never'}</span>
-            </div>
-          </div>
+                    {/* Dashboard Visualizer */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 100, rotateX: 20 }}
+                        animate={{ opacity: 1, y: 0, rotateX: 0 }}
+                        transition={{ duration: 1.2, delay: 0.4, ease: "easeOut" }}
+                        className="mt-32 max-w-6xl mx-auto relative perspective-2000"
+                    >
+                        <div className="absolute -inset-4 bg-primary/20 rounded-[64px] blur-[100px] opacity-30 animate-pulse"></div>
+                        <div className="relative bg-card border-[3px] border-border/80 rounded-[48px] overflow-hidden shadow-[0_0_100px_-20px_rgba(0,0,0,0.5)] ring-1 ring-white/10">
+                            <img
+                                src="https://images.unsplash.com/photo-1644659510777-49dfc3fbc3df?q=80&w=2670&auto=format&fit=crop"
+                                alt="Next Gen Dashboard"
+                                className="w-full h-auto object-cover opacity-90 scale-105"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-transparent to-transparent"></div>
 
-          {/* Total Invested */}
-          <div className="bg-slate-800/40 backdrop-blur-md border border-slate-700/50 p-6 rounded-3xl relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-              <BarChart3 size={64} className="text-blue-400" />
-            </div>
-            <p className="text-slate-400 text-sm font-medium mb-1">Total Invested</p>
-            <h2 className="text-3xl font-bold text-white mb-2">
-              {isLoading ? (
-                <div className="h-9 w-32 bg-slate-700 animate-pulse rounded"></div>
-              ) : (
-                formatCurrency(convertCurrency(summary?.totalInvested || 0, currency, rates), currency)
-              )}
-            </h2>
-            <div className="text-xs text-slate-500">Includes all fees and costs</div>
-          </div>
+                            {/* Floating UI Elements */}
+                            <div className="absolute bottom-12 left-12 right-12 flex flex-col items-center">
+                                <div className="p-8 bg-background/40 backdrop-blur-2xl border border-white/10 rounded-[40px] shadow-2xl max-w-md w-full">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-primary">Live Performance</span>
+                                        <TrendingUp size={16} className="text-primary" />
+                                    </div>
+                                    <div className="h-2 bg-white/10 rounded-full w-full mb-2 overflow-hidden">
+                                        <motion.div
+                                            initial={{ width: 0 }}
+                                            animate={{ width: "78%" }}
+                                            transition={{ duration: 2, delay: 1 }}
+                                            className="h-full bg-primary"
+                                        />
+                                    </div>
+                                    <p className="text-xl font-black text-white">+24.5% <span className="text-xs text-white/50 ml-1">YTD</span></p>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                </motion.div>
+            </section>
 
-          {/* Total P&L */}
-          <div className="bg-slate-800/40 backdrop-blur-md border border-slate-700/50 p-6 rounded-3xl relative overflow-hidden group col-span-1 md:col-span-2">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-slate-400 text-sm font-medium mb-1">Total Profit / Loss</p>
-                <div className="flex items-baseline gap-3">
-                  <h2 className={`text-3xl font-bold mb-1 ${(summary?.totalGain || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {isLoading ? (
-                      <div className="h-9 w-32 bg-slate-700 animate-pulse rounded"></div>
-                    ) : (
-                      formatCurrency(convertCurrency(summary?.totalGain || 0, currency, rates), currency)
-                    )}
-                  </h2>
-                  <span className={`text-lg font-semibold px-2 py-0.5 rounded-lg ${(summary?.totalGain || 0) >= 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
-                    {isLoading ? '...' : formatPercentage(summary?.totalGainPercent || 0)}
-                  </span>
+            {/* Core Capabilities */}
+            <section id="features" className="py-40 px-6">
+                <div className="container mx-auto">
+                    <div className="flex flex-col md:flex-row items-end justify-between mb-24 gap-8">
+                        <div className="max-w-xl">
+                            <span className="text-primary font-black uppercase tracking-[0.3em] text-[10px] mb-4 block">Architectural Features</span>
+                            <h2 className="text-4xl md:text-6xl font-black tracking-tighter leading-[0.9]">Forged for high precision management.</h2>
+                        </div>
+                        <div className="text-muted-foreground text-sm font-medium max-w-xs">
+                            We've eliminated the friction of traditional tracking tools. Built for speed, accuracy, and depth.
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                        {features.map((feature, idx) => (
+                            <motion.div
+                                key={idx}
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.5, delay: idx * 0.1 }}
+                                viewport={{ once: true }}
+                                className="p-10 bg-card border border-border/50 rounded-[48px] shadow-sm hover:shadow-2xl hover:border-primary/20 hover:-translate-y-2 transition-all group"
+                            >
+                                <div className="w-16 h-16 rounded-3xl bg-muted flex items-center justify-center mb-8 group-hover:bg-primary/10 transition-colors shadow-inner">
+                                    {feature.icon}
+                                </div>
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-2xl font-black tracking-tight">{feature.title}</h3>
+                                    <span className={`text-[8px] font-black px-2 py-1 rounded-full uppercase tracking-widest ${feature.status === 'Operational' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-orange-500/10 text-orange-500'
+                                        }`}>
+                                        {feature.status}
+                                    </span>
+                                </div>
+                                <p className="text-muted-foreground text-sm leading-relaxed font-medium">
+                                    {feature.description}
+                                </p>
+                            </motion.div>
+                        ))}
+                    </div>
                 </div>
-              </div>
-              <div className={`p-3 rounded-2xl ${(summary?.totalGain || 0) >= 0 ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
-                {(summary?.totalGain || 0) >= 0 ? (
-                  <TrendingUp className="text-emerald-400" size={24} />
-                ) : (
-                  <TrendingDown className="text-red-400" size={24} />
-                )}
-              </div>
-            </div>
-            <div className="mt-4 h-1.5 w-full bg-slate-700/50 rounded-full overflow-hidden">
-              <div
-                className={`h-full transition-all duration-1000 ${(summary?.totalGain || 0) >= 0 ? 'bg-emerald-500' : 'bg-red-500'}`}
-                style={{ width: `${Math.min(100, Math.abs(summary?.totalGainPercent || 0) * 2)}%` }}
-              ></div>
-            </div>
-          </div>
-        </section>
+            </section>
 
-        {/* Dashboard Content - Full Width */}
-        <div className="space-y-8">
-          {(isFormOpen || editingTrade) && (
-            <div className="animate-in fade-in slide-in-from-top-4 duration-300">
-              {/* 2. UPDATED: Passing the portfolio ID to the form */}
-              <AddTradeForm
-                portfolioId={portfolio?.id || ''}
-                editTrade={editingTrade}
-                onCancel={() => {
-                  setIsFormOpen(false);
-                  setEditingTrade(null);
-                }}
-                onTradeAdded={() => {
-                  fetchPortfolio(true);
-                  setIsFormOpen(false);
-                  setEditingTrade(null);
-                }}
-              />
-            </div>
-          )}
+            {/* Verification Section */}
+            <section className="py-40 px-6 bg-card/30 relative">
+                <div className="container mx-auto">
+                    <div className="max-w-5xl mx-auto bg-background border border-border/60 rounded-[64px] p-12 md:p-24 relative overflow-hidden text-center shadow-2xl">
+                        <div className="absolute top-0 right-0 p-10 opacity-5 rotate-12">
+                            <Shield size={200} className="text-primary" />
+                        </div>
 
-          <HoldingsTable
-            holdings={summary?.holdings || []}
-            currency={currency}
-            exchangeRates={rates}
-            isLoading={isLoading}
-          />
+                        <div className="p-4 bg-primary/10 rounded-3xl w-fit mx-auto mb-10">
+                            <BarChart3 className="text-primary" size={40} />
+                        </div>
 
-          <PerformanceChart
-            holdings={summary?.holdings || []}
-            currency={currency}
-            exchangeRates={rates}
-            isLoading={isLoading}
-          />
+                        <h2 className="text-4xl md:text-6xl font-black mb-6 tracking-tighter">Secure. Scalable. Precise.</h2>
+                        <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-16 leading-relaxed">
+                            Stop using fragmented spreadsheets. Consolidate your investment lifecycle into
+                            one unified powerhouse. Join the top percentile of European investors.
+                        </p>
 
-          <SectorAllocationChart
-            holdings={summary?.holdings || []}
-            currency={currency}
-            exchangeRates={rates}
-            isLoading={isLoading}
-          />
-
-          <TradeHistory
-            trades={trades}
-            currency={currency}
-            exchangeRates={rates}
-            onTradeDeleted={() => fetchPortfolio(true)}
-            onTradeEdit={handleEditTrade}
-          />
-
-          {/* Market Status */}
-          <div className="bg-slate-800/40 backdrop-blur-md border border-slate-700/50 p-8 rounded-3xl">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-500/10 rounded-xl">
-                  <History className="text-blue-400" size={24} />
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-8">
+                            <div className="flex flex-col items-center">
+                                <div className="text-3xl font-black mb-1">99.9%</div>
+                                <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Uptime</div>
+                            </div>
+                            <div className="w-px h-10 bg-border hidden sm:block"></div>
+                            <div className="flex flex-col items-center">
+                                <div className="text-3xl font-black mb-1">AES-256</div>
+                                <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Encryption</div>
+                            </div>
+                            <div className="w-px h-10 bg-border hidden sm:block"></div>
+                            <div className="flex flex-col items-center">
+                                <div className="text-3xl font-black mb-1">EUR-LOC</div>
+                                <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Cloud Sync</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-white">System Status</h3>
-                  <p className="text-slate-400 text-sm">Real-time data and storage connectivity</p>
-                </div>
-              </div>
+            </section>
 
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-8 flex-1 max-w-2xl">
-                <div className="space-y-1">
-                  <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Data Source</span>
-                  <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-                    <span className="text-slate-200 text-sm font-medium">Yahoo Finance API</span>
-                  </div>
+            {/* Closing CTA */}
+            <section className="py-40 px-6 text-center">
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    className="container mx-auto"
+                >
+                    <h2 className="text-5xl md:text-7xl font-black tracking-tighter mb-10">Ready to command your capital?</h2>
+                    <Link
+                        href="/register"
+                        className="inline-flex items-center gap-4 px-12 py-6 bg-primary text-primary-foreground rounded-[32px] font-black text-lg uppercase tracking-widest shadow-2xl shadow-primary/30 hover:scale-[1.05] active:scale-[0.98] transition-all"
+                    >
+                        Create My Account
+                        <ArrowRight size={24} />
+                    </Link>
+                </motion.div>
+            </section>
+
+            <footer className="py-20 border-t border-border/50 bg-card/20 pb-32 md:pb-20">
+                <div className="container mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12">
+                    <div className="md:col-span-2">
+                        <div className="flex items-center gap-2 mb-8">
+                            <TrendingUp className="text-primary" size={26} />
+                            <span className="text-2xl font-black tracking-tighter">StockTrackr<span className="text-primary">.eu</span></span>
+                        </div>
+                        <p className="text-muted-foreground text-sm font-medium leading-relaxed max-w-sm">
+                            Next-generation equity intelligence for the sophisticated European investor.
+                        </p>
+                    </div>
+
+                    <div>
+                        <h4 className="text-[10px] font-black uppercase tracking-widest mb-8 text-foreground">Infrastructure</h4>
+                        <ul className="space-y-4 text-sm font-bold text-muted-foreground">
+                            <li><Link href="#features" className="hover:text-primary transition-colors">Platform Engine</Link></li>
+                            <li><span className="opacity-50 cursor-not-allowed">Valuation API</span></li>
+                            <li><span className="opacity-50 cursor-not-allowed">Neural Links</span></li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h4 className="text-[10px] font-black uppercase tracking-widest mb-8 text-foreground">Compliance</h4>
+                        <ul className="space-y-4 text-sm font-bold text-muted-foreground">
+                            <li><Link href="/legal/privacy" className="hover:text-primary transition-colors">Privacy Node</Link></li>
+                            <li><Link href="/legal/terms" className="hover:text-primary transition-colors">Rights & Terms</Link></li>
+                        </ul>
+                    </div>
                 </div>
-                <div className="space-y-1">
-                  <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Database</span>
-                  <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
-                    <span className="text-slate-200 text-sm font-medium">Supabase Cloud Database</span>
-                  </div>
+
+                <div className="container mx-auto px-6 mt-20 pt-8 border-t border-border/20 text-center">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50">
+                        © 2026 Prometheus Digital Kft. All rights reserved.
+                    </p>
                 </div>
-                <div className="space-y-1 hidden lg:block">
-                  <span className="text-xs text-slate-500 uppercase font-bold tracking-wider">Sync Interval</span>
-                  <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-slate-500"></div>
-                    <span className="text-slate-200 text-sm font-medium">Manual / 5 min</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+            </footer>
+
+            <style jsx global>{`
+                @keyframes gradient {
+                    0% { background-position: 0% 50%; }
+                    50% { background-position: 100% 50%; }
+                    100% { background-position: 0% 50%; }
+                }
+                .animate-gradient {
+                    background-size: 200% auto;
+                    animation: gradient 10s ease infinite;
+                }
+                .text-glow-primary {
+                    text-shadow: 0 0 30px rgba(16, 185, 129, 0.3);
+                }
+                .perspective-2000 {
+                    perspective: 2000px;
+                }
+            `}</style>
         </div>
-      </main>
-
-      <Footer />
-      <MobileNav
-        onAddClick={() => {
-          setIsFormOpen(true);
-          setEditingTrade(null);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
-      />
-    </div>
-  );
+    );
 }

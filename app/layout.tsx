@@ -13,12 +13,13 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Stock Portfolio | Personal Asset Tracker",
-  description: "Track your trades and portfolio performance with Google Sheets integration and live stock prices.",
-  keywords: ["stock tracker", "portfolio", "google sheets mcp", "finance", "nextjs"],
+  title: "StockTrackr.eu | Advanced Portfolio Intelligence",
+  description: "Next-generation equity tracking and valuation tool for the sophisticated European investor.",
+  keywords: ["stocktrackr", "portfolio tracker", "dcf valuation", "equity management", "finance hub"],
 };
 
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import CookieBanner from "@/components/CookieBanner";
 
 export default function RootLayout({
@@ -27,18 +28,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en">
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
         <meta name="theme-color" content="#0f172a" />
       </head>
       <body
-        className={`${outfit.variable} ${inter.variable} font-inter antialiased bg-[#0f172a] text-slate-200`}
+        className={`${outfit.variable} ${inter.variable} font-inter antialiased bg-background text-foreground`}
       >
         <AuthProvider>
-          {children}
-          <CookieBanner />
+          <ThemeProvider>
+            {children}
+            <CookieBanner />
+          </ThemeProvider>
         </AuthProvider>
       </body>
     </html>

@@ -7,7 +7,8 @@ import {
     formatNumber,
     convertCurrency
 } from '@/lib/portfolio';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, ChevronRight } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface HoldingsTableProps {
     holdings: Holding[];
@@ -19,17 +20,17 @@ interface HoldingsTableProps {
 export default function HoldingsTable({ holdings, currency, exchangeRates, isLoading }: HoldingsTableProps) {
     if (isLoading) {
         return (
-            <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6">
-                <h2 className="text-xl font-semibold text-white mb-6">Holdings</h2>
+            <div className="bg-card rounded-[40px] border border-border p-8">
+                <div className="h-6 w-32 bg-muted animate-pulse rounded mb-8"></div>
                 <div className="space-y-4">
                     {[1, 2, 3].map((i) => (
                         <div key={i} className="animate-pulse flex items-center gap-4">
-                            <div className="h-12 w-20 bg-slate-700 rounded-lg"></div>
+                            <div className="h-12 w-12 bg-muted rounded-2xl"></div>
                             <div className="flex-1 space-y-2">
-                                <div className="h-4 bg-slate-700 rounded w-1/4"></div>
-                                <div className="h-3 bg-slate-700 rounded w-1/3"></div>
+                                <div className="h-4 bg-muted rounded w-1/4"></div>
+                                <div className="h-3 bg-muted rounded w-1/3"></div>
                             </div>
-                            <div className="h-4 bg-slate-700 rounded w-24"></div>
+                            <div className="h-4 bg-muted rounded w-24"></div>
                         </div>
                     ))}
                 </div>
@@ -39,89 +40,96 @@ export default function HoldingsTable({ holdings, currency, exchangeRates, isLoa
 
     if (holdings.length === 0) {
         return (
-            <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6">
-                <h2 className="text-xl font-semibold text-white mb-6">Holdings</h2>
-                <div className="text-center py-12">
-                    <div className="text-slate-400 text-lg">No holdings yet</div>
-                    <p className="text-slate-500 text-sm mt-2">
-                        Add your first trade to get started
-                    </p>
+            <div className="bg-card rounded-[40px] border border-border p-12 text-center">
+                <div className="w-16 h-16 bg-muted rounded-3xl flex items-center justify-center mx-auto mb-6">
+                    <TrendingUp className="text-muted-foreground" size={32} />
                 </div>
+                <h3 className="text-xl font-bold mb-2">No Holdings Yet</h3>
+                <p className="text-muted-foreground max-w-xs mx-auto mb-8 text-sm">
+                    Add your trades to see your portfolio performance and analytics.
+                </p>
             </div>
         );
     }
 
     return (
-        <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 overflow-hidden">
-            <div className="p-6 border-b border-slate-700/50">
-                <h2 className="text-xl font-semibold text-white">Holdings</h2>
-                <p className="text-slate-400 text-sm mt-1">{holdings.length} position{holdings.length !== 1 ? 's' : ''}</p>
+        <div className="bg-card rounded-[32px] md:rounded-[40px] border border-border overflow-hidden shadow-sm">
+            <div className="p-8 pb-4">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h2 className="text-2xl font-black tracking-tight">Holdings</h2>
+                        <p className="text-muted-foreground text-xs font-bold uppercase tracking-widest mt-1">
+                            {holdings.length} Positions Active
+                        </p>
+                    </div>
+                </div>
             </div>
 
-            <div className="overflow-x-auto hidden md:block">
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto">
                 <table className="w-full">
                     <thead>
-                        <tr className="border-b border-slate-700/50">
-                            <th className="text-left py-4 px-6 text-sm font-medium text-slate-400">Symbol</th>
-                            <th className="text-right py-4 px-6 text-sm font-medium text-slate-400">Shares</th>
-                            <th className="text-right py-4 px-6 text-sm font-medium text-slate-400">Avg Cost</th>
-                            <th className="text-right py-4 px-6 text-sm font-medium text-slate-400">Current Price</th>
-                            <th className="text-right py-4 px-6 text-sm font-medium text-slate-400">Market Value</th>
-                            <th className="text-right py-4 px-6 text-sm font-medium text-slate-400">Gain/Loss</th>
+                        <tr className="border-b border-border/50">
+                            <th className="text-left py-5 px-8 text-xs font-black text-muted-foreground uppercase tracking-wider">Symbol</th>
+                            <th className="text-right py-5 px-8 text-xs font-black text-muted-foreground uppercase tracking-wider">Shares</th>
+                            <th className="text-right py-5 px-8 text-xs font-black text-muted-foreground uppercase tracking-wider">Avg Cost</th>
+                            <th className="text-right py-5 px-8 text-xs font-black text-muted-foreground uppercase tracking-wider">Price</th>
+                            <th className="text-right py-5 px-8 text-xs font-black text-muted-foreground uppercase tracking-wider">Value</th>
+                            <th className="text-right py-5 px-8 text-xs font-black text-muted-foreground uppercase tracking-wider">Return</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-border/30">
                         {holdings.map((holding) => {
                             const isPositive = holding.unrealizedGain > 0;
                             const isNegative = holding.unrealizedGain < 0;
 
                             return (
-                                <tr
+                                <motion.tr
                                     key={holding.ticker}
-                                    className="border-b border-slate-700/30 hover:bg-slate-700/20 transition-colors"
+                                    whileHover={{ backgroundColor: 'var(--muted)', opacity: 1 }}
+                                    className="transition-colors group"
                                 >
-                                    <td className="py-4 px-6">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-white font-bold text-sm">
-                                                {holding.ticker.substring(0, 2)}
+                                    <td className="py-5 px-8">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center text-primary font-black text-sm group-hover:scale-110 transition-transform">
+                                                {holding.ticker}
                                             </div>
-                                            <span className="text-white font-semibold">{holding.ticker}</span>
+                                            <div>
+                                                <div className="font-black text-foreground">{holding.ticker}</div>
+                                                <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">Equity Asset</div>
+                                            </div>
                                         </div>
                                     </td>
-                                    <td className="py-4 px-6 text-right text-white">
+                                    <td className="py-5 px-8 text-right font-bold text-sm">
                                         {formatNumber(holding.shares, holding.shares % 1 !== 0 ? 3 : 0)}
                                     </td>
-                                    <td className="py-4 px-6 text-right text-slate-300">
+                                    <td className="py-5 px-8 text-right text-muted-foreground text-sm">
                                         {formatCurrency(convertCurrency(holding.avgCostBasis, currency, exchangeRates), currency)}
                                     </td>
-                                    <td className="py-4 px-6 text-right text-white font-medium">
-                                        {holding.currentPrice > 0
-                                            ? formatCurrency(convertCurrency(holding.currentPrice, currency, exchangeRates), currency)
-                                            : 'N/A'}
+                                    <td className="py-5 px-8 text-right font-black text-sm">
+                                        {formatCurrency(convertCurrency(holding.currentPrice, currency, exchangeRates), currency)}
                                     </td>
-                                    <td className="py-4 px-6 text-right text-white font-semibold">
+                                    <td className="py-5 px-8 text-right font-black text-foreground">
                                         {formatCurrency(convertCurrency(holding.marketValue, currency, exchangeRates), currency)}
                                     </td>
-                                    <td className="py-4 px-6 text-right">
-                                        <div className="flex items-center justify-end gap-2">
-                                            {isPositive && <TrendingUp className="w-4 h-4 text-emerald-400" />}
-                                            {isNegative && <TrendingDown className="w-4 h-4 text-red-400" />}
-                                            {!isPositive && !isNegative && <Minus className="w-4 h-4 text-slate-400" />}
+                                    <td className="py-5 px-8 text-right">
+                                        <div className="flex items-center justify-end gap-3">
                                             <div className="text-right">
-                                                <div className={`font-semibold ${isPositive ? 'text-emerald-400' :
-                                                    isNegative ? 'text-red-400' : 'text-slate-400'
-                                                    }`}>
+                                                <div className={`font-black text-sm ${isPositive ? 'text-emerald-500' : isNegative ? 'text-rose-500' : 'text-muted-foreground'}`}>
                                                     {formatCurrency(convertCurrency(holding.unrealizedGain, currency, exchangeRates), currency)}
                                                 </div>
-                                                <div className={`text-xs ${isPositive ? 'text-emerald-400/70' :
-                                                    isNegative ? 'text-red-400/70' : 'text-slate-500'
-                                                    }`}>
-                                                    {formatPercentage(holding.unrealizedGainPercent)}
+                                                <div className={`text-[10px] font-black ${isPositive ? 'text-emerald-500/70' : isNegative ? 'text-rose-500/70' : 'text-muted-foreground/50'}`}>
+                                                    {isPositive ? '+' : ''}{formatPercentage(holding.unrealizedGainPercent)}
                                                 </div>
+                                            </div>
+                                            <div className={`p-1.5 rounded-lg ${isPositive ? 'bg-emerald-500/10' : isNegative ? 'bg-rose-500/10' : 'bg-muted'}`}>
+                                                {isPositive && <TrendingUp size={14} className="text-emerald-500" />}
+                                                {isNegative && <TrendingDown size={14} className="text-rose-500" />}
+                                                {!isPositive && !isNegative && <Minus size={14} className="text-muted-foreground" />}
                                             </div>
                                         </div>
                                     </td>
-                                </tr>
+                                </motion.tr>
                             );
                         })}
                     </tbody>
@@ -129,53 +137,59 @@ export default function HoldingsTable({ holdings, currency, exchangeRates, isLoa
             </div>
 
             {/* Mobile Card View */}
-            <div className="md:hidden">
+            <div className="md:hidden divide-y divide-border/50">
                 {holdings.map((holding) => {
                     const isPositive = holding.unrealizedGain > 0;
                     const isNegative = holding.unrealizedGain < 0;
 
                     return (
-                        <div key={holding.ticker} className="p-4 border-b border-slate-700/50 last:border-none">
-                            <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-white font-bold text-sm">
-                                        {holding.ticker.substring(0, 2)}
+                        <div key={holding.ticker} className="p-6 active:bg-muted transition-colors">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center text-primary font-black text-sm">
+                                        {holding.ticker}
                                     </div>
                                     <div>
-                                        <span className="text-white font-bold text-lg">{holding.ticker}</span>
-                                        <div className="text-xs text-slate-400">
-                                            {formatNumber(holding.shares, holding.shares % 1 !== 0 ? 3 : 0)} shares
+                                        <div className="font-black text-lg">{holding.ticker}</div>
+                                        <div className="text-xs text-muted-foreground font-bold uppercase tracking-tighter">
+                                            {formatNumber(holding.shares, holding.shares % 1 !== 0 ? 3 : 0)} Shares
                                         </div>
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <div className="text-white font-bold text-lg">
+                                    <div className="font-black text-lg">
                                         {formatCurrency(convertCurrency(holding.marketValue, currency, exchangeRates), currency)}
                                     </div>
-                                    <div className="text-xs text-slate-400">
-                                        {formatCurrency(convertCurrency(holding.currentPrice, currency, exchangeRates), currency)} / share
+                                    <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
+                                        Total Value
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="flex items-center justify-between bg-slate-700/20 p-3 rounded-xl">
-                                <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Return</span>
-                                <div className="flex items-center gap-2">
-                                    {isPositive && <TrendingUp className="w-4 h-4 text-emerald-400" />}
-                                    {isNegative && <TrendingDown className="w-4 h-4 text-red-400" />}
-                                    <div className="text-right">
-                                        <div className={`text-sm font-bold ${isPositive ? 'text-emerald-400' : isNegative ? 'text-red-400' : 'text-slate-400'}`}>
-                                            {formatCurrency(convertCurrency(holding.unrealizedGain, currency, exchangeRates), currency)}
-                                        </div>
-                                        <div className={`text-[10px] ${isPositive ? 'text-emerald-400/70' : isNegative ? 'text-red-400/70' : 'text-slate-500'}`}>
-                                            {formatPercentage(holding.unrealizedGainPercent)}
-                                        </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="bg-muted/50 p-4 rounded-2xl border border-border/50">
+                                    <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mb-1 text-center">Price</div>
+                                    <div className="font-black text-center text-sm">
+                                        {formatCurrency(convertCurrency(holding.currentPrice, currency, exchangeRates), currency)}
+                                    </div>
+                                </div>
+                                <div className={`p-4 rounded-2xl border ${isPositive ? 'bg-emerald-500/5 border-emerald-500/20' : isNegative ? 'bg-rose-500/5 border-rose-500/20' : 'bg-muted/50 border-border/50'}`}>
+                                    <div className={`text-[10px] uppercase font-bold tracking-widest mb-1 text-center ${isPositive ? 'text-emerald-500' : isNegative ? 'text-rose-500' : 'text-muted-foreground'}`}>Return</div>
+                                    <div className={`font-black text-center text-sm ${isPositive ? 'text-emerald-500' : isNegative ? 'text-rose-500' : 'text-foreground'}`}>
+                                        {formatPercentage(holding.unrealizedGainPercent)}
                                     </div>
                                 </div>
                             </div>
                         </div>
                     );
                 })}
+            </div>
+
+            <div className="p-8 pt-4 border-t border-border/50 text-center">
+                <button className="text-xs text-muted-foreground hover:text-primary font-bold uppercase tracking-widest transition-colors flex items-center gap-2 mx-auto">
+                    View Comprehensive Report
+                    <ChevronRight size={14} />
+                </button>
             </div>
         </div>
     );
