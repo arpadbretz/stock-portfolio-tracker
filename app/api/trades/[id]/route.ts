@@ -3,10 +3,10 @@ import { deleteTrade, updateTrade } from '@/lib/sheets';
 
 export async function PATCH(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const id = params.id;
+        const { id } = await params;
         const body = await request.json();
         const updatedTrade = await updateTrade(id, body);
 
@@ -29,10 +29,10 @@ export async function PATCH(
 
 export async function DELETE(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const id = params.id;
+        const { id } = await params;
         const success = await deleteTrade(id);
 
         if (!success) {
