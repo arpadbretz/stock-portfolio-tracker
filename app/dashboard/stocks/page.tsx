@@ -77,7 +77,7 @@ export default function StockSearchPage() {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (query.trim()) {
-            router.push(`/ticker/${query.trim().toUpperCase()}`);
+            router.push(`/dashboard/ticker/${query.trim().toUpperCase()}`);
         }
     };
 
@@ -148,7 +148,7 @@ export default function StockSearchPage() {
                                     {results.map((result, i) => (
                                         <Link
                                             key={result.symbol}
-                                            href={`/ticker/${result.symbol}`}
+                                            href={`/dashboard/ticker/${result.symbol}`}
                                             className="flex items-center justify-between p-5 hover:bg-muted/50 transition-colors border-b border-border/50 last:border-0 group"
                                         >
                                             <div className="flex items-center gap-4">
@@ -195,7 +195,7 @@ export default function StockSearchPage() {
                             transition={{ delay: i * 0.05 }}
                         >
                             <Link
-                                href={`/ticker/${stock.symbol}`}
+                                href={`/dashboard/ticker/${stock.symbol}`}
                                 className="block p-6 bg-card border border-border rounded-[28px] hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition-all group"
                             >
                                 <div className="flex items-start justify-between mb-4">

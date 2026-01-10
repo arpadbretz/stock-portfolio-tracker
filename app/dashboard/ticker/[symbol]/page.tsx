@@ -21,6 +21,9 @@ import {
     ExternalLink,
     Plus,
     ChevronRight,
+    FileText,
+    Wallet,
+    ArrowUpDown,
 } from 'lucide-react';
 import {
     LineChart,
@@ -71,6 +74,9 @@ interface StockData {
     website: string | null;
     description: string | null;
     earningsDate: string | null;
+    incomeStatement: any[];
+    balanceSheet: any[];
+    cashFlow: any[];
 }
 
 interface ChartDataPoint {
@@ -90,6 +96,15 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
     const [isLoading, setIsLoading] = useState(true);
     const [chartLoading, setChartLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [activeFinancialTab, setActiveFinancialTab] = useState<'income' | 'balance' | 'cashflow'>('income');
+
+    // Calculate range-specific gain/loss
+    const rangeChange = chartData.length >= 2
+        ? chartData[chartData.length - 1].close - chartData[0].close
+        : stock?.change || 0;
+    const rangeChangePercent = chartData.length >= 2
+        ? ((chartData[chartData.length - 1].close - chartData[0].close) / chartData[0].close) * 100
+        : stock?.changePercent || 0;
 
     useEffect(() => {
         const fetchStock = async () => {
@@ -159,7 +174,7 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
                     <h1 className="text-4xl font-black mb-4">Stock Not Found</h1>
                     <p className="text-muted-foreground mb-8">We couldn't find data for "{symbol}"</p>
                     <Link
-                        href="/stocks"
+                        href="/dashboard/stocks"
                         className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-2xl font-black"
                     >
                         <ArrowLeft size={18} />
@@ -170,7 +185,7 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
         );
     }
 
-    const isPositive = stock.change >= 0;
+    const isPositive = rangeChange >= 0;
 
     return (
         <div className="min-h-screen bg-background pb-20">
@@ -178,7 +193,7 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
                 {/* Header */}
                 <div className="flex flex-col gap-8 mb-10">
                     <Link
-                        href="/stocks"
+                        href="/dashboard/stocks"
                         className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors w-fit group"
                     >
                         <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
@@ -206,7 +221,10 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
                             <div className={`flex items-center gap-2 ${isPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
                                 {isPositive ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
                                 <span className="font-black">
-                                    {isPositive ? '+' : ''}{stock.change.toFixed(2)} ({isPositive ? '+' : ''}{stock.changePercent.toFixed(2)}%)
+                                    {isPositive ? '+' : ''}{rangeChange.toFixed(2)} ({isPositive ? '+' : ''}{rangeChangePercent.toFixed(2)}%)
+                                </span>
+                                <span className="text-xs text-muted-foreground font-bold ml-2">
+                                    {selectedRange}
                                 </span>
                             </div>
                         </div>
@@ -392,7 +410,7 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
                             <div className="p-3 bg-emerald-500/10 rounded-2xl">
                                 <Zap className="text-emerald-500" size={20} />
                             </div>
-                            <h3 className="text-xl font-black">Dividends</h3>
+                            <h3 className="text-xl font-black">Dividends & Earnings</h3>
                         </div>
                         <div className="space-y-4">
                             <MetricRow label="Dividend Yield" value={stock.dividendYield ? `${(stock.dividendYield * 100).toFixed(2)}%` : 'N/A'} />
@@ -402,12 +420,70 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
                     </motion.div>
                 </div>
 
+                {/* Financial Statements */}
+                {(stock.incomeStatement?.length > 0 || stock.balanceSheet?.length > 0 || stock.cashFlow?.length > 0) && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="bg-card border border-border rounded-[40px] p-8 mt-8"
+                    >
+                        <div className="flex items-center gap-4 mb-8">
+                            <div className="p-3 bg-primary/10 rounded-2xl">
+                                <FileText className="text-primary" size={20} />
+                            </div>
+                            <h3 className="text-xl font-black">Financial Statements</h3>
+                        </div>
+
+                        {/* Tab Navigation */}
+                        <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
+                            <button
+                                onClick={() => setActiveFinancialTab('income')}
+                                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeFinancialTab === 'income'
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                                    }`}
+                            >
+                                Income Statement
+                            </button>
+                            <button
+                                onClick={() => setActiveFinancialTab('balance')}
+                                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeFinancialTab === 'balance'
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                                    }`}
+                            >
+                                Balance Sheet
+                            </button>
+                            <button
+                                onClick={() => setActiveFinancialTab('cashflow')}
+                                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeFinancialTab === 'cashflow'
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                                    }`}
+                            >
+                                Cash Flow
+                            </button>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                            <FinancialTable
+                                data={
+                                    activeFinancialTab === 'income' ? stock.incomeStatement :
+                                        activeFinancialTab === 'balance' ? stock.balanceSheet :
+                                            stock.cashFlow
+                                }
+                            />
+                        </div>
+                    </motion.div>
+                )}
+
                 {/* Company Profile */}
                 {stock.description && (
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3 }}
+                        transition={{ delay: 0.35 }}
                         className="bg-card border border-border rounded-[40px] p-8 mt-8"
                     >
                         <div className="flex items-center gap-4 mb-8">
@@ -480,5 +556,78 @@ function MetricRow({ label, value }: { label: string; value: string | null | und
             <span className="text-sm text-muted-foreground">{label}</span>
             <span className="font-black">{value ?? '—'}</span>
         </div>
+    );
+}
+
+function FinancialTable({ data }: { data: any[] }) {
+    if (!data || data.length === 0) {
+        return (
+            <div className="text-center py-8 text-muted-foreground">
+                No financial data available
+            </div>
+        );
+    }
+
+    // Get all unique keys from the data
+    const allKeys = new Set<string>();
+    data.forEach(item => {
+        Object.keys(item).forEach(key => {
+            if (key !== 'endDate' && key !== 'maxAge') allKeys.add(key);
+        });
+    });
+
+    const formatValue = (val: any) => {
+        if (val === null || val === undefined) return '—';
+        if (typeof val === 'number') {
+            if (Math.abs(val) >= 1e9) return `$${(val / 1e9).toFixed(2)}B`;
+            if (Math.abs(val) >= 1e6) return `$${(val / 1e6).toFixed(2)}M`;
+            return `$${val.toLocaleString()}`;
+        }
+        return val;
+    };
+
+    const getLabel = (key: string) => {
+        return key
+            .replace(/([A-Z])/g, ' $1')
+            .replace(/^./, str => str.toUpperCase())
+            .trim();
+    };
+
+    const importantKeys = [
+        'totalRevenue', 'grossProfit', 'operatingIncome', 'netIncome',
+        'totalAssets', 'totalLiabilities', 'totalStockholderEquity',
+        'operatingCashflow', 'capitalExpenditures', 'freeCashflow'
+    ];
+
+    const displayKeys = importantKeys.filter(key => allKeys.has(key));
+    if (displayKeys.length === 0) {
+        displayKeys.push(...Array.from(allKeys).slice(0, 8));
+    }
+
+    return (
+        <table className="w-full text-sm">
+            <thead>
+                <tr className="border-b border-border">
+                    <th className="text-left py-3 px-4 font-black uppercase tracking-widest text-[10px] text-muted-foreground">Metric</th>
+                    {data.slice(0, 4).map((item, i) => (
+                        <th key={i} className="text-right py-3 px-4 font-black uppercase tracking-widest text-[10px] text-muted-foreground">
+                            {item.endDate ? new Date(item.endDate).getFullYear() : `FY-${i + 1}`}
+                        </th>
+                    ))}
+                </tr>
+            </thead>
+            <tbody>
+                {displayKeys.map(key => (
+                    <tr key={key} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                        <td className="py-3 px-4 font-bold">{getLabel(key)}</td>
+                        {data.slice(0, 4).map((item, i) => (
+                            <td key={i} className="text-right py-3 px-4 tabular-nums">
+                                {formatValue(item[key])}
+                            </td>
+                        ))}
+                    </tr>
+                ))}
+            </tbody>
+        </table>
     );
 }

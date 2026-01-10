@@ -16,7 +16,7 @@ export async function GET(
     try {
         const ticker = symbol.toUpperCase();
 
-        // Fetch comprehensive stock data
+        // Fetch comprehensive stock data including financial statements
         const [quote, summary] = await Promise.all([
             yf.quote(ticker),
             yf.quoteSummary(ticker, {
@@ -26,6 +26,10 @@ export async function GET(
                     'financialData',
                     'defaultKeyStatistics',
                     'earnings',
+                    'calendarEvents',
+                    'incomeStatementHistory',
+                    'balanceSheetHistory',
+                    'cashflowStatementHistory',
                 ]
             }).catch(() => null)
         ]);
@@ -39,6 +43,13 @@ export async function GET(
         const financials = summary?.financialData || {};
         const keyStats = summary?.defaultKeyStatistics || {};
         const earnings = summary?.earnings || {};
+        const calendar = summary?.calendarEvents || {};
+        const incomeHistory = summary?.incomeStatementHistory?.incomeStatementHistory || [];
+        const balanceHistory = summary?.balanceSheetHistory?.balanceSheetStatements || [];
+        const cashflowHistory = summary?.cashflowStatementHistory?.cashflowStatements || [];
+
+        // Get next earnings date from calendar
+        const earningsDate = calendar?.earnings?.earningsDate?.[0] || earnings?.earningsDate?.[0] || null;
 
         const stockData = {
             // Basic Info
@@ -70,7 +81,7 @@ export async function GET(
             trailingPE: details.trailingPE || quote.trailingPE || null,
             forwardPE: details.forwardPE || quote.forwardPE || null,
             priceToBook: keyStats.priceToBook || null,
-            pegRatio: keyStats.pegRatio || null,
+            pegRatio: keyStats.pegRatio || details.pegRatio || null,
 
             // Dividends
             dividendYield: details.dividendYield || null,
@@ -96,8 +107,46 @@ export async function GET(
             description: profile.longBusinessSummary || null,
 
             // Earnings
-            earningsDate: earnings.earningsDate?.[0] || null,
+            earningsDate: earningsDate,
             earningsQuarterlyGrowth: keyStats.earningsQuarterlyGrowth || null,
+
+            // Financial Statements
+            incomeStatement: incomeHistory.map((item: any) => ({
+                endDate: item.endDate,
+                totalRevenue: item.totalRevenue,
+                costOfRevenue: item.costOfRevenue,
+                grossProfit: item.grossProfit,
+                operatingExpenses: item.totalOperatingExpenses,
+                operatingIncome: item.operatingIncome,
+                netIncome: item.netIncome,
+                ebit: item.ebit,
+                interestExpense: item.interestExpense,
+            })),
+
+            balanceSheet: balanceHistory.map((item: any) => ({
+                endDate: item.endDate,
+                totalAssets: item.totalAssets,
+                totalLiabilities: item.totalLiab,
+                totalStockholderEquity: item.totalStockholderEquity,
+                cash: item.cash,
+                shortTermInvestments: item.shortTermInvestments,
+                totalCurrentAssets: item.totalCurrentAssets,
+                totalCurrentLiabilities: item.totalCurrentLiabilities,
+                longTermDebt: item.longTermDebt,
+                retainedEarnings: item.retainedEarnings,
+            })),
+
+            cashFlow: cashflowHistory.map((item: any) => ({
+                endDate: item.endDate,
+                operatingCashflow: item.totalCashFromOperatingActivities,
+                capitalExpenditures: item.capitalExpenditures,
+                freeCashflow: item.totalCashFromOperatingActivities && item.capitalExpenditures
+                    ? item.totalCashFromOperatingActivities + item.capitalExpenditures
+                    : null,
+                dividendsPaid: item.dividendsPaid,
+                netBorrowings: item.netBorrowings,
+                stockRepurchased: item.repurchaseOfStock,
+            })),
 
             lastUpdated: new Date().toISOString(),
         };
