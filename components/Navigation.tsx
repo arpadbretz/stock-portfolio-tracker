@@ -12,7 +12,8 @@ import {
     Menu,
     X,
     TrendingUp,
-    Briefcase
+    Briefcase,
+    Search
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -21,6 +22,7 @@ import UserButton from '@/components/auth/UserButton';
 
 const links = [
     { name: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard size={20} />, status: 'active' },
+    { name: 'Stock Research', href: '/stocks', icon: <Search size={20} />, status: 'active' },
     { name: 'Watchlist', href: '#', icon: <LineChart size={20} />, status: 'soon' },
     { name: 'DCF Calculator', href: '#', icon: <Database size={20} />, status: 'soon' },
     { name: 'Portfolios', href: '/dashboard/portfolios/manage', icon: <Briefcase size={20} />, status: 'active' },
