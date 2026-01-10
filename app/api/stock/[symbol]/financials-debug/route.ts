@@ -8,6 +8,8 @@ export async function GET(
     { params }: { params: Promise<{ symbol: string }> }
 ) {
     const { symbol } = await params;
+    const searchParams = request.nextUrl.searchParams;
+    const manualCookie = searchParams.get('cookie');
 
     if (!symbol) {
         return NextResponse.json({ error: 'Symbol required' }, { status: 400 });
@@ -16,37 +18,46 @@ export async function GET(
     try {
         const ticker = symbol.toUpperCase();
 
-        console.log(`\n=== FETCHING FINANCIAL DATA FOR ${ticker} ===\n`);
+        if (manualCookie) {
+            console.log('Applying manual cookie...');
+            yf._opts.cookie = manualCookie;
+            console.log('Manual cookie applied.');
+        }
 
-        // Fetch using the EXACT pattern you specified
+        // Enable verbose searching
+        // yf._opts.logger = console; // Uncomment if you want NOISY logs
+
+        console.log(`\n=== FETCHING FINANCIAL DATA FOR ${ticker} (Cookie: ${manualCookie ? 'YES' : 'NO'}) ===\n`);
+
         const results = await yf.quoteSummary(ticker, {
             modules: [
                 "incomeStatementHistory",
+                "incomeStatementHistoryQuarterly",
                 "balanceSheetHistory",
+                "balanceSheetHistoryQuarterly",
                 "cashflowStatementHistory",
+                "cashflowStatementHistoryQuarterly",
                 "financialData"
             ]
         });
 
         // Log the EXACT structure
-        console.log('\n=== INCOME STATEMENT HISTORY ===');
-        console.log(JSON.stringify(results.incomeStatementHistory, null, 2));
-
-        console.log('\n=== BALANCE SHEET HISTORY ===');
-        console.log(JSON.stringify(results.balanceSheetHistory, null, 2));
-
-        console.log('\n=== CASHFLOW STATEMENT HISTORY ===');
-        console.log(JSON.stringify(results.cashflowStatementHistory, null, 2));
-
-        console.log('\n=== FINANCIAL DATA ===');
-        console.log(JSON.stringify(results.financialData, null, 2));
+        console.log('\n=== FULL RAW RESPONSE ===');
+        console.log(JSON.stringify(results, null, 2));
 
         // Return the raw structure for inspection
         return NextResponse.json({
             symbol: ticker,
-            incomeStatementHistory: results.incomeStatementHistory,
-            balanceSheetHistory: results.balanceSheetHistory,
-            cashflowStatementHistory: results.cashflowStatementHistory,
+            annual: {
+                income: results.incomeStatementHistory,
+                balance: results.balanceSheetHistory,
+                cashflow: results.cashflowStatementHistory,
+            },
+            quarterly: {
+                income: results.incomeStatementHistoryQuarterly,
+                balance: results.balanceSheetHistoryQuarterly,
+                cashflow: results.cashflowStatementHistoryQuarterly,
+            },
             financialData: results.financialData,
         }, { status: 200 });
 
