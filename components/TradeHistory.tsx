@@ -75,7 +75,8 @@ export default function TradeHistory({
                 </div>
             </div>
 
-            <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+            {/* Desktop Table View */}
+            <div className="hidden md:block max-h-[400px] overflow-y-auto custom-scrollbar">
                 <table className="w-full">
                     <thead>
                         <tr className="border-b border-border/50">
