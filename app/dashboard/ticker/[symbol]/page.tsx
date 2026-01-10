@@ -34,6 +34,7 @@ import {
     Star,
     Check,
     Loader2,
+    Bell,
 } from 'lucide-react';
 import {
     LineChart,
@@ -405,6 +406,15 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
                                     <><Star size={16} /> Add to Watchlist</>
                                 )}
                             </button>
+
+                            {/* Set Price Alert Button */}
+                            <Link
+                                href={`/dashboard/alerts`}
+                                className="mt-2 flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm bg-orange-500/10 text-orange-500 border border-orange-500/30 hover:bg-orange-500/20 transition-all"
+                            >
+                                <Bell size={16} />
+                                Set Price Alert
+                            </Link>
                         </div>
                     </div>
                 </div>

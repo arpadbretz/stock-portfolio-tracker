@@ -91,15 +91,15 @@ export default function HoldingsTable({ holdings, currency, exchangeRates, isLoa
                                     className="transition-colors group"
                                 >
                                     <td className="py-5 px-8">
-                                        <div className="flex items-center gap-4">
+                                        <Link href={`/dashboard/ticker/${holding.ticker}`} className="flex items-center gap-4">
                                             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center text-primary font-black text-sm group-hover:scale-110 transition-transform">
                                                 {holding.ticker}
                                             </div>
                                             <div>
-                                                <div className="font-black text-foreground">{holding.ticker}</div>
-                                                <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">Equity Asset</div>
+                                                <div className="font-black text-foreground group-hover:text-primary transition-colors">{holding.ticker}</div>
+                                                <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">View Details →</div>
                                             </div>
-                                        </div>
+                                        </Link>
                                     </td>
                                     <td className="py-5 px-8 text-right font-bold text-sm">
                                         {formatNumber(holding.shares, holding.shares % 1 !== 0 ? 3 : 0)}
@@ -120,7 +120,7 @@ export default function HoldingsTable({ holdings, currency, exchangeRates, isLoa
                                                     {formatCurrency(convertCurrency(holding.unrealizedGain, currency, exchangeRates), currency)}
                                                 </div>
                                                 <div className={`text-[10px] font-black ${isPositive ? 'text-emerald-500/70' : isNegative ? 'text-rose-500/70' : 'text-muted-foreground/50'}`}>
-                                                    {isPositive ? '+' : ''}{formatPercentage(holding.unrealizedGainPercent)}
+                                                    {formatPercentage(holding.unrealizedGainPercent)}
                                                 </div>
                                             </div>
                                             <div className={`p-1.5 rounded-lg ${isPositive ? 'bg-emerald-500/10' : isNegative ? 'bg-rose-500/10' : 'bg-muted'}`}>
@@ -144,7 +144,7 @@ export default function HoldingsTable({ holdings, currency, exchangeRates, isLoa
                     const isNegative = holding.unrealizedGain < 0;
 
                     return (
-                        <div key={holding.ticker} className="p-6 active:bg-muted transition-colors">
+                        <Link href={`/dashboard/ticker/${holding.ticker}`} key={holding.ticker} className="block p-6 active:bg-muted transition-colors">
                             <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center gap-4">
                                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center text-primary font-black text-sm">
@@ -181,7 +181,7 @@ export default function HoldingsTable({ holdings, currency, exchangeRates, isLoa
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </Link>
                     );
                 })}
             </div>
