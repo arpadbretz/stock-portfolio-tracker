@@ -173,26 +173,44 @@ export default function DashboardPage() {
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-12">
           {/* Card: Portfolio Valuation */}
           <motion.div
-            whileHover={{ y: -8 }}
-            className="p-10 bg-card border border-border/80 rounded-[48px] shadow-2xl shadow-black/5 relative overflow-hidden group"
+            whileHover={{ y: -4 }}
+            className="p-8 bg-card border border-border/80 rounded-[40px] shadow-2xl shadow-black/5 relative overflow-hidden group col-span-1 md:col-span-2"
           >
-            <div className="flex items-center justify-between mb-8">
-              <div className="w-12 h-12 bg-primary/20 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/10 border border-primary/20">
-                <Wallet size={20} className="text-primary" />
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-primary/20 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/10 border border-primary/20">
+                  <Wallet size={20} className="text-primary" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block">Total Portfolio Value</span>
+                  <h2 className="text-3xl font-black tracking-tight">
+                    {formatCurrency(convertCurrency(summary?.totalMarketValue || 0, currency, rates), currency)}
+                  </h2>
+                </div>
               </div>
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Net Asset Value</span>
-            </div>
-            <h2 className="text-4xl font-black tracking-tighter mb-4">
-              {formatCurrency(convertCurrency(summary?.totalMarketValue || 0, currency, rates), currency)}
-            </h2>
-            <div className="flex items-center gap-2">
-              <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden shadow-inner">
-                <motion.div initial={{ width: 0 }} animate={{ width: "100%" }} className="h-full bg-primary" />
+              <div className={`px-3 py-1.5 rounded-xl text-sm font-black ${(summary?.totalGainPercent || 0) >= 0 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
+                {(summary?.totalGainPercent || 0) >= 0 ? '+' : ''}{formatPercentage(summary?.totalGainPercent || 0)}
               </div>
             </div>
-            <div className="mt-6 flex items-center justify-between">
-              <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Operational Capacity</span>
-              <span className="text-[8px] font-black text-primary">100% SECURE</span>
+
+            {/* Animated Mini Chart */}
+            <div className="h-24 flex items-end gap-1 px-2 mb-4">
+              {[35, 45, 40, 55, 50, 65, 60, 75, 70, 85, 80, 90, 85, 95, 88, 100].map((h, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ height: 0 }}
+                  animate={{ height: `${h}%` }}
+                  transition={{ delay: 0.1 + i * 0.03, duration: 0.4 }}
+                  className="flex-1 bg-gradient-to-t from-primary/60 to-primary/20 rounded-t-sm"
+                />
+              ))}
+            </div>
+
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground font-bold">P&L: <span className={`${(summary?.totalGain || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                {(summary?.totalGain || 0) >= 0 ? '+' : ''}{formatCurrency(convertCurrency(summary?.totalGain || 0, currency, rates), currency)}
+              </span></span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{summary?.holdings?.length || 0} Holdings</span>
             </div>
           </motion.div>
 
