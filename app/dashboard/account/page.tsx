@@ -15,7 +15,7 @@ const CURRENCIES = [
 ];
 
 export default function AccountPage() {
-    const { user } = useAuth();
+    const { user, isLoading } = useAuth();
     const router = useRouter();
     const [exportLoading, setExportLoading] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
@@ -39,6 +39,14 @@ export default function AccountPage() {
         await new Promise(r => setTimeout(r, 300));
         setSavingCurrency(false);
     };
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+        );
+    }
 
     if (!user) {
         router.push('/login');
@@ -169,8 +177,8 @@ export default function AccountPage() {
                                         onClick={() => handleCurrencyChange(curr.code)}
                                         disabled={savingCurrency}
                                         className={`relative p-4 rounded-2xl border-2 transition-all ${currency === curr.code
-                                                ? 'bg-primary/10 border-primary'
-                                                : 'bg-muted border-transparent hover:border-border'
+                                            ? 'bg-primary/10 border-primary'
+                                            : 'bg-muted border-transparent hover:border-border'
                                             }`}
                                     >
                                         {currency === curr.code && (

@@ -1,22 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createHash } from 'crypto';
+
+function hashUserId(userId: string): string {
+    const salt = process.env.NEXT_PUBLIC_ANALYTICS_SALT || 'default-salt-change-me';
+    return createHash('sha256').update(userId + salt).digest('hex');
+}
 
 export async function POST(request: NextRequest) {
     try {
-        const { eventType, sessionHash, metadata, timestamp } = await request.json();
+        const { eventType, userId, sessionHash, metadata, timestamp } = await request.json();
 
-        if (!eventType || !sessionHash) {
+        if (!eventType || (!userId && !sessionHash)) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
         const supabase = await createClient();
+
+        // Generate or use existing hash
+        const finalHash = sessionHash || (userId ? hashUserId(userId) : 'anonymous');
 
         // Insert analytics event
         const { error: eventError } = await supabase
             .from('analytics_events')
             .insert({
                 event_type: eventType,
-                session_hash: sessionHash,
+                session_hash: finalHash,
                 metadata: metadata || {},
                 created_at: new Date(timestamp).toISOString(),
             });
@@ -34,7 +43,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Update DAU
-        await updateDailyActiveUsers(supabase, sessionHash);
+        await updateDailyActiveUsers(supabase, finalHash);
 
         return NextResponse.json({ success: true });
     } catch (error) {

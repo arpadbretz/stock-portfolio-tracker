@@ -20,18 +20,41 @@ export default function CookieBanner() {
 
     useEffect(() => {
         // Check if user has already given consent
-        const savedConsent = localStorage.getItem('cookieConsent');
-        if (!savedConsent) {
+        try {
+            const savedConsent = localStorage.getItem('cookieConsent');
+            if (savedConsent) {
+                const parsed = JSON.parse(savedConsent);
+                setConsent(parsed);
+                console.log('[CookieBanner] Loaded saved consent:', parsed);
+                // Ensure state matches localStorage if they differ
+                setShowBanner(false);
+            } else {
+                setShowBanner(true);
+            }
+        } catch (e) {
+            console.error('[CookieBanner] Error loading consent:', e);
             setShowBanner(true);
         }
     }, []);
 
     const saveConsent = (consentData: CookieConsent) => {
-        localStorage.setItem('cookieConsent', JSON.stringify(consentData));
-        // Save analytics consent flag for tracking library
-        localStorage.setItem('cookie_consent', consentData.analytics ? 'accepted' : 'rejected');
-        setShowBanner(false);
-        setShowSettings(false);
+        try {
+            console.log('[CookieBanner] Saving consent:', consentData);
+            localStorage.setItem('cookieConsent', JSON.stringify(consentData));
+            // Save analytics consent flag for tracking library
+            localStorage.setItem('cookie_consent', consentData.analytics ? 'accepted' : 'rejected');
+
+            setConsent(consentData);
+            setShowBanner(false);
+            setShowSettings(false);
+
+            // Reload the page or trigger a custom event if tracking needs to start immediately
+            if (consentData.analytics) {
+                window.dispatchEvent(new Event('cookieConsentUpdate'));
+            }
+        } catch (e) {
+            console.error('[CookieBanner] Error saving consent:', e);
+        }
     };
 
     const acceptAll = () => {

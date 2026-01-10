@@ -34,6 +34,21 @@ export default function LoginPage() {
         }
     };
 
+    const handleGithubLogin = async () => {
+        try {
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'github',
+                options: {
+                    redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+                },
+            });
+            if (error) setError(error.message);
+        } catch (err) {
+            setError('An unexpected error occurred with GitHub login');
+            console.error(err);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-6 relative overflow-hidden">
             {/* Architectural Background */}
@@ -134,7 +149,7 @@ export default function LoginPage() {
 
                         <button
                             type="button"
-                            onClick={() => { }} // Placeholder for now
+                            onClick={handleGithubLogin}
                             className="w-full py-4 bg-muted border border-border rounded-[24px] font-black text-sm uppercase tracking-widest hover:bg-card transition-all flex items-center justify-center gap-3 group"
                         >
                             <Github size={20} className="group-hover:rotate-[360deg] transition-transform duration-500" />

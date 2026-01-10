@@ -1,5 +1,3 @@
-import { createHash } from 'crypto';
-
 // GDPR-compliant analytics tracking
 // Only tracks if user has given consent via cookie banner
 
@@ -16,12 +14,6 @@ interface EventMetadata {
     ticker?: string;
     portfolioId?: string;
     [key: string]: any;
-}
-
-// One-way hash for anonymization
-function hashUserId(userId: string): string {
-    const salt = process.env.NEXT_PUBLIC_ANALYTICS_SALT || 'default-salt-change-me';
-    return createHash('sha256').update(userId + salt).digest('hex');
 }
 
 // Check if user has consented to analytics
@@ -49,9 +41,6 @@ export async function trackEvent(
     }
 
     try {
-        // Anonymize user ID
-        const sessionHash = userId ? hashUserId(userId) : 'anonymous';
-
         // Remove any PII from metadata
         const sanitizedMetadata = metadata ? {
             ...metadata,
@@ -66,7 +55,7 @@ export async function trackEvent(
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 eventType,
-                sessionHash,
+                userId, // We'll hash this on the server for security and compatibility
                 metadata: sanitizedMetadata,
                 timestamp: Date.now(),
             }),

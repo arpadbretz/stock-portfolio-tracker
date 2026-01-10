@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { TrendingUp, Mail, Lock, ShieldCheck, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { TrendingUp, Mail, Lock, ShieldCheck, ArrowRight, CheckCircle2, Github } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function RegisterPage() {
@@ -42,6 +42,21 @@ export default function RegisterPage() {
         } else {
             setSuccess(true);
             setLoading(false);
+        }
+    };
+
+    const handleGithubLogin = async () => {
+        try {
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'github',
+                options: {
+                    redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+                },
+            });
+            if (error) setError(error.message);
+        } catch (err) {
+            setError('An unexpected error occurred with GitHub login');
+            console.error(err);
         }
     };
 
@@ -171,6 +186,24 @@ export default function RegisterPage() {
                         )}
                     </AnimatePresence>
                 </div>
+
+                {!success && (
+                    <div className="mt-8 px-10 w-full">
+                        <div className="relative flex items-center justify-center mb-8">
+                            <div className="w-full border-t border-border/50"></div>
+                            <span className="absolute bg-card px-4 text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground/50">OAuth Sync</span>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={handleGithubLogin}
+                            className="w-full py-4 bg-muted border border-border rounded-[24px] font-black text-sm uppercase tracking-widest hover:bg-card transition-all flex items-center justify-center gap-3 group"
+                        >
+                            <Github size={20} className="group-hover:rotate-[360deg] transition-transform duration-500" />
+                            Continue with GitHub
+                        </button>
+                    </div>
+                )}
 
                 <div className="mt-10 text-center space-y-4">
                     <p className="text-muted-foreground text-xs font-medium">

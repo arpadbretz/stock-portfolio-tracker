@@ -53,6 +53,9 @@ export async function GET(
         const balanceAnnual = summary?.balanceSheetHistory?.balanceSheetStatements || [];
         const cashflowAnnual = summary?.cashflowStatementHistory?.cashflowStatements || [];
 
+        // USER REQUESTED DEBUG LOG
+        console.log(`[${ticker}] incomeStatementHistory structure:`, JSON.stringify(summary?.incomeStatementHistory, null, 2));
+
         console.log(`[${ticker}] Financial data available:`, {
             incomeStatements: incomeAnnual.length,
             balanceSheets: balanceAnnual.length,
@@ -63,42 +66,102 @@ export async function GET(
         // Get next earnings date from calendar
         const earningsDate = calendar?.earnings?.earningsDate?.[0] || earnings?.earningsDate?.[0] || null;
 
+        // Robust value extraction helper
+        const extractValue = (item: any, field: string): number | null => {
+            if (!item || item[field] === undefined || item[field] === null) return null;
+            const val = item[field];
+            if (typeof val === 'number') return val;
+            if (typeof val === 'object' && val.raw !== undefined) return val.raw;
+            if (typeof val === 'object' && val.value !== undefined) return val.value;
+            return null;
+        };
+
         // Simple processing - only include fields that actually have data
         const processIncomeStatement = (item: any) => {
             if (!item) return null;
-            const result: any = { endDate: item.endDate };
-            if (item.totalRevenue) result.totalRevenue = item.totalRevenue;
-            if (item.netIncome) result.netIncome = item.netIncome;
-            if (item.grossProfit && item.grossProfit !== 0) result.grossProfit = item.grossProfit;
-            if (item.operatingIncome && item.operatingIncome !== 0) result.operatingIncome = item.operatingIncome;
-            if (item.ebit && item.ebit !== 0) result.ebit = item.ebit;
+
+            // Format date if it's an object
+            let date = item.endDate;
+            if (typeof date === 'object' && date.raw) {
+                date = new Date(date.raw * 1000).toISOString();
+            }
+
+            const result: any = { endDate: date };
+
+            // Map common fields with fallbacks
+            const rev = extractValue(item, 'totalRevenue');
+            if (rev !== null) result.totalRevenue = rev;
+
+            const ni = extractValue(item, 'netIncome') || extractValue(item, 'netIncomeApplicableToCommonShares');
+            if (ni !== null) result.netIncome = ni;
+
+            const gp = extractValue(item, 'grossProfit');
+            if (gp !== null && gp !== 0) result.grossProfit = gp;
+
+            const oi = extractValue(item, 'operatingIncome');
+            if (oi !== null && oi !== 0) result.operatingIncome = oi;
+
+            const ebit = extractValue(item, 'ebit');
+            if (ebit !== null && ebit !== 0) result.ebit = ebit;
+
             return Object.keys(result).length > 1 ? result : null;
         };
 
         const processBalanceSheet = (item: any) => {
-            if (!item || !item.endDate) return null;
-            const result: any = { endDate: item.endDate };
-            if (item.totalAssets) result.totalAssets = item.totalAssets;
-            if (item.totalLiab || item.totalLiabilities) result.totalLiabilities = item.totalLiab || item.totalLiabilities;
-            if (item.totalStockholderEquity || item.totalShareholderEquity) {
-                result.totalStockholderEquity = item.totalStockholderEquity || item.totalShareholderEquity;
+            if (!item) return null;
+
+            let date = item.endDate;
+            if (typeof date === 'object' && date.raw) {
+                date = new Date(date.raw * 1000).toISOString();
             }
-            if (item.cash) result.cash = item.cash;
-            if (item.longTermDebt) result.longTermDebt = item.longTermDebt;
+
+            const result: any = { endDate: date };
+
+            const assets = extractValue(item, 'totalAssets');
+            if (assets !== null) result.totalAssets = assets;
+
+            const liabs = extractValue(item, 'totalLiab') || extractValue(item, 'totalLiabilities');
+            if (liabs !== null) result.totalLiabilities = liabs;
+
+            const equity = extractValue(item, 'totalStockholderEquity') || extractValue(item, 'totalShareholderEquity');
+            if (equity !== null) result.totalStockholderEquity = equity;
+
+            const cash = extractValue(item, 'cash') || extractValue(item, 'cashAndCashEquivalents');
+            if (cash !== null) result.cash = cash;
+
+            const debt = extractValue(item, 'longTermDebt') || extractValue(item, 'totalDebt');
+            if (debt !== null) result.longTermDebt = debt;
+
             return Object.keys(result).length > 1 ? result : null;
         };
 
         const processCashFlow = (item: any) => {
-            if (!item || !item.endDate) return null;
-            const result: any = { endDate: item.endDate };
-            if (item.netIncome) result.netIncome = item.netIncome;
-            if (item.totalCashFromOperatingActivities) result.operatingCashflow = item.totalCashFromOperatingActivities;
-            if (item.capitalExpenditures) result.capitalExpenditures = item.capitalExpenditures;
-            if (item.freeCashflow) result.freeCashflow = item.freeCashflow;
-            // Calculate FCF if we have components
-            if (result.operatingCashflow && item.capitalExpenditures) {
-                result.freeCashflow = result.operatingCashflow + item.capitalExpenditures;
+            if (!item) return null;
+
+            let date = item.endDate;
+            if (typeof date === 'object' && date.raw) {
+                date = new Date(date.raw * 1000).toISOString();
             }
+
+            const result: any = { endDate: date };
+
+            const ni = extractValue(item, 'netIncome');
+            if (ni !== null) result.netIncome = ni;
+
+            const ocf = extractValue(item, 'totalCashFromOperatingActivities') || extractValue(item, 'operatingCashflow');
+            if (ocf !== null) result.operatingCashflow = ocf;
+
+            const capex = extractValue(item, 'capitalExpenditures');
+            if (capex !== null) result.capitalExpenditures = capex;
+
+            const fcf = extractValue(item, 'freeCashflow');
+            if (fcf !== null) result.freeCashflow = fcf;
+
+            // Calculate FCF if missing but we have components
+            if (result.operatingCashflow !== undefined && capex !== null && result.freeCashflow === undefined) {
+                result.freeCashflow = result.operatingCashflow + capex; // capex is usually negative
+            }
+
             return Object.keys(result).length > 1 ? result : null;
         };
 
