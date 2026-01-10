@@ -97,6 +97,8 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
     const [chartLoading, setChartLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [activeFinancialTab, setActiveFinancialTab] = useState<'income' | 'balance' | 'cashflow'>('income');
+    const [fundamentals, setFundamentals] = useState<any>(null);
+    const [selectedFundamental, setSelectedFundamental] = useState('revenue');
 
     // Calculate range-specific gain/loss
     const rangeChange = chartData.length >= 2
@@ -145,6 +147,21 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
         };
         if (symbol) fetchChart();
     }, [symbol, selectedRange]);
+
+    useEffect(() => {
+        const fetchFundamentals = async () => {
+            try {
+                const res = await fetch(`/api/stock/${symbol}/fundamentals`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setFundamentals(data);
+                }
+            } catch (err) {
+                console.error('Fundamentals error:', err);
+            }
+        };
+        if (symbol) fetchFundamentals();
+    }, [symbol]);
 
     const formatLargeNumber = (num: number) => {
         if (num >= 1e12) return `$${(num / 1e12).toFixed(2)}T`;
@@ -245,8 +262,8 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
                                     key={range}
                                     onClick={() => setSelectedRange(range)}
                                     className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${selectedRange === range
-                                            ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
-                                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                                        ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+                                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
                                         }`}
                                 >
                                     {range}
@@ -331,6 +348,104 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
                     <StatCard label="52W High" value={`$${stock.fiftyTwoWeekHigh.toFixed(2)}`} icon={<TrendingUp size={18} />} color="emerald" />
                     <StatCard label="52W Low" value={`$${stock.fiftyTwoWeekLow.toFixed(2)}`} icon={<TrendingDown size={18} />} color="rose" />
                 </div>
+
+                {/* Fundamentals Charts */}
+                {fundamentals && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 }}
+                        className="bg-card border border-border rounded-[40px] p-8 mb-8"
+                    >
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-accent/10 rounded-2xl">
+                                    <Activity className="text-accent" size={20} />
+                                </div>
+                                <h3 className="text-xl font-black">Fundamentals Over Time</h3>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                {[
+                                    { key: 'revenue', label: 'Revenue' },
+                                    { key: 'netIncome', label: 'Net Income' },
+                                    { key: 'freeCashflow', label: 'Free Cash Flow' },
+                                    { key: 'grossProfit', label: 'Gross Profit' },
+                                    { key: 'totalAssets', label: 'Total Assets' },
+                                    { key: 'shareholderEquity', label: 'Equity' },
+                                ].map((metric) => (
+                                    <button
+                                        key={metric.key}
+                                        onClick={() => setSelectedFundamental(metric.key)}
+                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${selectedFundamental === metric.key
+                                                ? 'bg-primary text-primary-foreground'
+                                                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                                            }`}
+                                    >
+                                        {metric.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="h-[300px]">
+                            {fundamentals[selectedFundamental]?.length > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={fundamentals[selectedFundamental]}>
+                                        <defs>
+                                            <linearGradient id="colorFundamental" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                                                <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                                            </linearGradient>
+                                        </defs>
+                                        <XAxis
+                                            dataKey="year"
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tick={{ fill: '#64748b', fontSize: 12, fontWeight: 700 }}
+                                        />
+                                        <YAxis
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tick={{ fill: '#64748b', fontSize: 10 }}
+                                            tickFormatter={(val) => {
+                                                if (Math.abs(val) >= 1e12) return `$${(val / 1e12).toFixed(0)}T`;
+                                                if (Math.abs(val) >= 1e9) return `$${(val / 1e9).toFixed(0)}B`;
+                                                if (Math.abs(val) >= 1e6) return `$${(val / 1e6).toFixed(0)}M`;
+                                                return `$${val}`;
+                                            }}
+                                            width={80}
+                                        />
+                                        <Tooltip
+                                            content={({ active, payload }) => {
+                                                if (active && payload && payload.length) {
+                                                    const data = payload[0].payload;
+                                                    return (
+                                                        <div className="bg-card/95 backdrop-blur-xl border border-border p-4 rounded-2xl shadow-2xl">
+                                                            <p className="text-foreground font-black text-lg">{formatLargeNumber(data.value)}</p>
+                                                            <p className="text-muted-foreground text-xs font-bold">FY {data.year}</p>
+                                                        </div>
+                                                    );
+                                                }
+                                                return null;
+                                            }}
+                                        />
+                                        <Area
+                                            type="monotone"
+                                            dataKey="value"
+                                            stroke="#10b981"
+                                            strokeWidth={3}
+                                            fill="url(#colorFundamental)"
+                                        />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div className="h-full flex items-center justify-center text-muted-foreground">
+                                    No data available for this metric
+                                </div>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
 
                 {/* Detailed Sections */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -440,8 +555,8 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
                             <button
                                 onClick={() => setActiveFinancialTab('income')}
                                 className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeFinancialTab === 'income'
-                                        ? 'bg-primary text-primary-foreground'
-                                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
                                     }`}
                             >
                                 Income Statement
@@ -449,8 +564,8 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
                             <button
                                 onClick={() => setActiveFinancialTab('balance')}
                                 className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeFinancialTab === 'balance'
-                                        ? 'bg-primary text-primary-foreground'
-                                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
                                     }`}
                             >
                                 Balance Sheet
@@ -458,8 +573,8 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
                             <button
                                 onClick={() => setActiveFinancialTab('cashflow')}
                                 className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeFinancialTab === 'cashflow'
-                                        ? 'bg-primary text-primary-foreground'
-                                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
                                     }`}
                             >
                                 Cash Flow

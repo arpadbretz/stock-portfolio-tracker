@@ -28,10 +28,16 @@ export async function GET(
                     'earnings',
                     'calendarEvents',
                     'incomeStatementHistory',
+                    'incomeStatementHistoryQuarterly',
                     'balanceSheetHistory',
+                    'balanceSheetHistoryQuarterly',
                     'cashflowStatementHistory',
+                    'cashflowStatementHistoryQuarterly',
                 ]
-            }).catch(() => null)
+            }).catch((e: any) => {
+                console.warn('quoteSummary partial failure:', e.message);
+                return null;
+            })
         ]);
 
         if (!quote) {
@@ -44,12 +50,75 @@ export async function GET(
         const keyStats = summary?.defaultKeyStatistics || {};
         const earnings = summary?.earnings || {};
         const calendar = summary?.calendarEvents || {};
-        const incomeHistory = summary?.incomeStatementHistory?.incomeStatementHistory || [];
-        const balanceHistory = summary?.balanceSheetHistory?.balanceSheetStatements || [];
-        const cashflowHistory = summary?.cashflowStatementHistory?.cashflowStatements || [];
+
+        // Get annual statements
+        const incomeAnnual = summary?.incomeStatementHistory?.incomeStatementHistory || [];
+        const balanceAnnual = summary?.balanceSheetHistory?.balanceSheetStatements || [];
+        const cashflowAnnual = summary?.cashflowStatementHistory?.cashflowStatements || [];
 
         // Get next earnings date from calendar
         const earningsDate = calendar?.earnings?.earningsDate?.[0] || earnings?.earningsDate?.[0] || null;
+
+        // Process income statements with correct field names
+        const processIncomeStatement = (item: any) => {
+            if (!item) return null;
+            return {
+                endDate: item.endDate,
+                totalRevenue: extractValue(item.totalRevenue),
+                costOfRevenue: extractValue(item.costOfRevenue),
+                grossProfit: extractValue(item.grossProfit),
+                researchDevelopment: extractValue(item.researchDevelopment),
+                sellingGeneralAdministrative: extractValue(item.sellingGeneralAdministrative),
+                operatingExpenses: extractValue(item.totalOperatingExpenses),
+                operatingIncome: extractValue(item.operatingIncome),
+                interestExpense: extractValue(item.interestExpense),
+                incomeBeforeTax: extractValue(item.incomeBeforeTax),
+                incomeTaxExpense: extractValue(item.incomeTaxExpense),
+                netIncome: extractValue(item.netIncome),
+                ebit: extractValue(item.ebit),
+                ebitda: extractValue(item.ebitda),
+            };
+        };
+
+        // Process balance sheet with correct field names
+        const processBalanceSheet = (item: any) => {
+            if (!item) return null;
+            return {
+                endDate: item.endDate,
+                totalAssets: extractValue(item.totalAssets),
+                totalCurrentAssets: extractValue(item.totalCurrentAssets),
+                cash: extractValue(item.cash),
+                shortTermInvestments: extractValue(item.shortTermInvestments),
+                netReceivables: extractValue(item.netReceivables),
+                inventory: extractValue(item.inventory),
+                totalLiabilities: extractValue(item.totalLiab),
+                totalCurrentLiabilities: extractValue(item.totalCurrentLiabilities),
+                accountsPayable: extractValue(item.accountsPayable),
+                longTermDebt: extractValue(item.longTermDebt),
+                totalStockholderEquity: extractValue(item.totalStockholderEquity),
+                commonStock: extractValue(item.commonStock),
+                retainedEarnings: extractValue(item.retainedEarnings),
+            };
+        };
+
+        // Process cash flow with correct field names
+        const processCashFlow = (item: any) => {
+            if (!item) return null;
+            const opCashflow = extractValue(item.totalCashFromOperatingActivities);
+            const capex = extractValue(item.capitalExpenditures);
+            return {
+                endDate: item.endDate,
+                operatingCashflow: opCashflow,
+                capitalExpenditures: capex,
+                freeCashflow: opCashflow && capex ? opCashflow + capex : null,
+                depreciation: extractValue(item.depreciation),
+                changeInCash: extractValue(item.changeInCash),
+                dividendsPaid: extractValue(item.dividendsPaid),
+                netBorrowings: extractValue(item.netBorrowings),
+                stockRepurchased: extractValue(item.repurchaseOfStock),
+                issuanceOfStock: extractValue(item.issuanceOfStock),
+            };
+        };
 
         const stockData = {
             // Basic Info
@@ -71,6 +140,7 @@ export async function GET(
             volume: quote.regularMarketVolume || 0,
             avgVolume: quote.averageDailyVolume3Month || 0,
             marketCap: quote.marketCap || 0,
+            sharesOutstanding: keyStats.sharesOutstanding || quote.sharesOutstanding || null,
 
             // 52 Week Range
             fiftyTwoWeekHigh: quote.fiftyTwoWeekHigh || 0,
@@ -81,23 +151,37 @@ export async function GET(
             trailingPE: details.trailingPE || quote.trailingPE || null,
             forwardPE: details.forwardPE || quote.forwardPE || null,
             priceToBook: keyStats.priceToBook || null,
-            pegRatio: keyStats.pegRatio || details.pegRatio || null,
+            pegRatio: keyStats.pegRatio || details.pegRatio || financials.pegRatio || null,
+            priceToSales: keyStats.priceToSalesTrailing12Months || null,
+            enterpriseValue: keyStats.enterpriseValue || null,
+            evToRevenue: keyStats.enterpriseToRevenue || null,
+            evToEbitda: keyStats.enterpriseToEbitda || null,
 
             // Dividends
             dividendYield: details.dividendYield || null,
             dividendRate: details.dividendRate || null,
             exDividendDate: details.exDividendDate || null,
+            payoutRatio: details.payoutRatio || null,
 
             // Financials
             beta: keyStats.beta || details.beta || null,
             eps: quote.epsTrailingTwelveMonths || null,
+            forwardEps: keyStats.forwardEps || null,
             revenueGrowth: financials.revenueGrowth || null,
+            earningsGrowth: financials.earningsGrowth || null,
             profitMargin: financials.profitMargins || null,
+            grossMargin: financials.grossMargins || null,
             operatingMargin: financials.operatingMargins || null,
+            returnOnAssets: financials.returnOnAssets || null,
             returnOnEquity: financials.returnOnEquity || null,
             debtToEquity: financials.debtToEquity || null,
             currentRatio: financials.currentRatio || null,
+            quickRatio: financials.quickRatio || null,
             freeCashflow: financials.freeCashflow || null,
+            operatingCashflow: financials.operatingCashflow || null,
+            totalRevenue: financials.totalRevenue || null,
+            totalDebt: financials.totalDebt || null,
+            totalCash: financials.totalCash || null,
 
             // Company Profile
             sector: profile.sector || null,
@@ -105,48 +189,17 @@ export async function GET(
             employees: profile.fullTimeEmployees || null,
             website: profile.website || null,
             description: profile.longBusinessSummary || null,
+            country: profile.country || null,
+            city: profile.city || null,
 
             // Earnings
             earningsDate: earningsDate,
             earningsQuarterlyGrowth: keyStats.earningsQuarterlyGrowth || null,
 
-            // Financial Statements
-            incomeStatement: incomeHistory.map((item: any) => ({
-                endDate: item.endDate,
-                totalRevenue: item.totalRevenue,
-                costOfRevenue: item.costOfRevenue,
-                grossProfit: item.grossProfit,
-                operatingExpenses: item.totalOperatingExpenses,
-                operatingIncome: item.operatingIncome,
-                netIncome: item.netIncome,
-                ebit: item.ebit,
-                interestExpense: item.interestExpense,
-            })),
-
-            balanceSheet: balanceHistory.map((item: any) => ({
-                endDate: item.endDate,
-                totalAssets: item.totalAssets,
-                totalLiabilities: item.totalLiab,
-                totalStockholderEquity: item.totalStockholderEquity,
-                cash: item.cash,
-                shortTermInvestments: item.shortTermInvestments,
-                totalCurrentAssets: item.totalCurrentAssets,
-                totalCurrentLiabilities: item.totalCurrentLiabilities,
-                longTermDebt: item.longTermDebt,
-                retainedEarnings: item.retainedEarnings,
-            })),
-
-            cashFlow: cashflowHistory.map((item: any) => ({
-                endDate: item.endDate,
-                operatingCashflow: item.totalCashFromOperatingActivities,
-                capitalExpenditures: item.capitalExpenditures,
-                freeCashflow: item.totalCashFromOperatingActivities && item.capitalExpenditures
-                    ? item.totalCashFromOperatingActivities + item.capitalExpenditures
-                    : null,
-                dividendsPaid: item.dividendsPaid,
-                netBorrowings: item.netBorrowings,
-                stockRepurchased: item.repurchaseOfStock,
-            })),
+            // Financial Statements (Annual)
+            incomeStatement: incomeAnnual.map(processIncomeStatement).filter(Boolean),
+            balanceSheet: balanceAnnual.map(processBalanceSheet).filter(Boolean),
+            cashFlow: cashflowAnnual.map(processCashFlow).filter(Boolean),
 
             lastUpdated: new Date().toISOString(),
         };
@@ -156,4 +209,13 @@ export async function GET(
         console.error(`Error fetching stock data for ${symbol}:`, error);
         return NextResponse.json({ error: 'Failed to fetch stock data' }, { status: 500 });
     }
+}
+
+// Helper to extract numeric values from Yahoo Finance's nested structure
+function extractValue(field: any): number | null {
+    if (field === null || field === undefined) return null;
+    if (typeof field === 'number') return field;
+    if (typeof field === 'object' && field.raw !== undefined) return field.raw;
+    if (typeof field === 'object' && field.value !== undefined) return field.value;
+    return null;
 }
