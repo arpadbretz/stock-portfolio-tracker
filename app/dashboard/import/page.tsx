@@ -216,9 +216,9 @@ export default function ImportPage() {
 
                             <button
                                 onClick={downloadTemplate}
-                                className="w-full mt-8 flex items-center justify-center gap-2 px-4 py-3 bg-muted border border-border rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-card hover:border-primary/30 transition-all group"
+                                className="w-full mt-8 flex items-center justify-center gap-2 px-4 py-4 bg-primary/5 border border-primary/20 rounded-[24px] text-xs font-black uppercase tracking-widest text-primary hover:bg-primary/10 transition-all group shadow-sm"
                             >
-                                <Download size={16} className="text-primary group-hover:scale-110 transition-transform" />
+                                <Download size={16} className="group-hover:scale-110 transition-transform" />
                                 Get Template
                             </button>
                         </div>

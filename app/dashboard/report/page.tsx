@@ -19,16 +19,16 @@ import {
     Target,
     ArrowLeft,
     ChevronRight,
-    PieChart as PieChartIcon,
-    BarChart3,
     Dna,
     Database,
-    Briefcase
+    Briefcase,
+    HelpCircle,
+    BarChart3
 } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ReportPage() {
     const [portfolio, setPortfolio] = useState<{
@@ -111,6 +111,29 @@ export default function ReportPage() {
     }, {} as Record<string, number>);
 
     const dominantSector = Object.entries(sectorWeights).sort((a, b) => b[1] - a[1])[0] || ['None', 0];
+
+    const Tooltip = ({ title, content }: { title: string, content: string }) => {
+        const [isVisible, setIsVisible] = useState(false);
+        return (
+            <div className="relative inline-block ml-2 cursor-help" onMouseEnter={() => setIsVisible(true)} onMouseLeave={() => setIsVisible(false)}>
+                <HelpCircle size={14} className="text-muted-foreground/60 hover:text-primary transition-colors" />
+                <AnimatePresence>
+                    {isVisible && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                            className="absolute z-[100] bottom-full left-1/2 -translate-x-1/2 mb-3 w-64 p-4 bg-card/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl pointer-events-none"
+                        >
+                            <span className="text-[10px] font-black uppercase tracking-widest text-primary block mb-2">{title}</span>
+                            <p className="text-[11px] font-medium leading-relaxed text-foreground/80">{content}</p>
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-card/90"></div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+        );
+    };
 
     return (
         <div className="min-h-screen bg-background text-foreground pb-20">
@@ -195,39 +218,39 @@ export default function ReportPage() {
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div className="p-6 bg-card border border-border/40 rounded-3xl flex flex-col justify-between">
-                                            <div className="p-2 bg-muted rounded-xl w-fit mb-4">
-                                                <Activity className="text-muted-foreground" size={16} />
+                                        <div className="p-6 bg-card border border-border/40 rounded-3xl flex flex-col justify-between group/card hover:border-primary/30 transition-colors">
+                                            <div className="p-3 bg-primary/10 border border-primary/20 rounded-xl w-fit mb-4 shadow-lg shadow-primary/5 group-hover/card:bg-primary/20 transition-colors">
+                                                <Activity className="text-primary" size={18} />
                                             </div>
                                             <div>
                                                 <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Fee Efficiency</h4>
                                                 <p className="text-xl font-black">{feeEfficiency.toFixed(3)}%</p>
                                             </div>
                                         </div>
-                                        <div className="p-6 bg-card border border-border/40 rounded-3xl flex flex-col justify-between">
-                                            <div className="p-2 bg-muted rounded-xl w-fit mb-4">
-                                                <Zap className="text-primary" size={16} />
+                                        <div className="p-6 bg-card border border-border/40 rounded-3xl flex flex-col justify-between group/card hover:border-emerald-500/30 transition-colors">
+                                            <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl w-fit mb-4 shadow-lg shadow-emerald-500/5 group-hover/card:bg-emerald-500/20 transition-colors">
+                                                <Zap className="text-emerald-500" size={18} />
                                             </div>
                                             <div>
-                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Growth Engine</h4>
+                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1 text-emerald-500/80">Growth Engine</h4>
                                                 <p className="text-xl font-black">{topPerformers[0]?.ticker || 'N/A'}</p>
                                             </div>
                                         </div>
-                                        <div className="p-6 bg-card border border-border/40 rounded-3xl flex flex-col justify-between">
-                                            <div className="p-2 bg-muted rounded-xl w-fit mb-4">
-                                                <Shield className="text-accent" size={16} />
+                                        <div className="p-6 bg-card border border-border/40 rounded-3xl flex flex-col justify-between group/card hover:border-accent/30 transition-colors">
+                                            <div className="p-3 bg-accent/10 border border-accent/20 rounded-xl w-fit mb-4 shadow-lg shadow-accent/5 group-hover/card:bg-accent/20 transition-colors">
+                                                <Shield className="text-accent" size={18} />
                                             </div>
                                             <div>
-                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Top Exposure</h4>
+                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1 text-accent/80">Top Exposure</h4>
                                                 <p className="text-xl font-black">{top1Weight.toFixed(1)}%</p>
                                             </div>
                                         </div>
-                                        <div className="p-6 bg-card border border-border/40 rounded-3xl flex flex-col justify-between">
-                                            <div className="p-2 bg-muted rounded-xl w-fit mb-4">
-                                                <Target className="text-muted-foreground" size={16} />
+                                        <div className="p-6 bg-card border border-border/40 rounded-3xl flex flex-col justify-between group/card hover:border-primary/30 transition-colors">
+                                            <div className="p-3 bg-primary/10 border border-primary/20 rounded-xl w-fit mb-4 shadow-lg shadow-primary/5 group-hover/card:bg-primary/20 transition-colors">
+                                                <Target className="text-primary" size={18} />
                                             </div>
                                             <div>
-                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Health Score</h4>
+                                                <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1 font-bold">Health Score</h4>
                                                 <p className="text-xl font-black">AA+</p>
                                             </div>
                                         </div>
@@ -316,54 +339,53 @@ export default function ReportPage() {
                                     Risk Terminal
                                 </h3>
 
-                                <div className="space-y-10">
-                                    <div className="space-y-6">
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Concentration Profile</span>
-                                        <div className="flex items-end justify-between gap-2 h-32">
-                                            <div className="flex flex-col items-center gap-3 w-full">
-                                                <motion.div
-                                                    initial={{ height: 0 }}
-                                                    animate={{ height: `${top1Weight}%` }}
-                                                    className="w-full bg-accent rounded-t-xl"
-                                                />
-                                                <span className="text-[8px] font-black">Top 1</span>
+                                <div className="space-y-6">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Concentration Architecture</span>
+                                    <div className="flex items-end justify-between gap-6 h-40 px-2 mt-4">
+                                        {sortedHoldings.slice(0, 3).map((h, i) => (
+                                            <div key={h.ticker} className="flex flex-col items-center gap-4 w-full h-full">
+                                                <div className="flex-1 w-full bg-muted/20 rounded-2xl overflow-hidden relative flex flex-col justify-end">
+                                                    <motion.div
+                                                        initial={{ height: 0 }}
+                                                        animate={{ height: `${h.allocation}%` }}
+                                                        className={`w-full rounded-t-xl shadow-[0_-5px_15px_rgba(0,0,0,0.1)] ${i === 0 ? 'bg-primary' : i === 1 ? 'bg-accent' : 'bg-emerald-500'}`}
+                                                    />
+                                                </div>
+                                                <div className="text-center">
+                                                    <span className="text-[10px] font-black block text-foreground tracking-tighter">{h.ticker}</span>
+                                                    <span className="text-[8px] font-black text-muted-foreground uppercase">{h.allocation.toFixed(1)}%</span>
+                                                </div>
                                             </div>
-                                            <div className="flex flex-col items-center gap-3 w-full">
-                                                <motion.div
-                                                    initial={{ height: 0 }}
-                                                    animate={{ height: `${top3Weight}%` }}
-                                                    className="w-full bg-accent/60 rounded-t-xl"
-                                                />
-                                                <span className="text-[8px] font-black">Top 3</span>
-                                            </div>
-                                            <div className="flex flex-col items-center gap-3 w-full">
-                                                <motion.div
-                                                    initial={{ height: 0 }}
-                                                    animate={{ height: `${top5Weight}%` }}
-                                                    className="w-full bg-accent/30 rounded-t-xl"
-                                                />
-                                                <span className="text-[8px] font-black">Top 5</span>
-                                            </div>
-                                        </div>
-                                        <div className="p-4 bg-muted/30 rounded-2xl border border-border/40 text-[10px] font-medium leading-relaxed">
-                                            <p>
-                                                <AlertTriangle size={12} className="inline mr-2 text-amber-500" />
-                                                Portfolio shows <span className="font-black text-foreground">{top1Weight > 20 ? 'Aggressive' : 'Balanced'}</span> concentration in primary assets.
-                                            </p>
-                                        </div>
+                                        ))}
+                                    </div>
+                                    <div className="p-5 bg-card border border-border/40 rounded-[32px] text-[10px] font-medium leading-relaxed shadow-sm">
+                                        <p className="flex items-start gap-3">
+                                            <AlertTriangle size={14} className="shrink-0 text-amber-500" />
+                                            <span>Portfolio utilizes an <span className="font-black text-foreground underline decoration-primary/30 decoration-2 underline-offset-2">{top3Weight > 50 ? 'Aggressive' : 'Optimized'}</span> architecture with <span className="font-black text-foreground">{top3Weight.toFixed(1)}%</span> capital deployment in primary assets.</span>
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-8 pt-4">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">System Stability Audit</span>
+                                        <Tooltip title="System Stability" content="An algorithmic oversight of your total portfolio's structural health, diversification balance, and cash-flow resonance." />
                                     </div>
 
-                                    <div className="space-y-6">
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">System Stability</span>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-1">
+                                    <div className="grid grid-cols-2 gap-8">
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-2">
                                                 <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Liquidity</span>
-                                                <p className="text-sm font-black">ULTRA-HIGH</p>
+                                                <Tooltip title="Liquidity" content="The efficiency with which assets can be converted into currency without major valuation slippage. Ultra-high represents large-cap asset dominance." />
                                             </div>
-                                            <div className="space-y-1">
+                                            <p className="text-sm font-black text-primary tracking-tight">ULTRA-HIGH</p>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-2">
                                                 <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Volatility</span>
-                                                <p className="text-sm font-black">MODERATE</p>
+                                                <Tooltip title="Volatility Cluster" content="The historical frequency and intensity of price fluctuations in your current asset cluster." />
                                             </div>
+                                            <p className="text-sm font-black text-accent tracking-tight">MODERATE</p>
                                         </div>
                                     </div>
                                 </div>

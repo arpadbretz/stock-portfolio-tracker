@@ -407,11 +407,17 @@ export default function ManagePortfolios() {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button onClick={() => openShareModal(portfolio)} className="p-2.5 rounded-xl bg-muted border border-border text-muted-foreground hover:text-primary transition-all shadow-sm">
+                                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); openShareModal(portfolio); }}
+                                        className="p-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-all shadow-sm"
+                                    >
                                         <Share2 size={16} />
                                     </button>
-                                    <button onClick={() => startEditing(portfolio)} className="p-2.5 rounded-xl bg-muted border border-border text-muted-foreground hover:text-emerald-500 transition-all shadow-sm">
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); startEditing(portfolio); }}
+                                        className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 hover:bg-emerald-500/20 transition-all shadow-sm"
+                                    >
                                         <Edit2 size={16} />
                                     </button>
                                 </div>
@@ -423,19 +429,19 @@ export default function ManagePortfolios() {
 
                             <div className="flex items-center justify-between pt-6 border-t border-border/50">
                                 <div className="flex flex-col">
-                                    <span className="text-[9px] text-muted-foreground font-black uppercase tracking-[0.2em] mb-1">Status</span>
+                                    <span className="text-[9px] text-muted-foreground font-black uppercase tracking-[0.2em] mb-1 text-primary">Status</span>
                                     <span className="text-xs font-bold text-foreground capitalize">Operational</span>
                                 </div>
                                 {portfolio.id !== defaultPortfolioId ? (
                                     <button
-                                        onClick={() => handleSetDefault(portfolio.id)}
+                                        onClick={(e) => { e.stopPropagation(); handleSetDefault(portfolio.id); }}
                                         className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary flex items-center gap-2 transition-colors"
                                     >
                                         <Star size={14} />
                                         Make Default
                                     </button>
                                 ) : (
-                                    <div className="text-primary">
+                                    <div className="text-primary p-2 bg-primary/10 rounded-xl">
                                         <LayoutGrid size={20} />
                                     </div>
                                 )}
@@ -444,10 +450,10 @@ export default function ManagePortfolios() {
                             {/* Delete overlay for safety */}
                             {portfolios.length > 1 && (
                                 <button
-                                    onClick={() => handleDelete(portfolio.id, portfolio.name)}
-                                    className="absolute -top-2 -right-2 p-2 bg-rose-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all hover:scale-110 shadow-lg shadow-rose-500/30"
+                                    onClick={(e) => { e.stopPropagation(); handleDelete(portfolio.id, portfolio.name); }}
+                                    className="absolute -top-3 -right-3 p-3 bg-rose-500 text-white rounded-2xl opacity-0 group-hover:opacity-100 transition-all hover:scale-110 shadow-xl shadow-rose-500/30"
                                 >
-                                    <Trash2 size={14} />
+                                    <Trash2 size={16} />
                                 </button>
                             )}
                         </motion.div>

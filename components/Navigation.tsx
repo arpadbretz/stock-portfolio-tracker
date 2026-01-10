@@ -53,7 +53,7 @@ export default function Navigation() {
                     <ThemeToggle />
                     <button
                         onClick={() => setIsOpen(!isOpen)}
-                        className="p-2.5 bg-muted rounded-xl text-foreground"
+                        className="p-2.5 bg-primary/10 border border-primary/20 rounded-xl text-primary"
                     >
                         {isOpen ? <X size={24} /> : <Menu size={24} />}
                     </button>
@@ -78,7 +78,7 @@ export default function Navigation() {
                                     href={link.href}
                                     className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl text-sm font-black tracking-tight transition-all relative overflow-hidden ${pathname === link.href
                                         ? 'bg-primary text-primary-foreground shadow-xl shadow-primary/20'
-                                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                        : 'text-muted-foreground hover:bg-primary/10 hover:text-primary'
                                         } ${link.status === 'soon' ? 'opacity-40 cursor-not-allowed group-hover:opacity-60 transition-opacity' : ''}`}
                                 >
                                     <div className={`transition-transform duration-300 ${pathname === link.href ? '' : 'group-hover:scale-110'}`}>
