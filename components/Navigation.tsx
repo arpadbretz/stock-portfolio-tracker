@@ -15,6 +15,7 @@ import {
     Briefcase,
     Search,
     Bell,
+    Calculator,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -26,7 +27,7 @@ const links = [
     { name: 'Stock Research', href: '/dashboard/stocks', icon: <Search size={20} />, status: 'active' },
     { name: 'Watchlist', href: '/dashboard/watchlist', icon: <LineChart size={20} />, status: 'active' },
     { name: 'Price Alerts', href: '/dashboard/alerts', icon: <Bell size={20} />, status: 'active' },
-    { name: 'DCF Calculator', href: '#', icon: <Database size={20} />, status: 'soon' },
+    { name: 'DCF Calculator', href: '/dashboard/dcf', icon: <Calculator size={20} />, status: 'active' },
     { name: 'Portfolios', href: '/dashboard/portfolios/manage', icon: <Briefcase size={20} />, status: 'active' },
     { name: 'Import Data', href: '/dashboard/import', icon: <Upload size={20} />, status: 'active' },
     { name: 'Account', href: '/dashboard/account', icon: <Settings size={20} />, status: 'active' },
@@ -35,11 +36,49 @@ const links = [
 export default function Navigation() {
     const pathname = usePathname();
     const [isOpen, setIsOpen] = useState(false);
+    const [triggeredAlerts, setTriggeredAlerts] = useState<any[]>([]);
+    const [showNotifications, setShowNotifications] = useState(false);
     const { user } = useAuth();
 
     useEffect(() => {
         setIsOpen(false);
     }, [pathname]);
+
+    // Fetch triggered alerts for notification bell
+    useEffect(() => {
+        const fetchTriggeredAlerts = async () => {
+            try {
+                const res = await fetch('/api/alerts');
+                const data = await res.json();
+                if (data.success) {
+                    // Check which alerts are triggered based on current price
+                    const alertsWithPrices = await Promise.all(
+                        data.data.map(async (alert: any) => {
+                            try {
+                                const priceRes = await fetch(`/api/stock/${alert.symbol}`);
+                                const priceData = await priceRes.json();
+                                const currentPrice = priceData.price;
+                                const isTriggered = alert.condition === 'above'
+                                    ? currentPrice >= alert.target_price
+                                    : currentPrice <= alert.target_price;
+                                return { ...alert, currentPrice, isTriggered };
+                            } catch {
+                                return { ...alert, isTriggered: false };
+                            }
+                        })
+                    );
+                    setTriggeredAlerts(alertsWithPrices.filter((a: any) => a.isTriggered));
+                }
+            } catch (err) {
+                console.error('Failed to fetch alerts:', err);
+            }
+        };
+        if (user) {
+            fetchTriggeredAlerts();
+            const interval = setInterval(fetchTriggeredAlerts, 60000); // Check every minute
+            return () => clearInterval(interval);
+        }
+    }, [user]);
 
     if (!user) return null;
 
@@ -105,6 +144,71 @@ export default function Navigation() {
                 </div>
 
                 <div className="mt-auto p-8 border-t border-border/40 space-y-6 bg-muted/20">
+                    {/* Notification Bell */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowNotifications(!showNotifications)}
+                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-card border border-border hover:bg-muted transition-all"
+                        >
+                            <div className="relative">
+                                <Bell size={18} className={triggeredAlerts.length > 0 ? 'text-orange-500' : 'text-muted-foreground'} />
+                                {triggeredAlerts.length > 0 && (
+                                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 rounded-full text-[10px] font-black text-white flex items-center justify-center">
+                                        {triggeredAlerts.length}
+                                    </span>
+                                )}
+                            </div>
+                            <span className="text-sm font-bold">Notifications</span>
+                            {triggeredAlerts.length > 0 && (
+                                <span className="ml-auto text-xs font-bold text-orange-500">{triggeredAlerts.length} alerts</span>
+                            )}
+                        </button>
+
+                        <AnimatePresence>
+                            {showNotifications && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    className="absolute bottom-full left-0 right-0 mb-2 bg-card border border-border rounded-2xl shadow-2xl overflow-hidden max-h-64 overflow-y-auto"
+                                >
+                                    {triggeredAlerts.length === 0 ? (
+                                        <div className="p-4 text-center text-sm text-muted-foreground">
+                                            No triggered alerts
+                                        </div>
+                                    ) : (
+                                        <div className="divide-y divide-border">
+                                            {triggeredAlerts.map((alert) => (
+                                                <Link
+                                                    key={alert.id}
+                                                    href={`/dashboard/ticker/${alert.symbol}`}
+                                                    onClick={() => setShowNotifications(false)}
+                                                    className="block p-4 hover:bg-muted transition-colors"
+                                                >
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="font-black">{alert.symbol}</span>
+                                                        <span className="text-xs font-bold text-orange-500">TRIGGERED</span>
+                                                    </div>
+                                                    <div className="text-xs text-muted-foreground mt-1">
+                                                        {alert.condition === 'above' ? '↑' : '↓'} ${alert.target_price.toFixed(2)}
+                                                        <span className="ml-2">Now: ${alert.currentPrice?.toFixed(2)}</span>
+                                                    </div>
+                                                </Link>
+                                            ))}
+                                            <Link
+                                                href="/dashboard/alerts"
+                                                onClick={() => setShowNotifications(false)}
+                                                className="block p-3 text-center text-xs font-bold text-primary hover:bg-primary/10"
+                                            >
+                                                View All Alerts →
+                                            </Link>
+                                        </div>
+                                    )}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+
                     <div className="flex items-center justify-between">
                         <UserButton />
                         <ThemeToggle />

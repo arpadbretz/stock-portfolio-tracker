@@ -415,6 +415,15 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
                                 <Bell size={16} />
                                 Set Price Alert
                             </Link>
+
+                            {/* DCF Calculator Button */}
+                            <Link
+                                href={`/dashboard/dcf?symbol=${symbol}`}
+                                className="mt-2 flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm bg-indigo-500/10 text-indigo-500 border border-indigo-500/30 hover:bg-indigo-500/20 transition-all"
+                            >
+                                <Target size={16} />
+                                Calculate DCF
+                            </Link>
                         </div>
                     </div>
                 </div>
