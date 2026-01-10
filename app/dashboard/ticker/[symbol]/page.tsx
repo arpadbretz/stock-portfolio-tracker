@@ -31,6 +31,9 @@ import {
     Briefcase,
     FileCheck,
     TrendingDownIcon,
+    Star,
+    Check,
+    Loader2,
 } from 'lucide-react';
 import {
     LineChart,
@@ -116,11 +119,54 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
     const [institutions, setInstitutions] = useState<any>(null);
     const [news, setNews] = useState<any>(null);
     const [filings, setFilings] = useState<any>(null);
+    const [isInWatchlist, setIsInWatchlist] = useState(false);
+    const [watchlistLoading, setWatchlistLoading] = useState(false);
 
     // Track ticker view
     useEffect(() => {
         trackTickerView(symbol, user?.id || null);
     }, [symbol, user]);
+
+    // Check if in watchlist
+    useEffect(() => {
+        const checkWatchlist = async () => {
+            try {
+                const res = await fetch('/api/watchlist');
+                const data = await res.json();
+                if (data.success) {
+                    setIsInWatchlist(data.data.some((item: any) => item.symbol === symbol));
+                }
+            } catch (err) {
+                console.error('Watchlist check error:', err);
+            }
+        };
+        if (user) checkWatchlist();
+    }, [symbol, user]);
+
+    const handleWatchlistToggle = async () => {
+        setWatchlistLoading(true);
+        try {
+            if (isInWatchlist) {
+                await fetch(`/api/watchlist?symbol=${symbol}`, { method: 'DELETE' });
+                setIsInWatchlist(false);
+            } else {
+                await fetch('/api/watchlist', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        symbol,
+                        name: stock?.name,
+                        added_price: stock?.price,
+                    }),
+                });
+                setIsInWatchlist(true);
+            }
+        } catch (err) {
+            console.error('Watchlist toggle error:', err);
+        } finally {
+            setWatchlistLoading(false);
+        }
+    };
 
     // Calculate range-specific gain/loss
     const rangeChange = chartData.length >= 2
@@ -341,6 +387,24 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
                                     {selectedRange}
                                 </span>
                             </div>
+
+                            {/* Add to Watchlist Button */}
+                            <button
+                                onClick={handleWatchlistToggle}
+                                disabled={watchlistLoading}
+                                className={`mt-4 flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${isInWatchlist
+                                    ? 'bg-primary/10 text-primary border border-primary/30'
+                                    : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border'
+                                    }`}
+                            >
+                                {watchlistLoading ? (
+                                    <Loader2 size={16} className="animate-spin" />
+                                ) : isInWatchlist ? (
+                                    <><Check size={16} /> In Watchlist</>
+                                ) : (
+                                    <><Star size={16} /> Add to Watchlist</>
+                                )}
+                            </button>
                         </div>
                     </div>
                 </div>
