@@ -99,6 +99,7 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
     const [activeFinancialTab, setActiveFinancialTab] = useState<'income' | 'balance' | 'cashflow'>('income');
     const [fundamentals, setFundamentals] = useState<any>(null);
     const [selectedFundamental, setSelectedFundamental] = useState('revenue');
+    const [analysts, setAnalysts] = useState<any>(null);
 
     // Calculate range-specific gain/loss
     const rangeChange = chartData.length >= 2
@@ -161,6 +162,21 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
             }
         };
         if (symbol) fetchFundamentals();
+    }, [symbol]);
+
+    useEffect(() => {
+        const fetchAnalysts = async () => {
+            try {
+                const res = await fetch(`/api/stock/${symbol}/analysts`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setAnalysts(data);
+                }
+            } catch (err) {
+                console.error('Analysts error:', err);
+            }
+        };
+        if (symbol) fetchAnalysts();
     }, [symbol]);
 
     const formatLargeNumber = (num: number) => {
@@ -349,6 +365,72 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
                     <StatCard label="52W Low" value={`$${stock.fiftyTwoWeekLow.toFixed(2)}`} icon={<TrendingDown size={18} />} color="rose" />
                 </div>
 
+                {/* Analyst Ratings */}
+                {analysts && analysts.totalAnalysts > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.05 }}
+                        className="bg-card border border-border rounded-[40px] p-8 mb-8"
+                    >
+                        <div className="flex items-center gap-4 mb-8">
+                            <div className="p-3 bg-amber-500/10 rounded-2xl">
+                                <Target className="text-amber-500" size={20} />
+                            </div>
+                            <h3 className="text-xl font-black">Analyst Ratings</h3>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            {/* Recommendation */}
+                            <div className="text-center">
+                                <div className={`text-4xl font-black mb-2 ${analysts.recommendation === 'Strong Buy' || analysts.recommendation === 'Buy'
+                                    ? 'text-emerald-500'
+                                    : analysts.recommendation === 'Hold'
+                                        ? 'text-amber-500'
+                                        : 'text-rose-500'
+                                    }`}>
+                                    {analysts.recommendation}
+                                </div>
+                                <p className="text-sm text-muted-foreground">
+                                    Based on {analysts.totalAnalysts} analyst{analysts.totalAnalysts !== 1 ? 's' : ''}
+                                </p>
+                            </div>
+
+                            {/* Rating Breakdown */}
+                            <div className="space-y-3">
+                                <RatingBar label="Strong Buy" count={analysts.breakdown?.strongBuy || 0} total={analysts.totalAnalysts} color="emerald" />
+                                <RatingBar label="Buy" count={analysts.breakdown?.buy || 0} total={analysts.totalAnalysts} color="green" />
+                                <RatingBar label="Hold" count={analysts.breakdown?.hold || 0} total={analysts.totalAnalysts} color="amber" />
+                                <RatingBar label="Sell" count={analysts.breakdown?.sell || 0} total={analysts.totalAnalysts} color="orange" />
+                                <RatingBar label="Strong Sell" count={analysts.breakdown?.strongSell || 0} total={analysts.totalAnalysts} color="rose" />
+                            </div>
+
+                            {/* Price Target */}
+                            {analysts.priceTarget?.mean && (
+                                <div className="text-center">
+                                    <div className="text-3xl font-black mb-1">${analysts.priceTarget.mean.toFixed(2)}</div>
+                                    <p className="text-sm text-muted-foreground mb-4">Average Price Target</p>
+                                    <div className="flex justify-center gap-4 text-sm">
+                                        <div>
+                                            <span className="text-muted-foreground">Low: </span>
+                                            <span className="font-bold">${analysts.priceTarget.low?.toFixed(2)}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-muted-foreground">High: </span>
+                                            <span className="font-bold">${analysts.priceTarget.high?.toFixed(2)}</span>
+                                        </div>
+                                    </div>
+                                    {analysts.priceTarget.upside !== null && (
+                                        <div className={`mt-4 text-lg font-black ${analysts.priceTarget.upside >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                            {analysts.priceTarget.upside >= 0 ? '+' : ''}{analysts.priceTarget.upside.toFixed(1)}% Upside
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+
                 {/* Fundamentals Charts */}
                 {fundamentals && (
                     <motion.div
@@ -377,8 +459,8 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
                                         key={metric.key}
                                         onClick={() => setSelectedFundamental(metric.key)}
                                         className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${selectedFundamental === metric.key
-                                                ? 'bg-primary text-primary-foreground'
-                                                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                                            ? 'bg-primary text-primary-foreground'
+                                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
                                             }`}
                                     >
                                         {metric.label}
@@ -744,5 +826,29 @@ function FinancialTable({ data }: { data: any[] }) {
                 ))}
             </tbody>
         </table>
+    );
+}
+
+function RatingBar({ label, count, total, color }: { label: string; count: number; total: number; color: string }) {
+    const percentage = total > 0 ? (count / total) * 100 : 0;
+    const colorClasses: Record<string, string> = {
+        emerald: 'bg-emerald-500',
+        green: 'bg-green-500',
+        amber: 'bg-amber-500',
+        orange: 'bg-orange-500',
+        rose: 'bg-rose-500',
+    };
+
+    return (
+        <div className="flex items-center gap-3">
+            <span className="text-[10px] font-bold w-20 text-muted-foreground">{label}</span>
+            <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                <div
+                    className={`h-full ${colorClasses[color]} transition-all duration-500`}
+                    style={{ width: `${percentage}%` }}
+                />
+            </div>
+            <span className="text-xs font-black w-6 text-right">{count}</span>
+        </div>
     );
 }

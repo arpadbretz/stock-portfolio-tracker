@@ -30,77 +30,174 @@ export async function GET(
             return NextResponse.json({ error: 'No fundamentals data' }, { status: 404 });
         }
 
+        // Helper to safely extract value
+        const extractValue = (field: any): number | null => {
+            if (field === null || field === undefined) return null;
+            if (typeof field === 'number') return field;
+            if (typeof field === 'object') {
+                if ('raw' in field) return field.raw;
+                if ('value' in field) return field.value;
+            }
+            return null;
+        };
+
         const incomeAnnual = summary?.incomeStatementHistory?.incomeStatementHistory || [];
         const balanceAnnual = summary?.balanceSheetHistory?.balanceSheetStatements || [];
         const cashflowAnnual = summary?.cashflowStatementHistory?.cashflowStatements || [];
         const earningsHistory = summary?.earningsHistory?.history || [];
 
         // Build time series data for charts
-        const revenueData = incomeAnnual.map((item: any) => ({
-            date: item.endDate,
-            year: new Date(item.endDate).getFullYear(),
-            value: extractValue(item.totalRevenue),
-        })).filter((d: any) => d.value !== null).reverse();
+        const revenueData = incomeAnnual.map((item: any) => {
+            const val = extractValue(item.totalRevenue);
+            let endDate = item.endDate;
+            if (typeof endDate === 'object' && endDate?.raw) {
+                endDate = new Date(endDate.raw * 1000);
+            } else if (typeof endDate === 'string') {
+                endDate = new Date(endDate);
+            }
+            return {
+                date: endDate,
+                year: endDate instanceof Date ? endDate.getFullYear() : null,
+                value: val,
+            };
+        }).filter((d: any) => d.value !== null && d.year).reverse();
 
-        const netIncomeData = incomeAnnual.map((item: any) => ({
-            date: item.endDate,
-            year: new Date(item.endDate).getFullYear(),
-            value: extractValue(item.netIncome),
-        })).filter((d: any) => d.value !== null).reverse();
+        const netIncomeData = incomeAnnual.map((item: any) => {
+            const val = extractValue(item.netIncome);
+            let endDate = item.endDate;
+            if (typeof endDate === 'object' && endDate?.raw) {
+                endDate = new Date(endDate.raw * 1000);
+            } else if (typeof endDate === 'string') {
+                endDate = new Date(endDate);
+            }
+            return {
+                date: endDate,
+                year: endDate instanceof Date ? endDate.getFullYear() : null,
+                value: val,
+            };
+        }).filter((d: any) => d.value !== null && d.year).reverse();
 
-        const grossProfitData = incomeAnnual.map((item: any) => ({
-            date: item.endDate,
-            year: new Date(item.endDate).getFullYear(),
-            value: extractValue(item.grossProfit),
-        })).filter((d: any) => d.value !== null).reverse();
+        const grossProfitData = incomeAnnual.map((item: any) => {
+            const val = extractValue(item.grossProfit);
+            let endDate = item.endDate;
+            if (typeof endDate === 'object' && endDate?.raw) {
+                endDate = new Date(endDate.raw * 1000);
+            } else if (typeof endDate === 'string') {
+                endDate = new Date(endDate);
+            }
+            return {
+                date: endDate,
+                year: endDate instanceof Date ? endDate.getFullYear() : null,
+                value: val,
+            };
+        }).filter((d: any) => d.value !== null && d.year).reverse();
 
-        const operatingIncomeData = incomeAnnual.map((item: any) => ({
-            date: item.endDate,
-            year: new Date(item.endDate).getFullYear(),
-            value: extractValue(item.operatingIncome),
-        })).filter((d: any) => d.value !== null).reverse();
+        const operatingIncomeData = incomeAnnual.map((item: any) => {
+            const val = extractValue(item.operatingIncome);
+            let endDate = item.endDate;
+            if (typeof endDate === 'object' && endDate?.raw) {
+                endDate = new Date(endDate.raw * 1000);
+            } else if (typeof endDate === 'string') {
+                endDate = new Date(endDate);
+            }
+            return {
+                date: endDate,
+                year: endDate instanceof Date ? endDate.getFullYear() : null,
+                value: val,
+            };
+        }).filter((d: any) => d.value !== null && d.year).reverse();
 
         const freeCashflowData = cashflowAnnual.map((item: any) => {
-            const opCf = extractValue(item.totalCashFromOperatingActivities);
+            const opCf = extractValue(item.totalCashFromOperatingActivities) || extractValue(item.operatingCashflow);
             const capex = extractValue(item.capitalExpenditures);
+            const fcf = opCf && capex ? opCf + capex : null;
+            let endDate = item.endDate;
+            if (typeof endDate === 'object' && endDate?.raw) {
+                endDate = new Date(endDate.raw * 1000);
+            } else if (typeof endDate === 'string') {
+                endDate = new Date(endDate);
+            }
             return {
-                date: item.endDate,
-                year: new Date(item.endDate).getFullYear(),
-                value: opCf && capex ? opCf + capex : null,
+                date: endDate,
+                year: endDate instanceof Date ? endDate.getFullYear() : null,
+                value: fcf,
             };
-        }).filter((d: any) => d.value !== null).reverse();
+        }).filter((d: any) => d.value !== null && d.year).reverse();
 
-        const operatingCashflowData = cashflowAnnual.map((item: any) => ({
-            date: item.endDate,
-            year: new Date(item.endDate).getFullYear(),
-            value: extractValue(item.totalCashFromOperatingActivities),
-        })).filter((d: any) => d.value !== null).reverse();
+        const operatingCashflowData = cashflowAnnual.map((item: any) => {
+            const val = extractValue(item.totalCashFromOperatingActivities) || extractValue(item.operatingCashflow);
+            let endDate = item.endDate;
+            if (typeof endDate === 'object' && endDate?.raw) {
+                endDate = new Date(endDate.raw * 1000);
+            } else if (typeof endDate === 'string') {
+                endDate = new Date(endDate);
+            }
+            return {
+                date: endDate,
+                year: endDate instanceof Date ? endDate.getFullYear() : null,
+                value: val,
+            };
+        }).filter((d: any) => d.value !== null && d.year).reverse();
 
-        const totalAssetsData = balanceAnnual.map((item: any) => ({
-            date: item.endDate,
-            year: new Date(item.endDate).getFullYear(),
-            value: extractValue(item.totalAssets),
-        })).filter((d: any) => d.value !== null).reverse();
+        const totalAssetsData = balanceAnnual.map((item: any) => {
+            const val = extractValue(item.totalAssets);
+            let endDate = item.endDate;
+            if (typeof endDate === 'object' && endDate?.raw) {
+                endDate = new Date(endDate.raw * 1000);
+            } else if (typeof endDate === 'string') {
+                endDate = new Date(endDate);
+            }
+            return {
+                date: endDate,
+                year: endDate instanceof Date ? endDate.getFullYear() : null,
+                value: val,
+            };
+        }).filter((d: any) => d.value !== null && d.year).reverse();
 
-        const totalDebtData = balanceAnnual.map((item: any) => ({
-            date: item.endDate,
-            year: new Date(item.endDate).getFullYear(),
-            value: extractValue(item.longTermDebt) || 0,
-        })).filter((d: any) => d.value !== null).reverse();
+        const totalDebtData = balanceAnnual.map((item: any) => {
+            const val = extractValue(item.longTermDebt) || 0;
+            let endDate = item.endDate;
+            if (typeof endDate === 'object' && endDate?.raw) {
+                endDate = new Date(endDate.raw * 1000);
+            } else if (typeof endDate === 'string') {
+                endDate = new Date(endDate);
+            }
+            return {
+                date: endDate,
+                year: endDate instanceof Date ? endDate.getFullYear() : null,
+                value: val,
+            };
+        }).filter((d: any) => d.value !== null && d.year).reverse();
 
-        const shareholderEquityData = balanceAnnual.map((item: any) => ({
-            date: item.endDate,
-            year: new Date(item.endDate).getFullYear(),
-            value: extractValue(item.totalStockholderEquity),
-        })).filter((d: any) => d.value !== null).reverse();
+        const shareholderEquityData = balanceAnnual.map((item: any) => {
+            const val = extractValue(item.totalStockholderEquity) || extractValue(item.totalShareholderEquity);
+            let endDate = item.endDate;
+            if (typeof endDate === 'object' && endDate?.raw) {
+                endDate = new Date(endDate.raw * 1000);
+            } else if (typeof endDate === 'string') {
+                endDate = new Date(endDate);
+            }
+            return {
+                date: endDate,
+                year: endDate instanceof Date ? endDate.getFullYear() : null,
+                value: val,
+            };
+        }).filter((d: any) => d.value !== null && d.year).reverse();
 
         // Historical EPS from earnings
-        const epsData = earningsHistory.map((item: any) => ({
-            date: item.quarter,
-            quarter: item.quarter ? new Date(item.quarter).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }) : null,
-            actual: extractValue(item.epsActual),
-            estimate: extractValue(item.epsEstimate),
-        })).filter((d: any) => d.actual !== null).reverse();
+        const epsData = earningsHistory.map((item: any) => {
+            const actual = extractValue(item.epsActual);
+            let quarter = item.quarter;
+            if (typeof quarter === 'object' && quarter?.raw) {
+                quarter = new Date(quarter.raw * 1000);
+            }
+            return {
+                date: quarter,
+                quarter: quarter instanceof Date ? quarter.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }) : null,
+                actual: actual,
+                estimate: extractValue(item.epsEstimate),
+            };
+        }).filter((d: any) => d.actual !== null).reverse();
 
         return NextResponse.json({
             symbol: ticker,
@@ -119,12 +216,4 @@ export async function GET(
         console.error(`Error fetching fundamentals for ${symbol}:`, error);
         return NextResponse.json({ error: 'Failed to fetch fundamentals' }, { status: 500 });
     }
-}
-
-function extractValue(field: any): number | null {
-    if (field === null || field === undefined) return null;
-    if (typeof field === 'number') return field;
-    if (typeof field === 'object' && field.raw !== undefined) return field.raw;
-    if (typeof field === 'object' && field.value !== undefined) return field.value;
-    return null;
 }

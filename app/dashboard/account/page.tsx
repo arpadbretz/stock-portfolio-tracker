@@ -1,11 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Download, Trash2, AlertCircle, Shield, User, ChevronRight, Lock } from 'lucide-react';
+import { ArrowLeft, Download, Trash2, AlertCircle, Shield, User, ChevronRight, Lock, Globe, Check, DollarSign } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+const CURRENCIES = [
+    { code: 'USD', symbol: '$', name: 'US Dollar' },
+    { code: 'EUR', symbol: '€', name: 'Euro' },
+    { code: 'HUF', symbol: 'Ft', name: 'Hungarian Forint' },
+    { code: 'GBP', symbol: '£', name: 'British Pound' },
+];
 
 export default function AccountPage() {
     const { user } = useAuth();
@@ -15,6 +22,23 @@ export default function AccountPage() {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [deleteConfirmText, setDeleteConfirmText] = useState('');
     const [error, setError] = useState<string | null>(null);
+    const [currency, setCurrency] = useState('USD');
+    const [savingCurrency, setSavingCurrency] = useState(false);
+
+    useEffect(() => {
+        // Load saved currency preference
+        const saved = localStorage.getItem('preferredCurrency');
+        if (saved) setCurrency(saved);
+    }, []);
+
+    const handleCurrencyChange = async (newCurrency: string) => {
+        setSavingCurrency(true);
+        setCurrency(newCurrency);
+        localStorage.setItem('preferredCurrency', newCurrency);
+        // Small delay for visual feedback
+        await new Promise(r => setTimeout(r, 300));
+        setSavingCurrency(false);
+    };
 
     if (!user) {
         router.push('/login');
@@ -73,7 +97,7 @@ export default function AccountPage() {
 
     return (
         <div className="p-6 md:p-10">
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-6xl mx-auto">
                 <header className="mb-10">
                     <div className="flex items-center gap-2 text-primary mb-1">
                         <User size={18} />
@@ -82,9 +106,9 @@ export default function AccountPage() {
                     <h1 className="text-3xl font-extrabold tracking-tight">Manage your Account</h1>
                 </header>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Account Info Sidebar */}
-                    <div className="md:col-span-1 space-y-6">
+                    <div className="lg:col-span-1 space-y-6">
                         <div className="bg-card border border-border p-8 rounded-[40px] text-center">
                             <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center text-primary font-black text-2xl mx-auto mb-6 shadow-inner">
                                 {user.email?.[0].toUpperCase()}
@@ -93,7 +117,7 @@ export default function AccountPage() {
                             <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mb-6">{user.email}</p>
                             <div className="pt-6 border-t border-border/50 text-left">
                                 <div className="text-[10px] text-muted-foreground font-black uppercase tracking-tighter mb-2 text-primary">Member Reference</div>
-                                <code className="text-[10px] bg-primary/5 border border-primary/10 px-3 py-1.5 rounded-xl block font-mono text-center text-primary/80">{user.id}</code>
+                                <code className="text-[10px] bg-primary/5 border border-primary/10 px-3 py-1.5 rounded-xl block font-mono text-center text-primary/80 break-all">{user.id}</code>
                             </div>
                         </div>
 
@@ -105,138 +129,180 @@ export default function AccountPage() {
                                     </div>
                                     <span className="text-xs font-black uppercase tracking-widest text-primary">Identity Verified</span>
                                 </div>
-                                <p className="text-[10px] text-muted-foreground font-medium leading-relaxed">Your account is secured with enterprise-grade encryption and multi-layer biometric protection.</p>
+                                <p className="text-[10px] text-muted-foreground font-medium leading-relaxed">Your account is secured with enterprise-grade encryption.</p>
                             </div>
                         </div>
-                        <h3 className="text-sm font-black mb-4 flex items-center gap-2">
-                            <Shield size={16} className="text-primary" />
-                            Privacy
-                        </h3>
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                            Your data is encrypted and managed according to GDPR standards.
-                        </p>
-                        <Link href="/legal/privacy" className="mt-4 flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-primary hover:translate-x-1 transition-transform">
-                            Read Privacy Policy
-                            <ChevronRight size={14} />
-                        </Link>
                     </div>
-                </div>
 
-                {/* Main Settings Areas */}
-                <div className="md:col-span-2 space-y-8">
-                    <AnimatePresence>
-                        {error && (
-                            <motion.div
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center gap-3 text-rose-500"
-                            >
-                                <AlertCircle size={20} />
-                                <p className="text-sm font-bold">{error}</p>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-
-                    {/* Export Module */}
-                    <section className="bg-card border border-border p-8 rounded-[40px] shadow-sm group">
-                        <div className="flex items-start gap-6 mb-8">
-                            <div className="p-4 bg-primary/10 rounded-2xl group-hover:scale-110 transition-transform">
-                                <Download className="text-primary" size={24} />
-                            </div>
-                            <div>
-                                <h2 className="text-xl font-black mb-2">Data Portability</h2>
-                                <p className="text-sm text-muted-foreground leading-relaxed">
-                                    Download a portable JSON archive of your entire investment history, portfolios, and research notes.
-                                </p>
-                            </div>
-                        </div>
-                        <button
-                            onClick={handleExportData}
-                            disabled={exportLoading}
-                            className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-muted border border-border rounded-[24px] font-black text-sm uppercase tracking-widest hover:bg-card hover:border-primary/50 transition-all disabled:opacity-50"
-                        >
-                            {exportLoading ? (
-                                <Loader2 size={18} className="animate-spin text-primary" />
-                            ) : (
-                                <>
-                                    <Download size={18} className="text-primary" />
-                                    Generate Data Archive
-                                </>
+                    {/* Main Settings Areas */}
+                    <div className="lg:col-span-2 space-y-8">
+                        <AnimatePresence>
+                            {error && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center gap-3 text-rose-500"
+                                >
+                                    <AlertCircle size={20} />
+                                    <p className="text-sm font-bold">{error}</p>
+                                </motion.div>
                             )}
-                        </button>
-                    </section>
+                        </AnimatePresence>
 
-                    {/* Security Module */}
-                    <section className="bg-card border border-border p-8 rounded-[40px] shadow-sm group">
-                        <div className="flex items-start gap-6 mb-8">
-                            <div className="p-4 bg-accent/10 rounded-2xl group-hover:scale-110 transition-transform">
-                                <Lock className="text-accent" size={24} />
-                            </div>
-                            <div>
-                                <h2 className="text-xl font-black mb-2">Security & Identity</h2>
-                                <p className="text-sm text-muted-foreground leading-relaxed">
-                                    Update your login credentials or manage multi-factor authentication for enhanced protection.
-                                </p>
-                            </div>
-                        </div>
-                        <button disabled className="w-full px-6 py-4 bg-muted border border-border rounded-[24px] font-black text-[10px] uppercase tracking-widest text-muted-foreground/50 cursor-not-allowed">
-                            Identity Controls - Coming Soon
-                        </button>
-                    </section>
-
-                    {/* Danger Zone */}
-                    <section className="bg-rose-500/5 border border-rose-500/20 p-8 rounded-[40px] relative overflow-hidden">
-                        <div className="flex items-start gap-6 mb-8">
-                            <div className="p-4 bg-rose-500/10 rounded-2xl">
-                                <Trash2 className="text-rose-500" size={24} />
-                            </div>
-                            <div>
-                                <h2 className="text-xl font-black mb-2 text-rose-600">Danger Zone</h2>
-                                <p className="text-sm text-rose-500/70 leading-relaxed">
-                                    Permanently delete your account and all associated data. This action is instantaneous and cannot be reversed.
-                                </p>
-                            </div>
-                        </div>
-
-                        {!showDeleteConfirm ? (
-                            <button
-                                onClick={() => setShowDeleteConfirm(true)}
-                                className="w-full px-6 py-4 bg-rose-500 text-white font-black text-sm uppercase tracking-widest rounded-[24px] hover:bg-rose-600 transition-all shadow-xl shadow-rose-500/20"
-                            >
-                                Initiate Account Deletion
-                            </button>
-                        ) : (
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                className="bg-card border border-rose-500/50 p-6 rounded-[32px] shadow-2xl space-y-4"
-                            >
-                                <p className="font-black text-sm text-center uppercase tracking-widest">Type <span className="text-rose-500">DELETE</span> to confirm</p>
-                                <input
-                                    type="text"
-                                    value={deleteConfirmText}
-                                    onChange={(e) => setDeleteConfirmText(e.target.value)}
-                                    className="w-full p-4 bg-muted border border-border rounded-2xl text-foreground font-black text-center focus:ring-2 focus:ring-rose-500/20 outline-none transition-all"
-                                    placeholder="DELETE"
-                                />
-                                <div className="flex gap-4">
-                                    <button
-                                        onClick={() => setShowDeleteConfirm(false)}
-                                        className="flex-1 py-4 font-black text-xs uppercase tracking-widest text-muted-foreground hover:text-foreground transition-all"
-                                    >
-                                        Nevermind
-                                    </button>
-                                    <button
-                                        onClick={handleDeleteAccount}
-                                        disabled={deleteLoading || deleteConfirmText !== 'DELETE'}
-                                        className="flex-1 py-4 bg-rose-500 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl disabled:opacity-30"
-                                    >
-                                        {deleteLoading ? 'Decommissioning...' : 'Final Delete'}
-                                    </button>
+                        {/* Currency Preference */}
+                        <section className="bg-card border border-border p-8 rounded-[40px] shadow-sm">
+                            <div className="flex items-start gap-6 mb-8">
+                                <div className="p-4 bg-emerald-500/10 rounded-2xl">
+                                    <DollarSign className="text-emerald-500" size={24} />
                                 </div>
-                            </motion.div>
-                        )}
-                    </section>
+                                <div>
+                                    <h2 className="text-xl font-black mb-2">Currency Preference</h2>
+                                    <p className="text-sm text-muted-foreground leading-relaxed">
+                                        Select your preferred currency for displaying portfolio values and prices.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                {CURRENCIES.map((curr) => (
+                                    <button
+                                        key={curr.code}
+                                        onClick={() => handleCurrencyChange(curr.code)}
+                                        disabled={savingCurrency}
+                                        className={`relative p-4 rounded-2xl border-2 transition-all ${currency === curr.code
+                                                ? 'bg-primary/10 border-primary'
+                                                : 'bg-muted border-transparent hover:border-border'
+                                            }`}
+                                    >
+                                        {currency === curr.code && (
+                                            <div className="absolute top-2 right-2">
+                                                <Check size={14} className="text-primary" />
+                                            </div>
+                                        )}
+                                        <div className="text-2xl font-black mb-1">{curr.symbol}</div>
+                                        <div className="text-xs font-bold text-muted-foreground">{curr.code}</div>
+                                    </button>
+                                ))}
+                            </div>
+                        </section>
+
+                        {/* Export Module */}
+                        <section className="bg-card border border-border p-8 rounded-[40px] shadow-sm group">
+                            <div className="flex items-start gap-6 mb-8">
+                                <div className="p-4 bg-primary/10 rounded-2xl group-hover:scale-110 transition-transform">
+                                    <Download className="text-primary" size={24} />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-black mb-2">Data Portability</h2>
+                                    <p className="text-sm text-muted-foreground leading-relaxed">
+                                        Download a portable JSON archive of your entire investment history, portfolios, and research notes.
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={handleExportData}
+                                disabled={exportLoading}
+                                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-muted border border-border rounded-[24px] font-black text-sm uppercase tracking-widest hover:bg-card hover:border-primary/50 transition-all disabled:opacity-50"
+                            >
+                                {exportLoading ? (
+                                    <Loader2 size={18} className="text-primary" />
+                                ) : (
+                                    <>
+                                        <Download size={18} className="text-primary" />
+                                        Generate Data Archive
+                                    </>
+                                )}
+                            </button>
+                        </section>
+
+                        {/* Security Module */}
+                        <section className="bg-card border border-border p-8 rounded-[40px] shadow-sm group">
+                            <div className="flex items-start gap-6 mb-8">
+                                <div className="p-4 bg-accent/10 rounded-2xl group-hover:scale-110 transition-transform">
+                                    <Lock className="text-accent" size={24} />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-black mb-2">Security & Identity</h2>
+                                    <p className="text-sm text-muted-foreground leading-relaxed">
+                                        Update your login credentials or manage multi-factor authentication for enhanced protection.
+                                    </p>
+                                </div>
+                            </div>
+                            <button disabled className="w-full px-6 py-4 bg-muted border border-border rounded-[24px] font-black text-[10px] uppercase tracking-widest text-muted-foreground/50 cursor-not-allowed">
+                                Identity Controls - Coming Soon
+                            </button>
+                        </section>
+
+                        {/* Privacy */}
+                        <section className="bg-card border border-border p-6 rounded-[32px]">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                    <Shield size={18} className="text-primary" />
+                                    <div>
+                                        <h3 className="font-black">Privacy</h3>
+                                        <p className="text-xs text-muted-foreground">Your data is encrypted and managed according to GDPR standards.</p>
+                                    </div>
+                                </div>
+                                <Link href="/legal/privacy" className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-primary hover:translate-x-1 transition-transform">
+                                    Read Policy
+                                    <ChevronRight size={14} />
+                                </Link>
+                            </div>
+                        </section>
+
+                        {/* Danger Zone */}
+                        <section className="bg-rose-500/5 border border-rose-500/20 p-8 rounded-[40px] relative overflow-hidden">
+                            <div className="flex items-start gap-6 mb-8">
+                                <div className="p-4 bg-rose-500/10 rounded-2xl">
+                                    <Trash2 className="text-rose-500" size={24} />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-black mb-2 text-rose-600">Danger Zone</h2>
+                                    <p className="text-sm text-rose-500/70 leading-relaxed">
+                                        Permanently delete your account and all associated data. This action cannot be reversed.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {!showDeleteConfirm ? (
+                                <button
+                                    onClick={() => setShowDeleteConfirm(true)}
+                                    className="w-full px-6 py-4 bg-rose-500 text-white font-black text-sm uppercase tracking-widest rounded-[24px] hover:bg-rose-600 transition-all shadow-xl shadow-rose-500/20"
+                                >
+                                    Initiate Account Deletion
+                                </button>
+                            ) : (
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    className="bg-card border border-rose-500/50 p-6 rounded-[32px] shadow-2xl space-y-4"
+                                >
+                                    <p className="font-black text-sm text-center uppercase tracking-widest">Type <span className="text-rose-500">DELETE</span> to confirm</p>
+                                    <input
+                                        type="text"
+                                        value={deleteConfirmText}
+                                        onChange={(e) => setDeleteConfirmText(e.target.value)}
+                                        className="w-full p-4 bg-muted border border-border rounded-2xl text-foreground font-black text-center focus:ring-2 focus:ring-rose-500/20 outline-none transition-all"
+                                        placeholder="DELETE"
+                                    />
+                                    <div className="flex gap-4">
+                                        <button
+                                            onClick={() => setShowDeleteConfirm(false)}
+                                            className="flex-1 py-4 font-black text-xs uppercase tracking-widest text-muted-foreground hover:text-foreground transition-all"
+                                        >
+                                            Nevermind
+                                        </button>
+                                        <button
+                                            onClick={handleDeleteAccount}
+                                            disabled={deleteLoading || deleteConfirmText !== 'DELETE'}
+                                            className="flex-1 py-4 bg-rose-500 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl disabled:opacity-30"
+                                        >
+                                            {deleteLoading ? 'Decommissioning...' : 'Final Delete'}
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </section>
+                    </div>
                 </div>
             </div>
         </div>
