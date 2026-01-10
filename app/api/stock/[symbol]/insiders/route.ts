@@ -16,16 +16,31 @@ export async function GET(
     try {
         const ticker = symbol.toUpperCase();
 
+        console.log(`Fetching insider data for ${ticker}...`);
+
         const summary = await yf.quoteSummary(ticker, {
             modules: ['insiderTransactions', 'insiderHolders']
-        }).catch(() => null);
+        }).catch((e: any) => {
+            console.error('Yahoo Finance insider error:', e);
+            return null;
+        });
 
         if (!summary) {
-            return NextResponse.json({ error: 'No insider data' }, { status: 404 });
+            console.log('No summary data returned for insiders');
+            return NextResponse.json({
+                symbol: ticker,
+                transactions: [],
+                holders: [],
+                message: 'No insider data available'
+            });
         }
+
+        console.log('Insider data keys:', Object.keys(summary));
 
         const transactions = summary?.insiderTransactions?.transactions || [];
         const holders = summary?.insiderHolders?.holders || [];
+
+        console.log(`Found ${transactions.length} transactions, ${holders.length} holders`);
 
         // Process transactions
         const recentTransactions = transactions.slice(0, 20).map((txn: any) => ({
@@ -57,6 +72,9 @@ export async function GET(
         });
     } catch (error) {
         console.error(`Error fetching insider data for ${symbol}:`, error);
-        return NextResponse.json({ error: 'Failed to fetch insider data' }, { status: 500 });
+        return NextResponse.json({
+            error: 'Failed to fetch insider data',
+            details: error instanceof Error ? error.message : String(error)
+        }, { status: 500 });
     }
 }

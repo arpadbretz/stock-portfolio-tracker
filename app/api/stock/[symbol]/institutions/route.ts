@@ -16,17 +16,33 @@ export async function GET(
     try {
         const ticker = symbol.toUpperCase();
 
+        console.log(`Fetching institutional data for ${ticker}...`);
+
         const summary = await yf.quoteSummary(ticker, {
             modules: ['institutionOwnership', 'fundOwnership', 'majorHoldersBreakdown']
-        }).catch(() => null);
+        }).catch((e: any) => {
+            console.error('Yahoo Finance institutional error:', e);
+            return null;
+        });
 
         if (!summary) {
-            return NextResponse.json({ error: 'No institutional data' }, { status: 404 });
+            console.log('No summary data returned for institutions');
+            return NextResponse.json({
+                symbol: ticker,
+                institutions: [],
+                funds: [],
+                breakdown: {},
+                message: 'No institutional data available'
+            });
         }
+
+        console.log('Institutional data keys:', Object.keys(summary));
 
         const institutions = summary?.institutionOwnership?.ownershipList || [];
         const funds = summary?.fundOwnership?.ownershipList || [];
         const breakdown = summary?.majorHoldersBreakdown || {};
+
+        console.log(`Found ${institutions.length} institutions, ${funds.length} funds`);
 
         // Process institutional holders
         const institutionalHolders = institutions.slice(0, 15).map((inst: any) => ({
@@ -62,6 +78,9 @@ export async function GET(
         });
     } catch (error) {
         console.error(`Error fetching institutional data for ${symbol}:`, error);
-        return NextResponse.json({ error: 'Failed to fetch institutional data' }, { status: 500 });
+        return NextResponse.json({
+            error: 'Failed to fetch institutional data',
+            details: error instanceof Error ? error.message : String(error)
+        }, { status: 500 });
     }
 }

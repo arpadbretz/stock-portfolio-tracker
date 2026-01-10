@@ -3,6 +3,8 @@
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import { trackTickerView } from '@/lib/analytics';
+import { useAuth } from '@/components/auth/AuthProvider';
 import {
     ArrowLeft,
     TrendingUp,
@@ -98,6 +100,7 @@ const TIME_RANGES = ['1D', '5D', '1M', '3M', '6M', '1Y', '5Y'];
 export default function TickerPage({ params }: { params: Promise<{ symbol: string }> }) {
     const resolvedParams = use(params);
     const symbol = resolvedParams.symbol.toUpperCase();
+    const { user } = useAuth();
 
     const [stock, setStock] = useState<StockData | null>(null);
     const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
@@ -113,6 +116,11 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
     const [institutions, setInstitutions] = useState<any>(null);
     const [news, setNews] = useState<any>(null);
     const [filings, setFilings] = useState<any>(null);
+
+    // Track ticker view
+    useEffect(() => {
+        trackTickerView(symbol, user?.id || null);
+    }, [symbol, user]);
 
     // Calculate range-specific gain/loss
     const rangeChange = chartData.length >= 2

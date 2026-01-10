@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import { trackTickerSearch } from '@/lib/analytics';
+import { useAuth } from '@/components/auth/AuthProvider';
 import {
     Search,
     TrendingUp,
@@ -34,6 +36,7 @@ const POPULAR_STOCKS = [
 ];
 
 export default function StockSearchPage() {
+    const { user } = useAuth();
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<SearchResult[]>([]);
     const [isSearching, setIsSearching] = useState(false);
@@ -55,16 +58,23 @@ export default function StockSearchPage() {
         const searchStocks = async () => {
             if (query.length < 1) {
                 setResults([]);
+                setShowResults(false);
                 return;
             }
 
             setIsSearching(true);
+            setShowResults(true);
+
+            // Track search
+            trackTickerSearch(query, user?.id || null);
+
             try {
-                const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-                const data = await res.json();
+                const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
                 setResults(data.results || []);
             } catch (error) {
                 console.error('Search error:', error);
+                setResults([]);
             } finally {
                 setIsSearching(false);
             }
