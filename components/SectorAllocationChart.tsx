@@ -60,67 +60,71 @@ export default function SectorAllocationChart({ holdings, currency, exchangeRate
         .sort((a, b) => b.value - a.value);
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center h-full min-h-[350px]">
-            <div className="h-full min-h-[300px] relative">
-                <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                        <Pie
-                            data={data}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={70}
-                            outerRadius={100}
-                            paddingAngle={6}
-                            dataKey="value"
-                            stroke="none"
-                        >
-                            {data.map((entry, index) => (
-                                <Cell
-                                    key={`cell-${index}`}
-                                    fill={COLORS[index % COLORS.length]}
-                                    className="hover:opacity-80 transition-opacity cursor-pointer"
-                                />
-                            ))}
-                        </Pie>
-                        <Tooltip
-                            content={({ active, payload }) => {
-                                if (active && payload && payload.length) {
-                                    const data = payload[0].payload;
-                                    return (
-                                        <div className="bg-card/90 backdrop-blur-xl border border-border p-4 rounded-2xl shadow-2xl">
-                                            <p className="text-foreground font-black mb-1 flex items-center gap-2">
-                                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: payload[0].color }}></div>
-                                                {data.name}
-                                            </p>
-                                            <p className="text-secondary text-sm font-black">{formatCurrency(data.value, currency)}</p>
-                                            <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest mt-1">{data.percentage.toFixed(1)}% Weight</p>
-                                        </div>
-                                    );
-                                }
-                                return null;
-                            }}
-                        />
-                    </PieChart>
-                </ResponsiveContainer>
+        <div className="flex flex-col lg:grid lg:grid-cols-2 gap-8 lg:gap-10 items-center">
+            {/* Chart Container */}
+            <div className="w-full flex items-center justify-center">
+                <div className="relative w-full max-w-[280px] aspect-square">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                            <Pie
+                                data={data}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius="55%"
+                                outerRadius="85%"
+                                paddingAngle={6}
+                                dataKey="value"
+                                stroke="none"
+                            >
+                                {data.map((entry, index) => (
+                                    <Cell
+                                        key={`cell-${index}`}
+                                        fill={COLORS[index % COLORS.length]}
+                                        className="hover:opacity-80 transition-opacity cursor-pointer"
+                                    />
+                                ))}
+                            </Pie>
+                            <Tooltip
+                                content={({ active, payload }) => {
+                                    if (active && payload && payload.length) {
+                                        const data = payload[0].payload;
+                                        return (
+                                            <div className="bg-card/90 backdrop-blur-xl border border-border p-4 rounded-2xl shadow-2xl">
+                                                <p className="text-foreground font-black mb-1 flex items-center gap-2">
+                                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: payload[0].color }}></div>
+                                                    {data.name}
+                                                </p>
+                                                <p className="text-secondary text-sm font-black">{formatCurrency(data.value, currency)}</p>
+                                                <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest mt-1">{data.percentage.toFixed(1)}% Weight</p>
+                                            </div>
+                                        );
+                                    }
+                                    return null;
+                                }}
+                            />
+                        </PieChart>
+                    </ResponsiveContainer>
 
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-muted-foreground text-[10px] font-black uppercase tracking-widest">Sectors</span>
-                    <span className="text-2xl font-black text-foreground">{data.length}</span>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                        <span className="text-muted-foreground text-[10px] font-black uppercase tracking-widest">Sectors</span>
+                        <span className="text-2xl font-black text-foreground">{data.length}</span>
+                    </div>
                 </div>
             </div>
 
-            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-4 custom-scrollbar">
+            {/* Legend */}
+            <div className="w-full space-y-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
                 {data.map((item, index) => (
-                    <div key={item.name} className="flex items-center justify-between p-4 rounded-[24px] bg-muted/20 border border-transparent hover:border-border/50 hover:bg-muted/40 transition-all group/item shadow-sm">
-                        <div className="flex items-center gap-5">
+                    <div key={item.name} className="flex items-center justify-between p-4 rounded-[20px] bg-muted/20 border border-transparent hover:border-border/50 hover:bg-muted/40 transition-all group/item shadow-sm">
+                        <div className="flex items-center gap-4 min-w-0 flex-1">
                             <div
-                                className="w-4 h-4 rounded-full flex-shrink-0 shadow-lg"
+                                className="w-3 h-3 rounded-full flex-shrink-0 shadow-lg"
                                 style={{ backgroundColor: COLORS[index % COLORS.length] }}
                             />
-                            <span className="text-foreground font-black text-sm uppercase tracking-wider group-hover/item:text-secondary transition-colors truncate max-w-[150px]">{item.name}</span>
+                            <span className="text-foreground font-black text-sm uppercase tracking-wider group-hover/item:text-secondary transition-colors truncate">{item.name}</span>
                         </div>
-                        <div className="text-right">
-                            <div className="text-sm font-black text-foreground mb-0.5">{formatCurrency(item.value, currency)}</div>
+                        <div className="text-right flex-shrink-0 ml-4">
+                            <div className="text-sm font-black text-foreground mb-0.5 whitespace-nowrap">{formatCurrency(item.value, currency)}</div>
                             <div className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.1em]">{item.percentage.toFixed(1)}% Weight</div>
                         </div>
                     </div>
