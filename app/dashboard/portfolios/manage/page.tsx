@@ -17,7 +17,11 @@ import {
     Check,
     X,
     Briefcase,
-    LayoutGrid
+    LayoutGrid,
+    Activity,
+    Zap,
+    ChevronRight,
+    Dna
 } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -274,18 +278,56 @@ export default function ManagePortfolios() {
                         <h1 className="text-3xl font-extrabold tracking-tight">Your Portfolios</h1>
                     </div>
                     {!showCreate && !editingId && (
-                        <button
-                            onClick={() => {
-                                setShowCreate(true);
-                                resetForm();
-                            }}
-                            className="flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-2xl font-black text-sm shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
-                        >
-                            <Plus size={20} />
-                            <span>Create New Portfolio</span>
-                        </button>
+                        <div className="flex items-center gap-4">
+                            <Link
+                                href="/dashboard/report"
+                                className="hidden md:flex items-center gap-2 px-6 py-3 bg-accent/10 border border-accent/20 text-accent rounded-2xl font-black text-sm hover:bg-accent/20 transition-all"
+                            >
+                                <Zap size={18} />
+                                Intelligence Hub
+                            </Link>
+                            <button
+                                onClick={() => {
+                                    setShowCreate(true);
+                                    resetForm();
+                                }}
+                                className="flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-2xl font-black text-sm shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                            >
+                                <Plus size={20} />
+                                <span>Create New Portfolio</span>
+                            </button>
+                        </div>
                     )}
                 </header>
+
+                {!showCreate && !editingId && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mb-10 p-8 bg-gradient-to-r from-primary/10 via-accent/5 to-transparent border border-primary/20 rounded-[40px] flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden group"
+                    >
+                        <div className="relative z-10">
+                            <div className="flex items-center gap-2 text-primary mb-2">
+                                <Activity size={16} className="animate-pulse" />
+                                <span className="text-[10px] font-black uppercase tracking-[0.3em]">Institutional Pulse</span>
+                            </div>
+                            <h2 className="text-2xl font-black tracking-tight leading-tight mb-2">Portfolio Intelligence Hub</h2>
+                            <p className="text-muted-foreground text-sm font-medium max-w-xl">
+                                Access advanced risk analytics, weighted beta monitoring, and clinical audits of your current capital allocation.
+                            </p>
+                        </div>
+                        <Link
+                            href="/dashboard/report"
+                            className="relative z-10 flex items-center gap-3 px-8 py-4 bg-primary text-primary-foreground rounded-[24px] font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/30 hover:scale-[1.05] transition-all whitespace-nowrap"
+                        >
+                            Launch Diagnostics
+                            <ChevronRight size={16} />
+                        </Link>
+                        <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+                            <Dna size={160} />
+                        </div>
+                    </motion.div>
+                )}
 
                 <AnimatePresence>
                     {(showCreate || editingId) && (

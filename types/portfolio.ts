@@ -28,6 +28,7 @@ export interface Holding {
   allocation: number;
   sector?: string;
   industry?: string;
+  beta?: number;
 }
 
 export interface PriceData {
@@ -38,6 +39,7 @@ export interface PriceData {
   lastUpdated: string;
   sector?: string;
   industry?: string;
+  beta?: number;
 }
 
 export interface PortfolioSummary {

@@ -24,6 +24,7 @@ export default function TradeHistory({
     readOnly = false
 }: TradeHistoryProps) {
     const [isDeleting, setIsDeleting] = useState<string | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
 
     const handleDelete = async (id: string) => {
         if (readOnly || !onTradeDeleted) return;
@@ -44,7 +45,11 @@ export default function TradeHistory({
         }
     };
 
-    const sortedTrades = [...trades].sort((a, b) =>
+    const filteredTrades = trades.filter(t =>
+        t.ticker.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const sortedTrades = [...filteredTrades].sort((a, b) =>
         new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
 
@@ -54,15 +59,23 @@ export default function TradeHistory({
 
     return (
         <div className="bg-card rounded-[32px] md:rounded-[40px] border border-border overflow-hidden shadow-sm">
-            <div className="p-8 pb-4 flex justify-between items-center">
+            <div className="p-8 pb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h2 className="text-2xl font-black tracking-tight">Trade History</h2>
                     <p className="text-muted-foreground text-xs font-bold uppercase tracking-widest mt-1">Transaction Ledger</p>
                 </div>
+                <div className="relative w-full md:w-64">
+                    <input
+                        type="text"
+                        placeholder="Search tickers..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full bg-muted/50 border border-border rounded-xl px-4 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                    />
+                </div>
             </div>
 
-            {/* Desktop Table View */}
-            <div className="overflow-x-auto hidden md:block">
+            <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
                 <table className="w-full">
                     <thead>
                         <tr className="border-b border-border/50">
@@ -208,6 +221,21 @@ export default function TradeHistory({
                     Export Ledger to Spreadsheet (CSV)
                 </button>
             </div>
+            <style jsx>{`
+                .custom-scrollbar::-webkit-scrollbar {
+                    width: 6px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: rgba(var(--primary-rgb), 0.1);
+                    border-radius: 10px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: rgba(var(--primary-rgb), 0.2);
+                }
+            `}</style>
         </div >
     );
 }
