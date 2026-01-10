@@ -48,7 +48,7 @@ export async function GET(
         const earnings = summary?.earnings || {};
         const calendar = summary?.calendarEvents || {};
 
-        // Get annual statements - handle both possible structures
+        // Get annual statements - Yahoo Finance free tier has very limited data
         const incomeAnnual = summary?.incomeStatementHistory?.incomeStatementHistory || [];
         const balanceAnnual = summary?.balanceSheetHistory?.balanceSheetStatements || [];
         const cashflowAnnual = summary?.cashflowStatementHistory?.cashflowStatements || [];
@@ -56,107 +56,43 @@ export async function GET(
         // Get next earnings date from calendar
         const earningsDate = calendar?.earnings?.earningsDate?.[0] || earnings?.earningsDate?.[0] || null;
 
-        // Helper to safely extract numeric value from various Yahoo Finance formats
-        const extractValue = (field: any): number | null => {
-            if (field === null || field === undefined) return null;
-            if (typeof field === 'number') return field;
-            if (typeof field === 'object') {
-                // Try all possible nested formats
-                if ('raw' in field) return field.raw;
-                if ('value' in field) return field.value;
-                if ('fmt' in field && field.raw === undefined) {
-                    // Parse formatted string like "$1.5B"
-                    const str = field.fmt;
-                    if (typeof str === 'string') {
-                        const num = parseFloat(str.replace(/[$,]/g, ''));
-                        if (!isNaN(num)) return num;
-                    }
-                }
-            }
-            return null;
-        };
-
-        // Process income statements - try all known field variations
+        // Simple processing - only include fields that actually have data
         const processIncomeStatement = (item: any) => {
             if (!item) return null;
-
-            // Extract date
-            let endDate = item.endDate;
-            if (typeof endDate === 'object' && endDate?.raw) {
-                endDate = new Date(endDate.raw * 1000).toISOString();
-            }
-
-            return {
-                endDate: endDate,
-                totalRevenue: extractValue(item.totalRevenue),
-                costOfRevenue: extractValue(item.costOfRevenue),
-                grossProfit: extractValue(item.grossProfit),
-                researchDevelopment: extractValue(item.researchDevelopment) || extractValue(item.researchAndDevelopment),
-                sellingGeneralAdministrative: extractValue(item.sellingGeneralAdministrative),
-                operatingExpenses: extractValue(item.totalOperatingExpenses) || extractValue(item.operatingExpenses),
-                operatingIncome: extractValue(item.operatingIncome),
-                interestExpense: extractValue(item.interestExpense),
-                incomeBeforeTax: extractValue(item.incomeBeforeTax),
-                incomeTaxExpense: extractValue(item.incomeTaxExpense),
-                netIncome: extractValue(item.netIncome),
-                ebit: extractValue(item.ebit),
-                ebitda: extractValue(item.ebitda),
-            };
+            const result: any = { endDate: item.endDate };
+            if (item.totalRevenue) result.totalRevenue = item.totalRevenue;
+            if (item.netIncome) result.netIncome = item.netIncome;
+            if (item.grossProfit && item.grossProfit !== 0) result.grossProfit = item.grossProfit;
+            if (item.operatingIncome && item.operatingIncome !== 0) result.operatingIncome = item.operatingIncome;
+            if (item.ebit && item.ebit !== 0) result.ebit = item.ebit;
+            return Object.keys(result).length > 1 ? result : null;
         };
 
-        // Process balance sheet
         const processBalanceSheet = (item: any) => {
-            if (!item) return null;
-
-            let endDate = item.endDate;
-            if (typeof endDate === 'object' && endDate?.raw) {
-                endDate = new Date(endDate.raw * 1000).toISOString();
+            if (!item || !item.endDate) return null;
+            const result: any = { endDate: item.endDate };
+            if (item.totalAssets) result.totalAssets = item.totalAssets;
+            if (item.totalLiab || item.totalLiabilities) result.totalLiabilities = item.totalLiab || item.totalLiabilities;
+            if (item.totalStockholderEquity || item.totalShareholderEquity) {
+                result.totalStockholderEquity = item.totalStockholderEquity || item.totalShareholderEquity;
             }
-
-            return {
-                endDate: endDate,
-                totalAssets: extractValue(item.totalAssets),
-                totalCurrentAssets: extractValue(item.totalCurrentAssets),
-                cash: extractValue(item.cash) || extractValue(item.cashAndCashEquivalents),
-                shortTermInvestments: extractValue(item.shortTermInvestments),
-                netReceivables: extractValue(item.netReceivables),
-                inventory: extractValue(item.inventory),
-                totalLiabilities: extractValue(item.totalLiab) || extractValue(item.totalLiabilities),
-                totalCurrentLiabilities: extractValue(item.totalCurrentLiabilities),
-                accountsPayable: extractValue(item.accountsPayable),
-                longTermDebt: extractValue(item.longTermDebt),
-                totalStockholderEquity: extractValue(item.totalStockholderEquity) || extractValue(item.totalShareholderEquity),
-                commonStock: extractValue(item.commonStock),
-                retainedEarnings: extractValue(item.retainedEarnings),
-            };
+            if (item.cash) result.cash = item.cash;
+            if (item.longTermDebt) result.longTermDebt = item.longTermDebt;
+            return Object.keys(result).length > 1 ? result : null;
         };
 
-        // Process cash flow
         const processCashFlow = (item: any) => {
-            if (!item) return null;
-
-            let endDate = item.endDate;
-            if (typeof endDate === 'object' && endDate?.raw) {
-                endDate = new Date(endDate.raw * 1000).toISOString();
+            if (!item || !item.endDate) return null;
+            const result: any = { endDate: item.endDate };
+            if (item.netIncome) result.netIncome = item.netIncome;
+            if (item.totalCashFromOperatingActivities) result.operatingCashflow = item.totalCashFromOperatingActivities;
+            if (item.capitalExpenditures) result.capitalExpenditures = item.capitalExpenditures;
+            if (item.freeCashflow) result.freeCashflow = item.freeCashflow;
+            // Calculate FCF if we have components
+            if (result.operatingCashflow && item.capitalExpenditures) {
+                result.freeCashflow = result.operatingCashflow + item.capitalExpenditures;
             }
-
-            const opCashflow = extractValue(item.totalCashFromOperatingActivities) || extractValue(item.operatingCashflow);
-            const capex = extractValue(item.capitalExpenditures);
-
-            return {
-                endDate: endDate,
-                operatingCashflow: opCashflow,
-                capitalExpenditures: capex,
-                freeCashflow: opCashflow && capex ? opCashflow + capex : extractValue(item.freeCashflow),
-                depreciation: extractValue(item.depreciation),
-                changeInCash: extractValue(item.changeInCash) || extractValue(item.changeToNetincome),
-                dividendsPaid: extractValue(item.dividendsPaid),
-                netBorrowings: extractValue(item.netBorrowings),
-                stockRepurchased: extractValue(item.repurchaseOfStock),
-                issuanceOfStock: extractValue(item.issuanceOfStock),
-                investingCashflow: extractValue(item.totalCashflowsFromInvestingActivities) || extractValue(item.investingCashflow),
-                financingCashflow: extractValue(item.totalCashFromFinancingActivities) || extractValue(item.financingCashflow),
-            };
+            return Object.keys(result).length > 1 ? result : null;
         };
 
         const stockData = {
@@ -222,6 +158,12 @@ export async function GET(
             totalDebt: financials.totalDebt || null,
             totalCash: financials.totalCash || null,
 
+            // Short Interest
+            shortRatio: keyStats.shortRatio || null,
+            shortPercentOfFloat: keyStats.shortPercentOfFloat || null,
+            sharesShort: keyStats.sharesShort || null,
+            sharesShortPriorMonth: keyStats.sharesShortPriorMonth || null,
+
             // Company Profile
             sector: profile.sector || null,
             industry: profile.industry || null,
@@ -235,17 +177,10 @@ export async function GET(
             earningsDate: earningsDate,
             earningsQuarterlyGrowth: keyStats.earningsQuarterlyGrowth || null,
 
-            // Financial Statements (Annual) - pass raw for debugging
+            // Financial Statements (Annual) - filtered to only include non-null entries
             incomeStatement: incomeAnnual.map(processIncomeStatement).filter(Boolean),
             balanceSheet: balanceAnnual.map(processBalanceSheet).filter(Boolean),
             cashFlow: cashflowAnnual.map(processCashFlow).filter(Boolean),
-
-            // Debug: Include raw data length for troubleshooting
-            _debug: {
-                incomeCount: incomeAnnual.length,
-                balanceCount: balanceAnnual.length,
-                cashflowCount: cashflowAnnual.length,
-            },
 
             lastUpdated: new Date().toISOString(),
         };

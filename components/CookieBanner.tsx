@@ -28,6 +28,8 @@ export default function CookieBanner() {
 
     const saveConsent = (consentData: CookieConsent) => {
         localStorage.setItem('cookieConsent', JSON.stringify(consentData));
+        // Save analytics consent flag for tracking library
+        localStorage.setItem('cookie_consent', consentData.analytics ? 'accepted' : 'rejected');
         setShowBanner(false);
         setShowSettings(false);
     };
