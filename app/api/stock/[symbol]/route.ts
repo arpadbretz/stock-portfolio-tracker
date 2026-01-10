@@ -48,10 +48,17 @@ export async function GET(
         const earnings = summary?.earnings || {};
         const calendar = summary?.calendarEvents || {};
 
-        // Get annual statements - Yahoo Finance free tier has very limited data
+        // Get annual statements
         const incomeAnnual = summary?.incomeStatementHistory?.incomeStatementHistory || [];
         const balanceAnnual = summary?.balanceSheetHistory?.balanceSheetStatements || [];
         const cashflowAnnual = summary?.cashflowStatementHistory?.cashflowStatements || [];
+
+        console.log(`[${ticker}] Financial data available:`, {
+            incomeStatements: incomeAnnual.length,
+            balanceSheets: balanceAnnual.length,
+            cashFlows: cashflowAnnual.length,
+            hasFinancialData: !!financials,
+        });
 
         // Get next earnings date from calendar
         const earningsDate = calendar?.earnings?.earningsDate?.[0] || earnings?.earningsDate?.[0] || null;
