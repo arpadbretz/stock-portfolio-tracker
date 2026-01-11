@@ -19,6 +19,7 @@ import {
     Loader2,
     ExternalLink,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface PriceAlert {
     id: string;
@@ -119,22 +120,32 @@ export default function AlertsPage() {
                 setNewCondition('above');
                 setIsFormOpen(false);
                 fetchAlerts();
+                toast.success('Alert created!', {
+                    description: `You'll be notified when ${newSymbol.toUpperCase()} goes ${newCondition} $${newTargetPrice}`
+                });
             } else {
                 setError(data.error || 'Failed to create alert');
+                toast.error('Failed to create alert', { description: data.error });
             }
         } catch (err) {
             setError('Failed to create alert');
+            toast.error('Failed to create alert');
         } finally {
             setIsCreating(false);
         }
     };
 
     const handleDeleteAlert = async (alertId: string) => {
+        const alert = alerts.find(a => a.id === alertId);
         try {
             await fetch(`/api/alerts?id=${alertId}`, { method: 'DELETE' });
-            setAlerts(prev => prev.filter(alert => alert.id !== alertId));
+            setAlerts(prev => prev.filter(a => a.id !== alertId));
+            toast.success('Alert deleted', {
+                description: alert ? `Removed ${alert.symbol} alert` : undefined
+            });
         } catch (err) {
             console.error('Failed to delete alert:', err);
+            toast.error('Failed to delete alert');
         }
     };
 
@@ -233,8 +244,8 @@ export default function AlertsPage() {
                                             type="button"
                                             onClick={() => setNewCondition('above')}
                                             className={`flex-1 px-4 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${newCondition === 'above'
-                                                    ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/30'
-                                                    : 'bg-muted text-muted-foreground border border-border'
+                                                ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/30'
+                                                : 'bg-muted text-muted-foreground border border-border'
                                                 }`}
                                         >
                                             <ArrowUp size={16} />
@@ -244,8 +255,8 @@ export default function AlertsPage() {
                                             type="button"
                                             onClick={() => setNewCondition('below')}
                                             className={`flex-1 px-4 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${newCondition === 'below'
-                                                    ? 'bg-rose-500/10 text-rose-500 border border-rose-500/30'
-                                                    : 'bg-muted text-muted-foreground border border-border'
+                                                ? 'bg-rose-500/10 text-rose-500 border border-rose-500/30'
+                                                : 'bg-muted text-muted-foreground border border-border'
                                                 }`}
                                         >
                                             <ArrowDown size={16} />
@@ -306,8 +317,8 @@ export default function AlertsPage() {
                                     exit={{ opacity: 0, scale: 0.9 }}
                                     transition={{ delay: idx * 0.05 }}
                                     className={`bg-card border rounded-3xl p-6 ${status === 'triggered'
-                                            ? 'border-orange-500/50 bg-orange-500/5'
-                                            : 'border-border'
+                                        ? 'border-orange-500/50 bg-orange-500/5'
+                                        : 'border-border'
                                         }`}
                                 >
                                     <div className="flex items-start justify-between mb-4">

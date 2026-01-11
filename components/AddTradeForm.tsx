@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Loader2, Plus, Edit2, X } from 'lucide-react';
 import { Trade } from '@/types/portfolio';
+import { toast } from 'sonner';
 
 const tradeSchema = z.object({
     ticker: z.string().min(1, 'Ticker is required').max(10, 'Ticker too long'),
@@ -93,10 +94,16 @@ export default function AddTradeForm({ portfolioId, onTradeAdded, editTrade, onC
             reset();
             onTradeAdded();
 
+            toast.success(isEditing ? 'Trade updated!' : 'Trade added!', {
+                description: `${data.action} ${data.quantity} ${data.ticker.toUpperCase()}`
+            });
+
             // Clear success message after 3 seconds
             setTimeout(() => setSuccess(false), 3000);
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'An error occurred');
+            const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+            setError(errorMessage);
+            toast.error('Failed to save trade', { description: errorMessage });
         } finally {
             setIsLoading(false);
         }

@@ -26,6 +26,7 @@ import {
     Loader2,
 } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 interface DCFInputs {
     symbol: string;
@@ -289,9 +290,13 @@ function DCFCalculatorContent() {
                 setShowSaveDialog(false);
                 setSaveName('');
                 fetchSavedAnalyses();
+                toast.success('Analysis saved!', { description: saveName });
+            } else {
+                toast.error('Failed to save analysis');
             }
         } catch (err) {
             console.error('Failed to save:', err);
+            toast.error('Failed to save analysis');
         } finally {
             setIsSaving(false);
         }
@@ -325,6 +330,7 @@ function DCFCalculatorContent() {
         setIsAdvancedMode(analysis.is_advanced || false);
         setStockName(analysis.name || analysis.symbol);
         setShowSavedModal(false);
+        toast.success('Analysis loaded', { description: analysis.name || analysis.symbol });
     };
 
     const deleteAnalysis = async (id: string) => {
@@ -383,8 +389,8 @@ function DCFCalculatorContent() {
                     <button
                         onClick={() => setIsAdvancedMode(!isAdvancedMode)}
                         className={`px-4 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-all ${isAdvancedMode
-                                ? 'bg-indigo-500 text-white'
-                                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                            ? 'bg-indigo-500 text-white'
+                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
                             }`}
                     >
                         <Settings2 size={16} />
