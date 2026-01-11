@@ -35,7 +35,10 @@ import {
     Check,
     Loader2,
     Bell,
+    X,
+    ShoppingCart,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import {
     LineChart,
     Line,
@@ -123,6 +126,15 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
     const [isInWatchlist, setIsInWatchlist] = useState(false);
     const [watchlistLoading, setWatchlistLoading] = useState(false);
 
+    // Quick Trade modal state
+    const [showQuickTrade, setShowQuickTrade] = useState(false);
+    const [tradeType, setTradeType] = useState<'buy' | 'sell'>('buy');
+    const [tradeQuantity, setTradeQuantity] = useState('');
+    const [tradePrice, setTradePrice] = useState('');
+    const [isSubmittingTrade, setIsSubmittingTrade] = useState(false);
+    const [portfolios, setPortfolios] = useState<any[]>([]);
+    const [selectedPortfolio, setSelectedPortfolio] = useState<string>('');
+
     // Track ticker view
     useEffect(() => {
         trackTickerView(symbol, user?.id || null);
@@ -166,6 +178,67 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
             console.error('Watchlist toggle error:', err);
         } finally {
             setWatchlistLoading(false);
+        }
+    };
+
+    // Fetch user portfolios for quick trade
+    useEffect(() => {
+        const fetchPortfolios = async () => {
+            try {
+                const res = await fetch('/api/portfolios');
+                const data = await res.json();
+                if (data.success && data.data) {
+                    setPortfolios(data.data);
+                    if (data.data.length > 0) {
+                        setSelectedPortfolio(data.data[0].id);
+                    }
+                }
+            } catch (err) {
+                console.error('Error fetching portfolios:', err);
+            }
+        };
+        if (user) fetchPortfolios();
+    }, [user]);
+
+    const openQuickTrade = () => {
+        setTradePrice(stock?.price?.toString() || '');
+        setTradeQuantity('');
+        setShowQuickTrade(true);
+    };
+
+    const handleQuickTrade = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!tradeQuantity || !tradePrice || !selectedPortfolio) return;
+
+        setIsSubmittingTrade(true);
+        try {
+            const res = await fetch('/api/trades', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    portfolio_id: selectedPortfolio,
+                    symbol: symbol,
+                    name: stock?.name,
+                    trade_type: tradeType,
+                    quantity: parseFloat(tradeQuantity),
+                    price: parseFloat(tradePrice),
+                    trade_date: new Date().toISOString().split('T')[0],
+                }),
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                setShowQuickTrade(false);
+                toast.success(`${tradeType === 'buy' ? 'Bought' : 'Sold'} ${tradeQuantity} shares`, {
+                    description: `${symbol} at $${parseFloat(tradePrice).toFixed(2)}`
+                });
+            } else {
+                toast.error('Trade failed', { description: data.error });
+            }
+        } catch (err) {
+            toast.error('Failed to submit trade');
+        } finally {
+            setIsSubmittingTrade(false);
         }
     };
 
@@ -424,6 +497,17 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
                                 <Target size={16} />
                                 Calculate DCF
                             </Link>
+
+                            {/* Quick Trade Button */}
+                            {user && portfolios.length > 0 && (
+                                <button
+                                    onClick={openQuickTrade}
+                                    className="mt-2 flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 hover:bg-emerald-500/20 transition-all"
+                                >
+                                    <ShoppingCart size={16} />
+                                    Quick Trade
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -996,6 +1080,161 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
                     </motion.div>
                 )}
             </div>
+
+            {/* Quick Trade Modal */}
+            <AnimatePresence>
+                {showQuickTrade && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setShowQuickTrade(false)}
+                            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="fixed inset-0 z-50 flex items-center justify-center p-6"
+                        >
+                            <div className="bg-card border border-border rounded-3xl p-8 w-full max-w-md shadow-2xl">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h3 className="text-xl font-black">Quick Trade</h3>
+                                    <button
+                                        onClick={() => setShowQuickTrade(false)}
+                                        className="p-2 rounded-lg hover:bg-muted text-muted-foreground"
+                                    >
+                                        <X size={18} />
+                                    </button>
+                                </div>
+
+                                <div className="flex items-center gap-4 mb-6 p-4 bg-muted rounded-2xl">
+                                    <div className="p-3 bg-primary/10 rounded-xl">
+                                        <TrendingUp className="text-primary" size={24} />
+                                    </div>
+                                    <div>
+                                        <p className="text-2xl font-black">{symbol}</p>
+                                        <p className="text-sm text-muted-foreground">{stock?.name}</p>
+                                    </div>
+                                    <div className="ml-auto text-right">
+                                        <p className="text-lg font-black">${stock?.price?.toFixed(2)}</p>
+                                        <p className={`text-xs font-bold ${(stock?.changePercent || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                            {(stock?.changePercent || 0) >= 0 ? '+' : ''}{stock?.changePercent?.toFixed(2)}%
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <form onSubmit={handleQuickTrade} className="space-y-4">
+                                    {/* Trade Type */}
+                                    <div className="flex gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setTradeType('buy')}
+                                            className={`flex-1 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${tradeType === 'buy'
+                                                    ? 'bg-emerald-500 text-white'
+                                                    : 'bg-muted text-muted-foreground border border-border'
+                                                }`}
+                                        >
+                                            <Plus size={16} />
+                                            Buy
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setTradeType('sell')}
+                                            className={`flex-1 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${tradeType === 'sell'
+                                                    ? 'bg-rose-500 text-white'
+                                                    : 'bg-muted text-muted-foreground border border-border'
+                                                }`}
+                                        >
+                                            <TrendingDown size={16} />
+                                            Sell
+                                        </button>
+                                    </div>
+
+                                    {/* Portfolio Selector */}
+                                    <div>
+                                        <label className="text-sm font-bold text-muted-foreground mb-2 block">
+                                            Portfolio
+                                        </label>
+                                        <select
+                                            value={selectedPortfolio}
+                                            onChange={(e) => setSelectedPortfolio(e.target.value)}
+                                            className="w-full px-4 py-3 bg-muted border border-border rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                        >
+                                            {portfolios.map((p) => (
+                                                <option key={p.id} value={p.id}>{p.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Quantity */}
+                                    <div>
+                                        <label className="text-sm font-bold text-muted-foreground mb-2 block">
+                                            Quantity
+                                        </label>
+                                        <input
+                                            type="number"
+                                            step="any"
+                                            value={tradeQuantity}
+                                            onChange={(e) => setTradeQuantity(e.target.value)}
+                                            placeholder="Number of shares"
+                                            className="w-full px-4 py-3 bg-muted border border-border rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                            required
+                                        />
+                                    </div>
+
+                                    {/* Price */}
+                                    <div>
+                                        <label className="text-sm font-bold text-muted-foreground mb-2 block">
+                                            Price per Share
+                                        </label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            value={tradePrice}
+                                            onChange={(e) => setTradePrice(e.target.value)}
+                                            className="w-full px-4 py-3 bg-muted border border-border rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                            required
+                                        />
+                                    </div>
+
+                                    {/* Total */}
+                                    {tradeQuantity && tradePrice && (
+                                        <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm text-muted-foreground">Total Value</span>
+                                                <span className="text-lg font-black text-primary">
+                                                    ${(parseFloat(tradeQuantity) * parseFloat(tradePrice)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Submit */}
+                                    <button
+                                        type="submit"
+                                        disabled={isSubmittingTrade || !tradeQuantity || !tradePrice}
+                                        className={`w-full py-4 rounded-xl font-black flex items-center justify-center gap-2 transition-all disabled:opacity-50 ${tradeType === 'buy'
+                                                ? 'bg-emerald-500 text-white hover:bg-emerald-600'
+                                                : 'bg-rose-500 text-white hover:bg-rose-600'
+                                            }`}
+                                    >
+                                        {isSubmittingTrade ? (
+                                            <Loader2 className="animate-spin" size={18} />
+                                        ) : (
+                                            <>
+                                                <ShoppingCart size={18} />
+                                                {tradeType === 'buy' ? 'Buy' : 'Sell'} {symbol}
+                                            </>
+                                        )}
+                                    </button>
+                                </form>
+                            </div>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

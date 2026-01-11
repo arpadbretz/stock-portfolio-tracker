@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Download, Trash2, AlertCircle, Shield, User, ChevronRight, Lock, Globe, Check, DollarSign } from 'lucide-react';
+import { ArrowLeft, Download, Trash2, AlertCircle, Shield, User, ChevronRight, Lock, Globe, Check, DollarSign, Loader2, Eye, EyeOff, Key } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { createClient } from '@/lib/supabase/client';
+import { toast } from 'sonner';
 
 const CURRENCIES = [
     { code: 'USD', symbol: '$', name: 'US Dollar' },
@@ -25,6 +27,15 @@ export default function AccountPage() {
     const [currency, setCurrency] = useState('USD');
     const [savingCurrency, setSavingCurrency] = useState(false);
 
+    // Password change states
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [showPasswords, setShowPasswords] = useState(false);
+    const [passwordLoading, setPasswordLoading] = useState(false);
+    const [passwordSuccess, setPasswordSuccess] = useState(false);
+    const supabase = createClient();
+
     useEffect(() => {
         // Load saved currency preference
         const saved = localStorage.getItem('preferredCurrency');
@@ -38,6 +49,47 @@ export default function AccountPage() {
         // Small delay for visual feedback
         await new Promise(r => setTimeout(r, 300));
         setSavingCurrency(false);
+    };
+
+    const handlePasswordChange = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError(null);
+        setPasswordSuccess(false);
+
+        if (newPassword !== confirmPassword) {
+            setError('New passwords do not match');
+            toast.error('Passwords do not match');
+            return;
+        }
+
+        if (newPassword.length < 6) {
+            setError('Password must be at least 6 characters');
+            toast.error('Password too short');
+            return;
+        }
+
+        setPasswordLoading(true);
+
+        try {
+            const { error } = await supabase.auth.updateUser({
+                password: newPassword
+            });
+
+            if (error) {
+                throw error;
+            }
+
+            setPasswordSuccess(true);
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+            toast.success('Password changed successfully!');
+        } catch (err: any) {
+            setError(err.message || 'Failed to update password');
+            toast.error('Failed to change password', { description: err.message });
+        } finally {
+            setPasswordLoading(false);
+        }
     };
 
     if (isLoading) {
@@ -193,6 +245,78 @@ export default function AccountPage() {
                             </div>
                         </section>
 
+                        {/* Change Password */}
+                        <section className="bg-card border border-border p-8 rounded-[40px] shadow-sm">
+                            <div className="flex items-start gap-6 mb-8">
+                                <div className="p-4 bg-violet-500/10 rounded-2xl">
+                                    <Key className="text-violet-500" size={24} />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-black mb-2">Change Password</h2>
+                                    <p className="text-sm text-muted-foreground leading-relaxed">
+                                        Update your password to keep your account secure.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <form onSubmit={handlePasswordChange} className="space-y-4">
+                                <div className="relative">
+                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                                    <input
+                                        type={showPasswords ? 'text' : 'password'}
+                                        value={newPassword}
+                                        onChange={(e) => setNewPassword(e.target.value)}
+                                        placeholder="New Password"
+                                        className="w-full pl-12 pr-12 py-4 bg-muted border border-border rounded-2xl font-bold focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                        required
+                                        minLength={6}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPasswords(!showPasswords)}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                                    >
+                                        {showPasswords ? <EyeOff size={18} /> : <Eye size={18} />}
+                                    </button>
+                                </div>
+
+                                <div className="relative">
+                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                                    <input
+                                        type={showPasswords ? 'text' : 'password'}
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        placeholder="Confirm New Password"
+                                        className="w-full pl-12 pr-4 py-4 bg-muted border border-border rounded-2xl font-bold focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                        required
+                                        minLength={6}
+                                    />
+                                </div>
+
+                                {passwordSuccess && (
+                                    <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center gap-3 text-emerald-500">
+                                        <Check size={18} />
+                                        <span className="font-bold text-sm">Password updated successfully!</span>
+                                    </div>
+                                )}
+
+                                <button
+                                    type="submit"
+                                    disabled={passwordLoading || !newPassword || !confirmPassword}
+                                    className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-violet-500 text-white rounded-[24px] font-black text-sm uppercase tracking-widest hover:bg-violet-600 transition-all disabled:opacity-50"
+                                >
+                                    {passwordLoading ? (
+                                        <Loader2 className="animate-spin" size={18} />
+                                    ) : (
+                                        <>
+                                            <Key size={18} />
+                                            Update Password
+                                        </>
+                                    )}
+                                </button>
+                            </form>
+                        </section>
+
                         {/* Export Module */}
                         <section className="bg-card border border-border p-8 rounded-[40px] shadow-sm group">
                             <div className="flex items-start gap-6 mb-8">
@@ -315,8 +439,4 @@ export default function AccountPage() {
             </div>
         </div>
     );
-}
-
-function Loader2({ className, size }: { className?: string, size?: number }) {
-    return <div className={`border-2 border-current border-t-transparent rounded-full animate-spin ${className}`} style={{ width: size, height: size }}></div>;
 }

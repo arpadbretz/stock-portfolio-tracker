@@ -18,6 +18,8 @@ import {
     AlertTriangle,
     Loader2,
     ExternalLink,
+    Edit2,
+    X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -47,6 +49,12 @@ export default function AlertsPage() {
     const [newCondition, setNewCondition] = useState<'above' | 'below'>('above');
     const [isCreating, setIsCreating] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Edit state
+    const [editingAlert, setEditingAlert] = useState<PriceAlert | null>(null);
+    const [editTargetPrice, setEditTargetPrice] = useState('');
+    const [editCondition, setEditCondition] = useState<'above' | 'below'>('above');
+    const [isUpdating, setIsUpdating] = useState(false);
 
     useEffect(() => {
         if (!authLoading && !user) {
@@ -146,6 +154,56 @@ export default function AlertsPage() {
         } catch (err) {
             console.error('Failed to delete alert:', err);
             toast.error('Failed to delete alert');
+        }
+    };
+
+    const startEditing = (alert: PriceAlert) => {
+        setEditingAlert(alert);
+        setEditTargetPrice(alert.target_price.toString());
+        setEditCondition(alert.condition);
+    };
+
+    const cancelEditing = () => {
+        setEditingAlert(null);
+        setEditTargetPrice('');
+        setEditCondition('above');
+    };
+
+    const handleUpdateAlert = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingAlert || !editTargetPrice) return;
+
+        setIsUpdating(true);
+        setError(null);
+
+        try {
+            const res = await fetch('/api/alerts', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: editingAlert.id,
+                    target_price: parseFloat(editTargetPrice),
+                    condition: editCondition,
+                }),
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                fetchAlerts();
+                cancelEditing();
+                toast.success('Alert updated!', {
+                    description: `${editingAlert.symbol} ${editCondition} $${editTargetPrice}`
+                });
+            } else {
+                setError(data.error || 'Failed to update alert');
+                toast.error('Failed to update alert', { description: data.error });
+            }
+        } catch (err) {
+            setError('Failed to update alert');
+            toast.error('Failed to update alert');
+        } finally {
+            setIsUpdating(false);
         }
     };
 
@@ -340,12 +398,20 @@ export default function AlertsPage() {
                                                 )}
                                             </div>
                                         </div>
-                                        <button
-                                            onClick={() => handleDeleteAlert(alert.id)}
-                                            className="p-2 rounded-lg hover:bg-rose-500/10 text-muted-foreground hover:text-rose-500 transition-all"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
+                                        <div className="flex items-center gap-1">
+                                            <button
+                                                onClick={() => startEditing(alert)}
+                                                className="p-2 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-all"
+                                            >
+                                                <Edit2 size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteAlert(alert.id)}
+                                                className="p-2 rounded-lg hover:bg-rose-500/10 text-muted-foreground hover:text-rose-500 transition-all"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
                                     </div>
 
                                     <div className="space-y-3 mb-4">
@@ -391,6 +457,112 @@ export default function AlertsPage() {
                     </AnimatePresence>
                 </div>
             )}
+
+            {/* Edit Alert Modal */}
+            <AnimatePresence>
+                {editingAlert && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={cancelEditing}
+                            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="fixed inset-0 z-50 flex items-center justify-center p-6"
+                        >
+                            <div className="bg-card border border-border rounded-3xl p-8 w-full max-w-md shadow-2xl">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h3 className="text-xl font-black">Edit Alert</h3>
+                                    <button
+                                        onClick={cancelEditing}
+                                        className="p-2 rounded-lg hover:bg-muted text-muted-foreground"
+                                    >
+                                        <X size={18} />
+                                    </button>
+                                </div>
+
+                                <div className="mb-6">
+                                    <p className="text-sm text-muted-foreground mb-1">Symbol</p>
+                                    <p className="text-2xl font-black">{editingAlert.symbol}</p>
+                                </div>
+
+                                <form onSubmit={handleUpdateAlert} className="space-y-4">
+                                    <div>
+                                        <label className="text-sm font-bold text-muted-foreground mb-2 block">
+                                            Target Price
+                                        </label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            value={editTargetPrice}
+                                            onChange={(e) => setEditTargetPrice(e.target.value)}
+                                            className="w-full px-4 py-3 bg-muted border border-border rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                            required
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="text-sm font-bold text-muted-foreground mb-2 block">
+                                            Condition
+                                        </label>
+                                        <div className="flex gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setEditCondition('above')}
+                                                className={`flex-1 px-4 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${editCondition === 'above'
+                                                        ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/30'
+                                                        : 'bg-muted text-muted-foreground border border-border'
+                                                    }`}
+                                            >
+                                                <ArrowUp size={16} />
+                                                Above
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setEditCondition('below')}
+                                                className={`flex-1 px-4 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${editCondition === 'below'
+                                                        ? 'bg-rose-500/10 text-rose-500 border border-rose-500/30'
+                                                        : 'bg-muted text-muted-foreground border border-border'
+                                                    }`}
+                                            >
+                                                <ArrowDown size={16} />
+                                                Below
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex gap-3 pt-4">
+                                        <button
+                                            type="button"
+                                            onClick={cancelEditing}
+                                            className="flex-1 px-6 py-3 bg-muted text-muted-foreground rounded-xl font-bold"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={isUpdating || !editTargetPrice}
+                                            className="flex-1 px-6 py-3 bg-primary text-primary-foreground rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+                                        >
+                                            {isUpdating ? (
+                                                <Loader2 className="animate-spin" size={16} />
+                                            ) : (
+                                                <Check size={16} />
+                                            )}
+                                            Save Changes
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

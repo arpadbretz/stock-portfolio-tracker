@@ -23,6 +23,7 @@ export const metadata: Metadata = {
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import CookieBanner from "@/components/CookieBanner";
+import CommandPalette from "@/components/CommandPalette";
 import { Toaster } from "sonner";
 
 export default function RootLayout({
@@ -44,6 +45,7 @@ export default function RootLayout({
           <ThemeProvider>
             {children}
             <CookieBanner />
+            <CommandPalette />
             <Toaster
               position="bottom-right"
               toastOptions={{
