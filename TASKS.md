@@ -11,7 +11,7 @@
 | ID | Task | Status | Effort | Notes |
 |----|------|--------|--------|-------|
 | AUTH-001 | Google OAuth Login | ✅ | 1h | Implemented Jan 11, 2026 |
-| AUTH-002 | Apple Sign-In | ✅ | 1h | Implemented Jan 11, 2026 |
+| AUTH-002 | Apple Sign-In | ⏸️ | 1h | Blocked: Requires paid Apple Developer account |
 | AUTH-003 | Change Password Feature | ⬜ | 2h | Account settings page |
 | AUTH-004 | Linked Accounts Display | ⬜ | 2h | Show connected OAuth providers |
 
