@@ -29,19 +29,14 @@ export default function UserButton() {
                 <ChevronDown size={14} className={`text-muted-foreground transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
             </button>
 
-            {/* Dropdown Menu */}
+            {/* Dropdown Menu - Opens upward since button is at bottom of sidebar */}
             {isOpen && (
                 <>
                     <div
                         className="fixed inset-0 z-10"
                         onClick={() => setIsOpen(false)}
                     />
-                    <div className="absolute right-0 mt-3 w-64 bg-card border border-border rounded-[24px] shadow-2xl overflow-hidden z-20 animate-in fade-in zoom-in-95 duration-200">
-                        <div className="p-4 border-b border-border bg-muted/30">
-                            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mb-1">Signed in as</p>
-                            <p className="text-sm text-foreground font-black truncate">{user.email}</p>
-                        </div>
-
+                    <div className="absolute bottom-full left-0 right-0 mb-2 w-64 bg-card border border-border rounded-[24px] shadow-2xl overflow-hidden z-20 animate-in fade-in zoom-in-95 duration-200">
                         <div className="p-2">
                             <Link
                                 href="/dashboard/account"
@@ -62,6 +57,11 @@ export default function UserButton() {
                                 <LogOut size={18} />
                                 <span>Sign Out</span>
                             </button>
+                        </div>
+
+                        <div className="p-4 border-t border-border bg-muted/30">
+                            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mb-1">Signed in as</p>
+                            <p className="text-sm text-foreground font-black truncate">{user.email}</p>
                         </div>
                     </div>
                 </>

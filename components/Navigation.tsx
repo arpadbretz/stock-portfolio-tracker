@@ -16,7 +16,6 @@ import {
     Search,
     Bell,
     Calculator,
-    Crown,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -31,7 +30,6 @@ const links = [
     { name: 'DCF Calculator', href: '/dashboard/dcf', icon: <Calculator size={20} />, status: 'active' },
     { name: 'Portfolios', href: '/dashboard/portfolios/manage', icon: <Briefcase size={20} />, status: 'active' },
     { name: 'Import Data', href: '/dashboard/import', icon: <Upload size={20} />, status: 'active' },
-    { name: 'Admin', href: '/dashboard/admin', icon: <Crown size={20} />, status: 'active' },
     { name: 'Account', href: '/dashboard/account', icon: <Settings size={20} />, status: 'active' },
 ];
 
