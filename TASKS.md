@@ -12,7 +12,7 @@
 |----|------|--------|--------|-------|
 | AUTH-001 | Google OAuth Login | ✅ | 1h | Implemented Jan 11, 2026 |
 | AUTH-002 | Apple Sign-In | ⏸️ | 1h | Blocked: Requires paid Apple Developer account |
-| AUTH-003 | Change Password Feature | ⬜ | 2h | Account settings page |
+| AUTH-003 | Change Password Feature | ✅ | 2h | Implemented Jan 11, 2026 |
 | AUTH-004 | Linked Accounts Display | ⬜ | 2h | Show connected OAuth providers |
 
 ## Dashboard
@@ -29,7 +29,7 @@
 |----|------|--------|--------|-------|
 | TICK-001 | Technical Indicators | ⬜ | 6h | RSI, MACD, MA overlays |
 | TICK-002 | Peer Comparison Table | ⬜ | 4h | Same industry/sector stocks |
-| TICK-003 | Quick Add to Portfolio | ⬜ | 2h | Trade form modal from ticker |
+| TICK-003 | Quick Add to Portfolio | ✅ | 2h | Implemented Jan 11, 2026 |
 
 ## Account Settings
 
@@ -45,7 +45,7 @@
 | ID | Task | Status | Effort | Notes |
 |----|------|--------|--------|-------|
 | ALRT-001 | Email Notifications | ⬜ | 4h | Edge Function + Resend |
-| ALRT-002 | Edit Existing Alerts | ⬜ | 2h | PUT endpoint + UI |
+| ALRT-002 | Edit Existing Alerts | ✅ | 2h | Implemented Jan 11, 2026 |
 
 ## UX/UI Global
 
@@ -53,8 +53,8 @@
 |----|------|--------|--------|-------|
 | UX-001 | Loading Skeletons | ✅ | 3h | Implemented Jan 11, 2026 |
 | UX-002 | Toast Notifications | ✅ | 1h | Implemented Jan 11, 2026 |
-| UX-003 | Keyboard Shortcuts | ⬜ | 2h | Global hotkey handler |
-| UX-004 | Command Palette | ⬜ | 3h | cmdk integration |
+| UX-003 | Keyboard Shortcuts | ✅ | 2h | Cmd+K Command Palette |
+| UX-004 | Command Palette | ✅ | 3h | Implemented Jan 11, 2026 |
 
 ## Landing Page
 
@@ -309,13 +309,13 @@
 
 | Priority | Total | Done | Remaining |
 |----------|-------|------|-----------|
-| 🔴 High | 24 | 4 | 20 |
+| 🔴 High | 24 | 9 | 15 |
 | 🟡 Medium | 38 | 0 | 38 |
 | 🟢 Low | 20 | 0 | 20 |
 | ✅ Completed | 43 | 43 | 0 |
-| **TOTAL** | **125** | **47** | **78** |
+| **TOTAL** | **125** | **52** | **73** |
 
-**Completion Rate:** 37.6%
+**Completion Rate:** 41.6%
 
 ---
 
