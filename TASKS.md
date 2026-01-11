@@ -10,8 +10,8 @@
 
 | ID | Task | Status | Effort | Notes |
 |----|------|--------|--------|-------|
-| AUTH-001 | Google OAuth Login | ⬜ | 1h | Supabase config + login page update |
-| AUTH-002 | Apple Sign-In | ⬜ | 1h | Requires Apple Developer account |
+| AUTH-001 | Google OAuth Login | ✅ | 1h | Implemented Jan 11, 2026 |
+| AUTH-002 | Apple Sign-In | ✅ | 1h | Implemented Jan 11, 2026 |
 | AUTH-003 | Change Password Feature | ⬜ | 2h | Account settings page |
 | AUTH-004 | Linked Accounts Display | ⬜ | 2h | Show connected OAuth providers |
 
@@ -52,7 +52,7 @@
 | ID | Task | Status | Effort | Notes |
 |----|------|--------|--------|-------|
 | UX-001 | Loading Skeletons | ⬜ | 3h | Replace all spinners |
-| UX-002 | Toast Notifications | ⬜ | 1h | Install sonner, add provider |
+| UX-002 | Toast Notifications | ✅ | 1h | Implemented Jan 11, 2026 |
 | UX-003 | Keyboard Shortcuts | ⬜ | 2h | Global hotkey handler |
 | UX-004 | Command Palette | ⬜ | 3h | cmdk integration |
 
@@ -309,13 +309,13 @@
 
 | Priority | Total | Done | Remaining |
 |----------|-------|------|-----------|
-| 🔴 High | 24 | 0 | 24 |
+| 🔴 High | 24 | 3 | 21 |
 | 🟡 Medium | 38 | 0 | 38 |
 | 🟢 Low | 20 | 0 | 20 |
-| ✅ Completed | 39 | 39 | 0 |
-| **TOTAL** | **121** | **39** | **82** |
+| ✅ Completed | 42 | 42 | 0 |
+| **TOTAL** | **124** | **45** | **79** |
 
-**Completion Rate:** 32.2%
+**Completion Rate:** 36.3%
 
 ---
 
