@@ -1,37 +1,103 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 📈 StockTrackr.eu
 
-## Getting Started
+> A professional-grade stock portfolio tracker built with Next.js 15, Supabase, and TypeScript.
 
-First, run the development server:
+![Version](https://img.shields.io/badge/version-2.0-blue)
+![Status](https://img.shields.io/badge/status-active-brightgreen)
+![License](https://img.shields.io/badge/license-private-red)
+
+---
+
+## 🚀 Features
+
+### Portfolio Management
+- Multi-portfolio support with easy switching
+- Add/edit/delete trades with full history
+- Live price updates from Yahoo Finance
+- Multi-currency support (USD, EUR, HUF, GBP)
+- CSV import for bulk trade entry
+
+### Stock Research
+- Comprehensive ticker pages with 50+ data points
+- Interactive price charts with multiple timeframes
+- Analyst ratings and price targets
+- Institutional ownership tracking
+- Insider transaction monitoring
+- Real-time news feed
+- SEC filings access
+
+### Advanced Tools
+- **DCF Calculator** with Simple & Advanced modes
+- **Watchlist** with real-time price tracking
+- **Price Alerts** with in-app notifications
+- **Portfolio Sharing** via secure public links
+
+### Analytics & Reports
+- Sector allocation visualization
+- Performance tracking over time
+- Comprehensive portfolio report
+- Export data (JSON, CSV)
+
+---
+
+## 🛠️ Tech Stack
+
+- **Framework:** Next.js 15 (App Router)
+- **Language:** TypeScript
+- **Database:** PostgreSQL (Supabase)
+- **Auth:** Supabase Auth (Email + GitHub)
+- **Styling:** Tailwind CSS
+- **Charts:** Recharts
+- **Animations:** Framer Motion
+- **Stock Data:** Yahoo Finance API
+
+---
+
+## 📋 Documentation
+
+| Document | Description |
+|----------|-------------|
+| [ROADMAP.md](./ROADMAP.md) | Master implementation roadmap with 85 features |
+| [TASKS.md](./TASKS.md) | Detailed task tracker with status |
+| [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) | Common issues and solutions |
+
+---
+
+## 🏃 Getting Started
 
 ```bash
+# Install dependencies
+npm install
+
+# Set up environment variables
+cp env.example .env.local
+
+# Run development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📊 Project Status
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Metric | Value |
+|--------|-------|
+| Total Features Planned | 121 |
+| Features Completed | 39 |
+| Completion Rate | 32% |
+| High Priority Remaining | 24 |
 
-## Learn More
+See [ROADMAP.md](./ROADMAP.md) for full details.
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🔒 Security & Compliance
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Row Level Security (RLS) on all tables
+- GDPR compliant with data export/deletion
+- Encrypted password storage
+- Secure session management
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# Trigger redeploy with updated Supabase URLs
+*Built with ❤️ by Prometheus Digital*
