@@ -33,6 +33,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PortfolioSwitcher from '@/components/PortfolioSwitcher';
 import { motion, AnimatePresence } from 'framer-motion';
+import { SkeletonDashboard } from '@/components/Skeleton';
 
 export default function DashboardPage() {
   const [portfolio, setPortfolio] = useState<{
@@ -98,11 +99,7 @@ export default function DashboardPage() {
   };
 
   if (authLoading || (isLoading && !portfolio)) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background text-foreground">
-        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
+    return <SkeletonDashboard />;
   }
 
   const summary = portfolio?.summary;

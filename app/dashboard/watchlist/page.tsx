@@ -18,6 +18,8 @@ import {
     Star,
     Loader2,
 } from 'lucide-react';
+import { SkeletonWatchlist } from '@/components/Skeleton';
+import { toast } from 'sonner';
 
 interface WatchlistItem {
     id: string;
@@ -126,11 +128,14 @@ export default function WatchlistPage() {
             if (data.success) {
                 setAddSymbol('');
                 fetchWatchlist();
+                toast.success('Added to watchlist!', { description: addSymbol.toUpperCase() });
             } else {
                 setError(data.error || 'Failed to add');
+                toast.error('Failed to add', { description: data.error });
             }
         } catch (err) {
             setError('Failed to add to watchlist');
+            toast.error('Failed to add to watchlist');
         } finally {
             setIsAdding(false);
         }
@@ -140,17 +145,15 @@ export default function WatchlistPage() {
         try {
             await fetch(`/api/watchlist?symbol=${symbol}`, { method: 'DELETE' });
             setWatchlist(prev => prev.filter(item => item.symbol !== symbol));
+            toast.success('Removed from watchlist', { description: symbol });
         } catch (err) {
             console.error('Failed to remove:', err);
+            toast.error('Failed to remove');
         }
     };
 
     if (authLoading || isLoading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen bg-background">
-                <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-            </div>
-        );
+        return <SkeletonWatchlist />;
     }
 
     return (
