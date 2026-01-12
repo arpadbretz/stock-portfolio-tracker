@@ -58,6 +58,14 @@ export default function DashboardPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
 
+  // Load saved currency preference
+  useEffect(() => {
+    const savedCurrency = localStorage.getItem('preferredCurrency');
+    if (savedCurrency && ['USD', 'EUR', 'HUF'].includes(savedCurrency)) {
+      setCurrency(savedCurrency as CurrencyCode);
+    }
+  }, []);
+
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login');
@@ -151,7 +159,10 @@ export default function DashboardPage() {
                 {(['USD', 'EUR', 'HUF'] as CurrencyCode[]).map((c) => (
                   <button
                     key={c}
-                    onClick={() => setCurrency(c)}
+                    onClick={() => {
+                      setCurrency(c);
+                      localStorage.setItem('preferredCurrency', c);
+                    }}
                     className={`px-6 py-2.5 rounded-[18px] text-[10px] font-black uppercase tracking-widest transition-all ${currency === c
                       ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
                       : 'text-muted-foreground hover:text-foreground'

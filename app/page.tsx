@@ -417,11 +417,11 @@ export default function LandingPage() {
                             <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                 <div className="flex items-center gap-2">
                                     <Check size={16} className="text-emerald-500" />
-                                    <span>No setup fees</span>
+                                    <span>100% Free Forever</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Check size={16} className="text-emerald-500" />
-                                    <span>Cancel anytime</span>
+                                    <span>No hidden fees</span>
                                 </div>
                             </div>
                         </div>
