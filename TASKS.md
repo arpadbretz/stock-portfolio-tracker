@@ -57,12 +57,20 @@
 | UX-003 | Keyboard Shortcuts | ✅ | 2h | Cmd+K Command Palette |
 | UX-004 | Command Palette | ✅ | 3h | Implemented Jan 11, 2026 |
 
-## Landing Page
+## Landing Page (First Impression)
+
+> **Priority: CRITICAL** - This is the first interface users see. Must be polished.
 
 | ID | Task | Status | Effort | Notes |
 |----|------|--------|--------|-------|
-| LAND-001 | Testimonials Section | ⬜ | 2h | Carousel of quotes |
-| LAND-002 | Demo Video/GIF | ⬜ | 2h | Screen recording + edit |
+| LAND-001 | Hero Section Polish | ⬜ | 3h | Premium animations, compelling copy |
+| LAND-002 | Feature Showcase Cards | ⬜ | 2h | Interactive feature highlights |
+| LAND-003 | Live Data Preview | ⬜ | 3h | Real stock tickers / mock portfolio |
+| LAND-004 | Social Proof Stats | ⬜ | 1h | User count, trades tracked, etc |
+| LAND-005 | Pricing/Free Tier Section | ⬜ | 2h | Clear value proposition |
+| LAND-006 | CTA Optimization | ⬜ | 1h | Multiple conversion points |
+| LAND-007 | Mobile Landing Optimization | ⬜ | 2h | Mobile-first responsive design |
+| LAND-008 | Performance Lighthouse Score | ⬜ | 2h | Target 90+ on all metrics |
 
 ## Mobile Experience
 
@@ -310,13 +318,13 @@
 
 | Priority | Total | Done | Remaining |
 |----------|-------|------|-----------|
-| 🔴 High | 25 | 15 | 10 |
+| 🔴 High | 31 | 15 | 16 |
 | 🟡 Medium | 38 | 0 | 38 |
 | 🟢 Low | 20 | 0 | 20 |
 | ✅ Completed | 43 | 43 | 0 |
-| **TOTAL** | **126** | **58** | **68** |
+| **TOTAL** | **132** | **58** | **74** |
 
-**Completion Rate:** 46.0%
+**Completion Rate:** 43.9%
 
 ---
 
