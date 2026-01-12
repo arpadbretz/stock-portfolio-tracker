@@ -14,6 +14,7 @@
 | AUTH-002 | Apple Sign-In | ⏸️ | 1h | Blocked: Requires paid Apple Developer account |
 | AUTH-003 | Change Password Feature | ✅ | 2h | Implemented Jan 11, 2026 |
 | AUTH-004 | Linked Accounts Display | ⬜ | 2h | Show connected OAuth providers |
+| AUTH-005 | Resend Verification Email | ✅ | 1h | Implemented Jan 12, 2026 |
 
 ## Dashboard
 
@@ -36,8 +37,8 @@
 | ID | Task | Status | Effort | Notes |
 |----|------|--------|--------|-------|
 | ACCT-001 | Profile Photo Upload | ⬜ | 2h | Supabase storage bucket |
-| ACCT-002 | Display Name Setting | ⬜ | 1h | Account settings field |
-| ACCT-003 | In-App Password Change | ⬜ | 2h | Use Supabase auth update |
+| ACCT-002 | Display Name Setting | ✅ | 1h | Implemented Jan 12, 2026 |
+| ACCT-003 | In-App Password Change | ✅ | 2h | Done via AUTH-003 |
 | ACCT-004 | Linked Accounts Manager | ⬜ | 3h | View/disconnect OAuth |
 
 ## Price Alerts
@@ -68,7 +69,7 @@
 | ID | Task | Status | Effort | Notes |
 |----|------|--------|--------|-------|
 | MOB-001 | Bottom Tab Bar | ⬜ | 3h | Fixed mobile navigation |
-| MOB-002 | Pull to Refresh | ⬜ | 2h | Dashboard & holdings |
+| MOB-002 | Pull to Refresh | ✅ | 2h | Component created Jan 12, 2026 |
 
 ---
 
@@ -309,14 +310,14 @@
 
 | Priority | Total | Done | Remaining |
 |----------|-------|------|-----------|
-| 🔴 High | 24 | 9 | 15 |
+| 🔴 High | 25 | 13 | 12 |
 | 🟡 Medium | 38 | 0 | 38 |
 | 🟢 Low | 20 | 0 | 20 |
 | ✅ Completed | 43 | 43 | 0 |
-| **TOTAL** | **125** | **52** | **73** |
+| **TOTAL** | **126** | **56** | **70** |
 
-**Completion Rate:** 41.6%
+**Completion Rate:** 44.4%
 
 ---
 
-*Updated: January 11, 2026*
+*Updated: January 12, 2026*
