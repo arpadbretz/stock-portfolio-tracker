@@ -49,6 +49,8 @@ import {
     Area,
     AreaChart,
 } from 'recharts';
+import TechnicalIndicators from '@/components/TechnicalIndicators';
+import PeerComparison from '@/components/PeerComparison';
 
 interface StockData {
     symbol: string;
@@ -1080,6 +1082,33 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
                             {stock.description}
                         </p>
                     </motion.div>
+                )}
+
+                {/* Technical Indicators */}
+                {chartData.length > 30 && (
+                    <div className="mt-8">
+                        <TechnicalIndicators
+                            historicalData={chartData.map(d => ({
+                                date: d.date,
+                                close: d.close,
+                            }))}
+                            symbol={symbol}
+                        />
+                    </div>
+                )}
+
+                {/* Peer Comparison */}
+                {stock && stock.sector && (
+                    <div className="mt-8">
+                        <PeerComparison
+                            symbol={symbol}
+                            sector={stock.sector}
+                            industry={stock.industry || stock.sector}
+                            currentPrice={stock.price}
+                            currentPE={stock.trailingPE}
+                            currentMarketCap={stock.marketCap}
+                        />
+                    </div>
                 )}
             </div>
 
