@@ -21,6 +21,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/components/auth/AuthProvider';
 import ThemeToggle from '@/components/ThemeToggle';
 import UserButton from '@/components/auth/UserButton';
+import MobileTabBar from '@/components/MobileTabBar';
 
 const links = [
     { name: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard size={20} />, status: 'active' },
@@ -272,6 +273,9 @@ export default function Navigation() {
                     </>
                 )}
             </AnimatePresence>
+
+            {/* Mobile Bottom Tab Bar */}
+            <MobileTabBar />
         </>
     );
 }
