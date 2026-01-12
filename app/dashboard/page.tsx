@@ -27,7 +27,8 @@ import {
   LineChart,
   ArrowUpRight,
   ArrowDownRight,
-  Zap
+  Zap,
+  Settings2
 } from 'lucide-react';
 import AddTradeForm from '@/components/AddTradeForm';
 import HoldingsTable from '@/components/HoldingsTable';
@@ -40,6 +41,11 @@ import Link from 'next/link';
 import PortfolioSwitcher from '@/components/PortfolioSwitcher';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SkeletonDashboard } from '@/components/Skeleton';
+import {
+  useDashboardLayout,
+  CustomizationPanel,
+  DEFAULT_WIDGET_CONFIGS
+} from '@/components/DashboardWidgets';
 
 export default function DashboardPage() {
   const [portfolio, setPortfolio] = useState<{
@@ -57,6 +63,15 @@ export default function DashboardPage() {
 
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
+
+  // Widget customization
+  const {
+    isCustomizing,
+    setIsCustomizing,
+    toggleWidgetVisibility,
+    isWidgetVisible,
+    resetLayout
+  } = useDashboardLayout();
 
   // Load saved currency preference
   useEffect(() => {
@@ -186,13 +201,37 @@ export default function DashboardPage() {
                 onClick={() => fetchPortfolio(true)}
                 disabled={isRefreshing}
                 className="p-3.5 rounded-2xl bg-card border border-border shadow-md hover:bg-muted transition-all disabled:opacity-50"
+                title="Refresh data"
               >
                 <RefreshCw size={20} className={isRefreshing ? 'animate-spin text-primary' : 'text-foreground'} />
+              </motion.button>
+
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setIsCustomizing(!isCustomizing)}
+                className={`p-3.5 rounded-2xl border shadow-md transition-all ${isCustomizing
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'bg-card border-border hover:bg-muted'
+                  }`}
+                title="Customize dashboard"
+              >
+                <Settings2 size={20} className={isCustomizing ? '' : 'text-foreground'} />
               </motion.button>
             </div>
           </div>
 
         </header>
+
+        {/* Widget Customization Panel */}
+        <CustomizationPanel
+          isOpen={isCustomizing}
+          onClose={() => setIsCustomizing(false)}
+          widgetConfigs={DEFAULT_WIDGET_CONFIGS}
+          isWidgetVisible={isWidgetVisible}
+          toggleWidgetVisibility={toggleWidgetVisibility}
+          onReset={resetLayout}
+        />
 
         {/* Global Metric Clusters */}
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-12">

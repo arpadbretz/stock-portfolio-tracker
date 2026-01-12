@@ -52,9 +52,9 @@ const INDUSTRY_PEERS: Record<string, string[]> = {
     'Information Technology Services': ['ACN', 'IBM', 'CTSH', 'INFY', 'WIT'],
 
     // Consumer Electronics (Apple's actual industry)
-    'Consumer Electronics': ['AAPL', 'SONY', 'SSNLF', 'LPL', 'GPRO', 'SONO', 'HEAR'],
+    'Consumer Electronics': ['AAPL', 'SONY', 'DELL', 'HPQ', 'LOGI', 'GPRO', 'SONO'],
     'Electronic Components': ['APH', 'TEL', 'GLW', 'JBL', 'FLEX'],
-    'Computer Hardware': ['AAPL', 'DELL', 'HPQ', 'HPE', 'LOGI'],
+    'Computer Hardware': ['AAPL', 'DELL', 'HPQ', 'HPE', 'LOGI', 'NTAP', 'WDC'],
 
     // Healthcare/Pharma
     'Biotechnology': ['VRTX', 'REGN', 'AMGN', 'GILD', 'MRNA', 'BIIB', 'ILMN', 'ALNY', 'BNTX'],
@@ -195,40 +195,55 @@ export default function PeerComparison({
             try {
                 // Use smart matching to find peers
                 const peerSymbols = findPeers(industry, sector);
+                console.log(`[PeerComparison] Finding peers for ${symbol} in ${industry} / ${sector}`);
+                console.log(`[PeerComparison] Found peer symbols:`, peerSymbols);
 
                 // Filter out the current symbol and take top 6
                 const filteredPeers = peerSymbols.filter(s => s !== symbol).slice(0, 6);
+                console.log(`[PeerComparison] Filtered peers to fetch:`, filteredPeers);
+
+                if (filteredPeers.length === 0) {
+                    console.log(`[PeerComparison] No peers to fetch`);
+                    setPeers([]);
+                    setIsLoading(false);
+                    return;
+                }
 
                 // Fetch quotes for all peers in parallel
                 const peerPromises = filteredPeers.map(async (peerSymbol) => {
                     try {
                         const res = await fetch(`/api/stock/${peerSymbol}`);
-                        if (res.ok) {
-                            const data = await res.json();
-                            if (data.success) {
-                                return {
-                                    symbol: peerSymbol,
-                                    name: data.data.name || peerSymbol,
-                                    price: data.data.price || 0,
-                                    changePercent: data.data.changePercent || 0,
-                                    marketCap: data.data.marketCap || 0,
-                                    pe: data.data.trailingPE || null,
-                                    revenue: null,
-                                };
-                            }
+                        if (!res.ok) {
+                            console.warn(`[PeerComparison] HTTP ${res.status} for ${peerSymbol}`);
+                            return null;
+                        }
+                        const data = await res.json();
+                        if (data.success && data.data) {
+                            return {
+                                symbol: peerSymbol,
+                                name: data.data.name || data.data.shortName || peerSymbol,
+                                price: data.data.price || data.data.regularMarketPrice || 0,
+                                changePercent: data.data.changePercent || data.data.regularMarketChangePercent || 0,
+                                marketCap: data.data.marketCap || 0,
+                                pe: data.data.trailingPE || data.data.forwardPE || null,
+                                revenue: null,
+                            };
+                        } else {
+                            console.warn(`[PeerComparison] No data for ${peerSymbol}:`, data);
                         }
                     } catch (e) {
-                        console.error(`Failed to fetch peer ${peerSymbol}:`, e);
+                        console.error(`[PeerComparison] Error fetching ${peerSymbol}:`, e);
                     }
                     return null;
                 });
 
                 const results = await Promise.all(peerPromises);
                 const peerData = results.filter((p): p is NonNullable<typeof p> => p !== null);
+                console.log(`[PeerComparison] Successfully fetched ${peerData.length} peers`);
 
                 setPeers(peerData);
             } catch (e) {
-                console.error('Failed to fetch peers:', e);
+                console.error('[PeerComparison] Failed to fetch peers:', e);
                 setError('Failed to load peer comparison');
             } finally {
                 setIsLoading(false);
