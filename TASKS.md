@@ -20,8 +20,8 @@
 
 | ID | Task | Status | Effort | Notes |
 |----|------|--------|--------|-------|
-| DASH-001 | Daily P&L Summary | ⬜ | 3h | Calculate from previous close |
-| DASH-002 | Quick Actions Bar | ⬜ | 2h | Add trade, refresh, export |
+| DASH-001 | Daily P&L Summary | ✅ | 3h | Implemented Jan 12, 2026 |
+| DASH-002 | Quick Actions Bar | ✅ | 2h | Implemented Jan 12, 2026 |
 | DASH-003 | Widget Customization | ⬜ | 8h | Drag-and-drop grid layout |
 
 ## Stock Research (Ticker Page)
@@ -310,13 +310,13 @@
 
 | Priority | Total | Done | Remaining |
 |----------|-------|------|-----------|
-| 🔴 High | 25 | 13 | 12 |
+| 🔴 High | 25 | 15 | 10 |
 | 🟡 Medium | 38 | 0 | 38 |
 | 🟢 Low | 20 | 0 | 20 |
 | ✅ Completed | 43 | 43 | 0 |
-| **TOTAL** | **126** | **56** | **70** |
+| **TOTAL** | **126** | **58** | **68** |
 
-**Completion Rate:** 44.4%
+**Completion Rate:** 46.0%
 
 ---
 
