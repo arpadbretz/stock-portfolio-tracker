@@ -60,6 +60,8 @@ export function aggregateHoldings(trades: Trade[], prices: Map<string, PriceData
             allocation: 0, // Will be calculated in summary
             sector: priceData?.sector,
             industry: priceData?.industry,
+            dayChange: priceData?.change || 0,
+            dayChangePercent: priceData?.changePercent || 0,
         });
     }
 

@@ -36,7 +36,7 @@
 
 | ID | Task | Status | Effort | Notes |
 |----|------|--------|--------|-------|
-| ACCT-001 | Profile Photo Upload | ⬜ | 2h | Supabase storage bucket |
+| ACCT-001 | Profile Photo Upload | ✅ | 2h | Implemented Jan 12, 2026 |
 | ACCT-002 | Display Name Setting | ✅ | 1h | Implemented Jan 12, 2026 |
 | ACCT-003 | In-App Password Change | ✅ | 2h | Done via AUTH-003 |
 | ACCT-004 | Linked Accounts Manager | ⬜ | 3h | View/disconnect OAuth |
@@ -68,7 +68,7 @@
 | LAND-003 | Live Data Preview | ⬜ | 3h | Real stock tickers / mock portfolio |
 | LAND-004 | Social Proof Stats | ✅ | 1h | Implemented Jan 12, 2026 |
 | LAND-005 | Pricing/Free Tier Section | ✅ | 2h | EU Trust section enhanced |
-| LAND-006 | CTA Optimization | ⬜ | 1h | Multiple conversion points |
+| LAND-006 | CTA Optimization | ✅ | 1h | Implemented Jan 12, 2026 |
 | LAND-007 | Mobile Landing Optimization | ⬜ | 2h | Mobile-first responsive design |
 | LAND-008 | Performance Lighthouse Score | ⬜ | 2h | Target 90+ on all metrics |
 
@@ -415,14 +415,14 @@
 
 | Priority | Total | Done | Remaining |
 |----------|-------|------|-----------|
-| 🔴 High Priority | 31 | 18 | 13 |
+| 🔴 High Priority | 31 | 20 | 11 |
 | 🚀 Beta Launch | 62 | 11 | 51 |
 | 🟡 Medium Priority | 38 | 0 | 38 |
 | 🟢 Low Priority | 20 | 0 | 20 |
 | ✅ Pre-Completed | 43 | 43 | 0 |
-| **TOTAL** | **194** | **72** | **122** |
+| **TOTAL** | **194** | **74** | **120** |
 
-**Overall Completion:** 37.1%
+**Overall Completion:** 38.1%
 
 ### Beta Readiness Breakdown
 

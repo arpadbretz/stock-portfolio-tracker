@@ -113,10 +113,10 @@ export default function DashboardPage() {
   const lastUpdated = portfolio?.lastUpdated;
   const rates = summary?.exchangeRates || { USD: 1, EUR: 0.92, HUF: 350 };
 
-  // Calculate Daily P&L from holdings (using any extended properties from API)
-  const dailyPnL = (summary?.holdings || []).reduce((total, holding: any) => {
-    // Use dayChange if available, otherwise calculate from change percent
-    const dayChange = holding.dayChange || (holding.changePercent ? (holding.currentPrice * holding.changePercent / 100) : 0);
+  // Calculate Daily P&L from holdings
+  const dailyPnL = (summary?.holdings || []).reduce((total, holding) => {
+    // Each holding now has dayChange (per share price change today)
+    const dayChange = holding.dayChange || 0;
     return total + (dayChange * holding.shares);
   }, 0);
 

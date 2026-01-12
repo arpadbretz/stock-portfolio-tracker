@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Download, Trash2, AlertCircle, Shield, User, ChevronRight, Lock, Globe, Check, DollarSign, Loader2, Eye, EyeOff, Key, Edit3 } from 'lucide-react';
+import { ArrowLeft, Download, Trash2, AlertCircle, Shield, User, ChevronRight, Lock, Globe, Check, DollarSign, Loader2, Eye, EyeOff, Key, Edit3, Camera, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
@@ -39,6 +39,10 @@ export default function AccountPage() {
     const [displayName, setDisplayName] = useState('');
     const [displayNameLoading, setDisplayNameLoading] = useState(false);
     const [displayNameSuccess, setDisplayNameSuccess] = useState(false);
+
+    // Avatar states
+    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+    const [avatarLoading, setAvatarLoading] = useState(false);
     const supabase = createClient();
 
     useEffect(() => {
@@ -46,15 +50,73 @@ export default function AccountPage() {
         const saved = localStorage.getItem('preferredCurrency');
         if (saved) setCurrency(saved);
 
-        // Load display name from user metadata
+        // Load display name and avatar from user metadata
         const fetchUserData = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (user?.user_metadata?.display_name) {
                 setDisplayName(user.user_metadata.display_name);
             }
+            if (user?.user_metadata?.avatar_url) {
+                setAvatarUrl(user.user_metadata.avatar_url);
+            }
         };
         fetchUserData();
     }, [supabase.auth]);
+
+    const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setAvatarLoading(true);
+        setError(null);
+
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const res = await fetch('/api/avatar', {
+                method: 'POST',
+                body: formData,
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || 'Failed to upload');
+            }
+
+            setAvatarUrl(data.url);
+            toast.success('Profile photo updated!');
+        } catch (err: any) {
+            setError(err.message);
+            toast.error('Upload failed', { description: err.message });
+        } finally {
+            setAvatarLoading(false);
+        }
+    };
+
+    const handleAvatarDelete = async () => {
+        setAvatarLoading(true);
+        setError(null);
+
+        try {
+            const res = await fetch('/api/avatar', {
+                method: 'DELETE',
+            });
+
+            if (!res.ok) {
+                throw new Error('Failed to delete avatar');
+            }
+
+            setAvatarUrl(null);
+            toast.success('Profile photo removed');
+        } catch (err: any) {
+            setError(err.message);
+            toast.error('Delete failed');
+        } finally {
+            setAvatarLoading(false);
+        }
+    };
 
     const handleCurrencyChange = async (newCurrency: string) => {
         setSavingCurrency(true);
@@ -209,9 +271,47 @@ export default function AccountPage() {
                     {/* Account Info Sidebar */}
                     <div className="lg:col-span-1 space-y-6">
                         <div className="bg-card border border-border p-8 rounded-[40px] text-center">
-                            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center text-primary font-black text-2xl mx-auto mb-6 shadow-inner">
-                                {displayName ? displayName[0].toUpperCase() : user.email?.[0].toUpperCase()}
+                            {/* Avatar Upload */}
+                            <div className="relative w-24 h-24 mx-auto mb-6 group">
+                                {avatarUrl ? (
+                                    <img
+                                        src={avatarUrl}
+                                        alt="Profile"
+                                        className="w-full h-full rounded-full object-cover border-4 border-border"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center text-primary font-black text-3xl border-4 border-border">
+                                        {displayName ? displayName[0].toUpperCase() : user.email?.[0].toUpperCase()}
+                                    </div>
+                                )}
+
+                                {/* Upload Overlay */}
+                                <label className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-all">
+                                    {avatarLoading ? (
+                                        <Loader2 size={24} className="text-white animate-spin" />
+                                    ) : (
+                                        <Camera size={24} className="text-white" />
+                                    )}
+                                    <input
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/webp,image/gif"
+                                        onChange={handleAvatarUpload}
+                                        className="hidden"
+                                        disabled={avatarLoading}
+                                    />
+                                </label>
+
+                                {/* Delete Button */}
+                                {avatarUrl && !avatarLoading && (
+                                    <button
+                                        onClick={handleAvatarDelete}
+                                        className="absolute -top-1 -right-1 p-1.5 bg-rose-500 rounded-full text-white hover:bg-rose-600 transition-colors shadow-lg"
+                                    >
+                                        <X size={12} />
+                                    </button>
+                                )}
                             </div>
+
                             <h2 className="font-black text-lg mb-1">{displayName || user.email?.split('@')[0]}</h2>
                             <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mb-6">{user.email}</p>
 

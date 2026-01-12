@@ -320,6 +320,47 @@ export default function LandingPage() {
                 </div>
             </section>
 
+            {/* Mid-Page CTA Banner */}
+            <section className="py-16 px-6 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-emerald-500/10 to-primary/10" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.3)_100%)]" />
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    className="container mx-auto relative z-10"
+                >
+                    <div className="max-w-3xl mx-auto text-center">
+                        <h2 className="text-2xl md:text-4xl font-black mb-4 tracking-tight">
+                            Start tracking your portfolio in <span className="text-primary">under 2 minutes</span>
+                        </h2>
+                        <p className="text-muted-foreground mb-8">
+                            No credit card required. Import from CSV or add trades manually.
+                        </p>
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                            <Link
+                                href="/register"
+                                className="group px-8 py-4 bg-primary text-primary-foreground rounded-2xl font-bold shadow-xl shadow-primary/30 flex items-center gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                            >
+                                <Sparkles size={18} />
+                                Get Started Free
+                                <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                            </Link>
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                <div className="flex items-center gap-2">
+                                    <Check size={16} className="text-emerald-500" />
+                                    <span>No setup fees</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Check size={16} className="text-emerald-500" />
+                                    <span>Cancel anytime</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </motion.div>
+            </section>
+
             {/* Social Proof / Stats */}
             <section className="py-24 px-6">
                 <div className="container mx-auto">
@@ -490,6 +531,23 @@ export default function LandingPage() {
                     </p>
                 </div>
             </footer>
+
+            {/* Floating Mobile CTA */}
+            <motion.div
+                initial={{ y: 100, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 2 }}
+                className="fixed bottom-6 left-4 right-4 z-50 md:hidden"
+            >
+                <Link
+                    href="/register"
+                    className="flex items-center justify-center gap-3 w-full py-4 bg-primary text-primary-foreground rounded-2xl font-bold shadow-2xl shadow-primary/40"
+                >
+                    <Sparkles size={18} />
+                    Get Started Free
+                    <ArrowRight size={18} />
+                </Link>
+            </motion.div>
         </div>
     );
 }

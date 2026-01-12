@@ -29,6 +29,8 @@ export interface Holding {
   sector?: string;
   industry?: string;
   beta?: number;
+  dayChange?: number;
+  dayChangePercent?: number;
 }
 
 export interface PriceData {
