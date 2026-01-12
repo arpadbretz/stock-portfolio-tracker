@@ -119,8 +119,41 @@ export default function LandingPage() {
         <div className="min-h-screen bg-background text-foreground selection:bg-primary/30 overflow-x-hidden font-inter">
             {/* Background Effects */}
             <div className="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden -z-10 bg-background">
-                <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] bg-primary/5 blur-[150px] rounded-full opacity-60" />
-                <div className="absolute bottom-0 -right-[10%] w-[60%] h-[60%] bg-accent/5 blur-[150px] rounded-full opacity-60" />
+                {/* Animated gradient orbs */}
+                <motion.div
+                    animate={{
+                        x: [0, 50, 0],
+                        y: [0, -30, 0],
+                        scale: [1, 1.1, 1]
+                    }}
+                    transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] bg-primary/8 blur-[150px] rounded-full opacity-60"
+                />
+                <motion.div
+                    animate={{
+                        x: [0, -30, 0],
+                        y: [0, 50, 0],
+                        scale: [1, 1.15, 1]
+                    }}
+                    transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute bottom-[10%] -right-[10%] w-[60%] h-[60%] bg-emerald-500/5 blur-[150px] rounded-full opacity-60"
+                />
+                <motion.div
+                    animate={{
+                        x: [0, 20, 0],
+                        scale: [1, 1.05, 1]
+                    }}
+                    transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute top-[40%] left-[30%] w-[30%] h-[30%] bg-violet-500/5 blur-[120px] rounded-full opacity-40"
+                />
+                {/* Grid pattern overlay */}
+                <div
+                    className="absolute inset-0 opacity-[0.02]"
+                    style={{
+                        backgroundImage: `linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)`,
+                        backgroundSize: '60px 60px'
+                    }}
+                />
             </div>
 
             {/* Navigation */}
@@ -157,22 +190,57 @@ export default function LandingPage() {
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ duration: 0.7 }}
                         >
-                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary mb-8">
-                                <Sparkles size={14} />
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.2 }}
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary mb-8"
+                            >
+                                <motion.div animate={{ rotate: [0, 15, -15, 0] }} transition={{ duration: 2, repeat: Infinity }}>
+                                    <Sparkles size={14} />
+                                </motion.div>
                                 <span className="text-xs font-bold uppercase tracking-widest">100% Free • No Credit Card</span>
-                            </div>
+                            </motion.div>
 
                             <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-foreground mb-6 tracking-tight leading-[1.1]">
-                                Track Your
-                                <br />
-                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-emerald-400 to-primary">Investments</span>
-                                <br />
-                                Like a Pro.
+                                <motion.span
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.3 }}
+                                    className="block"
+                                >
+                                    Track Your
+                                </motion.span>
+                                <motion.span
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.4 }}
+                                    className="block text-transparent bg-clip-text bg-gradient-to-r from-primary via-emerald-400 to-primary bg-[length:200%_auto] animate-[gradient_3s_linear_infinite]"
+                                    style={{
+                                        backgroundSize: '200% auto',
+                                        animation: 'gradient 3s linear infinite'
+                                    }}
+                                >
+                                    Investments
+                                </motion.span>
+                                <motion.span
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.5 }}
+                                    className="block"
+                                >
+                                    Like a Pro.
+                                </motion.span>
                             </h1>
 
-                            <p className="text-lg md:text-xl text-muted-foreground max-w-lg mb-10 leading-relaxed">
+                            <motion.p
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.6 }}
+                                className="text-lg md:text-xl text-muted-foreground max-w-lg mb-10 leading-relaxed"
+                            >
                                 The modern portfolio tracker for European investors. Real-time prices, beautiful analytics, and deep stock research &mdash; all in one place.
-                            </p>
+                            </motion.p>
 
                             <div className="flex flex-col sm:flex-row gap-4 mb-12">
                                 <Link
