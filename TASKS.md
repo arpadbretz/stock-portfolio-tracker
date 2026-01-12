@@ -78,6 +78,103 @@
 |----|------|--------|--------|-------|
 | MOB-001 | Bottom Tab Bar | ✅ | 3h | Implemented Jan 12, 2026 |
 | MOB-002 | Pull to Refresh | ✅ | 2h | Component created Jan 12, 2026 |
+---
+
+# 🚀 BETA LAUNCH REQUIREMENTS
+
+> **These tasks are CRITICAL for a successful beta launch. Must be completed before public release.**
+
+## Security & Infrastructure
+
+| ID | Task | Status | Effort | Notes |
+|----|------|--------|--------|-------|
+| SEC-001 | Rate Limiting | ⬜ | 2h | API rate limits (Upstash/Redis) |
+| SEC-002 | Security Headers | ⬜ | 1h | CSP, HSTS, X-Frame-Options |
+| SEC-003 | Input Validation | ⬜ | 3h | Zod schemas for all endpoints |
+| SEC-004 | SQL Injection Prevention | ✅ | - | Using Supabase parameterized queries |
+| SEC-005 | XSS Prevention | ✅ | - | React auto-escapes |
+| SEC-006 | CSRF Protection | ✅ | - | Built into Supabase auth |
+| SEC-007 | Session Management | ⬜ | 2h | Token refresh, session expiry |
+| SEC-008 | Audit Logging | ⬜ | 4h | Log sensitive actions |
+| SEC-009 | Error Sanitization | ⬜ | 2h | Don't expose stack traces |
+| SEC-010 | Dependency Audit | ⬜ | 1h | npm audit, Snyk |
+
+## Analytics & Monitoring
+
+| ID | Task | Status | Effort | Notes |
+|----|------|--------|--------|-------|
+| ANLY-001 | Error Tracking (Sentry) | ⬜ | 2h | Frontend + API errors |
+| ANLY-002 | User Analytics | ⬜ | 2h | Plausible/PostHog/Mixpanel |
+| ANLY-003 | Performance Monitoring | ⬜ | 2h | Web Vitals tracking |
+| ANLY-004 | API Latency Tracking | ⬜ | 1h | Response time metrics |
+| ANLY-005 | User Session Recording | ⬜ | 1h | Optional hotjar/logrocket |
+| ANLY-006 | Conversion Funnels | ⬜ | 2h | Signup/onboarding tracking |
+| ANLY-007 | Custom Event Tracking | ⬜ | 2h | Button clicks, feature usage |
+
+## Automated Emails
+
+| ID | Task | Status | Effort | Notes |
+|----|------|--------|--------|-------|
+| EMAIL-001 | Email Service Setup | ⬜ | 2h | Resend/Sendgrid integration |
+| EMAIL-002 | Welcome Email | ⬜ | 1h | Send on registration |
+| EMAIL-003 | Email Verification | ✅ | - | Supabase built-in |
+| EMAIL-004 | Password Reset Email | ✅ | - | Supabase built-in |
+| EMAIL-005 | Weekly Portfolio Summary | ⬜ | 4h | Edge Function + cron |
+| EMAIL-006 | Price Alert Notifications | ⬜ | 3h | Edge Function trigger |
+| EMAIL-007 | Inactivity Re-engagement | ⬜ | 2h | Users inactive 30+ days |
+| EMAIL-008 | Email Templates | ⬜ | 3h | Branded HTML templates |
+
+## DevOps & CI/CD
+
+| ID | Task | Status | Effort | Notes |
+|----|------|--------|--------|-------|
+| DEVOPS-001 | CI/CD Pipeline | ⬜ | 3h | GitHub Actions |
+| DEVOPS-002 | Automated Testing | ⬜ | 6h | Jest + Playwright |
+| DEVOPS-003 | Staging Environment | ⬜ | 2h | Vercel preview deploys |
+| DEVOPS-004 | Database Backups | ⬜ | 1h | Supabase PITR |
+| DEVOPS-005 | Environment Config | ⬜ | 1h | .env validation |
+| DEVOPS-006 | Health Check Endpoint | ⬜ | 1h | /api/health |
+| DEVOPS-007 | Uptime Monitoring | ⬜ | 1h | Better Uptime/UptimeRobot |
+| DEVOPS-008 | Error Alerting | ⬜ | 1h | Slack/Discord webhooks |
+
+## User Experience Polish
+
+| ID | Task | Status | Effort | Notes |
+|----|------|--------|--------|-------|
+| UXP-001 | Onboarding Flow | ⬜ | 4h | First-time user walkthrough |
+| UXP-002 | Empty States | ⬜ | 2h | Helpful empty page designs |
+| UXP-003 | Help/FAQ Section | ⬜ | 3h | Common questions answered |
+| UXP-004 | Feedback Widget | ⬜ | 2h | In-app feedback collection |
+| UXP-005 | Bug Report Form | ⬜ | 1h | Easy bug submission |
+| UXP-006 | Tooltips/Hints | ⬜ | 2h | Feature discovery |
+| UXP-007 | Accessibility Audit | ⬜ | 3h | WCAG 2.1 AA compliance |
+| UXP-008 | i18n Prep | ⬜ | 4h | Internationalization setup |
+
+## Beta Program Specific
+
+| ID | Task | Status | Effort | Notes |
+|----|------|--------|--------|-------|
+| BETA-001 | Beta Invite System | ⬜ | 3h | Waitlist + invite codes |
+| BETA-002 | Feature Flags | ⬜ | 2h | Toggle features per user |
+| BETA-003 | Beta Feedback Modal | ⬜ | 2h | Persistent feedback button |
+| BETA-004 | Usage Limits | ⬜ | 2h | API calls, portfolios, etc |
+| BETA-005 | Beta Banner | ⬜ | 1h | "Beta" badge in UI |
+| BETA-006 | Known Issues Page | ⬜ | 1h | Public bug list |
+| BETA-007 | Changelog Page | ⬜ | 2h | What's new updates |
+| BETA-008 | Beta User Dashboard | ⬜ | 3h | Admin view of beta users |
+
+## Legal & Compliance
+
+| ID | Task | Status | Effort | Notes |
+|----|------|--------|--------|-------|
+| LEGAL-001 | Cookie Banner | ✅ | - | Implemented |
+| LEGAL-002 | Privacy Policy | ✅ | - | Implemented |
+| LEGAL-003 | Terms of Service | ✅ | - | Implemented |
+| LEGAL-004 | Impressum | ✅ | - | Implemented |
+| LEGAL-005 | GDPR Data Export | ✅ | - | Account page |
+| LEGAL-006 | Account Deletion | ✅ | - | Account page |
+| LEGAL-007 | Cookie Preferences | ⬜ | 2h | Granular consent |
+| LEGAL-008 | Data Processing Agreement | ⬜ | 2h | DPA template |
 
 ---
 
@@ -318,13 +415,28 @@
 
 | Priority | Total | Done | Remaining |
 |----------|-------|------|-----------|
-| 🔴 High | 31 | 18 | 13 |
-| 🟡 Medium | 38 | 0 | 38 |
-| 🟢 Low | 20 | 0 | 20 |
-| ✅ Completed | 43 | 43 | 0 |
-| **TOTAL** | **132** | **61** | **71** |
+| 🔴 High Priority | 31 | 18 | 13 |
+| 🚀 Beta Launch | 62 | 11 | 51 |
+| 🟡 Medium Priority | 38 | 0 | 38 |
+| 🟢 Low Priority | 20 | 0 | 20 |
+| ✅ Pre-Completed | 43 | 43 | 0 |
+| **TOTAL** | **194** | **72** | **122** |
 
-**Completion Rate:** 46.2%
+**Overall Completion:** 37.1%
+
+### Beta Readiness Breakdown
+
+| Category | Total | Done | Ready |
+|----------|-------|------|-------|
+| Security | 10 | 3 | 30% |
+| Analytics | 7 | 0 | 0% |
+| Emails | 8 | 2 | 25% |
+| DevOps | 8 | 0 | 0% |
+| UX Polish | 8 | 0 | 0% |
+| Beta Program | 8 | 0 | 0% |
+| Legal | 8 | 6 | 75% |
+
+**Estimated time to beta:** ~80-100 hours of development
 
 ---
 
