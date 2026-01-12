@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { TrendingUp, Mail, Lock, CheckCircle2, ArrowRight, Github } from 'lucide-react';
+import { TrendingUp, Mail, Lock, CheckCircle2, ArrowRight, Github, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 
@@ -24,6 +24,9 @@ function LoginPageContent() {
     const [loading, setLoading] = useState(false);
     const [oauthLoading, setOauthLoading] = useState<string | null>(null);
     const [verified, setVerified] = useState(false);
+    const [showResendForm, setShowResendForm] = useState(false);
+    const [resendEmail, setResendEmail] = useState('');
+    const [resendLoading, setResendLoading] = useState(false);
     const supabase = createClient();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -77,6 +80,43 @@ function LoginPageContent() {
             setError(`An unexpected error occurred with ${provider} login`);
             toast.error('Login error', { description: 'Please try again' });
             setOauthLoading(null);
+        }
+    };
+
+    const handleResendVerification = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!resendEmail) {
+            toast.error('Please enter your email address');
+            return;
+        }
+
+        setResendLoading(true);
+        setError(null);
+
+        try {
+            const { error } = await supabase.auth.resend({
+                type: 'signup',
+                email: resendEmail,
+                options: {
+                    emailRedirectTo: `${window.location.origin}/auth/callback`,
+                },
+            });
+
+            if (error) {
+                setError(error.message);
+                toast.error('Failed to resend', { description: error.message });
+            } else {
+                toast.success('Verification email sent!', {
+                    description: 'Check your inbox and spam folder'
+                });
+                setShowResendForm(false);
+                setResendEmail('');
+            }
+        } catch (err) {
+            setError('Failed to resend verification email');
+            toast.error('Failed to resend');
+        } finally {
+            setResendLoading(false);
         }
     };
 
@@ -228,6 +268,62 @@ function LoginPageContent() {
                             Create one free
                         </Link>
                     </p>
+
+                    {/* Resend Verification Section */}
+                    <div className="pt-4 border-t border-border/30">
+                        {!showResendForm ? (
+                            <button
+                                type="button"
+                                onClick={() => setShowResendForm(true)}
+                                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                                Didn't receive verification email? <span className="text-primary font-bold">Resend</span>
+                            </button>
+                        ) : (
+                            <form onSubmit={handleResendVerification} className="space-y-3">
+                                <p className="text-xs text-muted-foreground mb-2">Enter your email to resend verification</p>
+                                <div className="relative group">
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">
+                                        <Mail size={16} />
+                                    </div>
+                                    <input
+                                        type="email"
+                                        value={resendEmail}
+                                        onChange={(e) => setResendEmail(e.target.value)}
+                                        className="w-full pl-11 pr-4 py-3 bg-muted border border-border rounded-xl text-foreground font-bold text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                                        placeholder="you@example.com"
+                                        required
+                                    />
+                                </div>
+                                <div className="flex gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setShowResendForm(false);
+                                            setResendEmail('');
+                                        }}
+                                        className="flex-1 py-2.5 bg-muted text-muted-foreground rounded-xl font-bold text-sm"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={resendLoading}
+                                        className="flex-1 py-2.5 bg-primary text-primary-foreground rounded-xl font-bold text-sm flex items-center justify-center gap-2"
+                                    >
+                                        {resendLoading ? (
+                                            <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                                        ) : (
+                                            <>
+                                                <RefreshCw size={14} />
+                                                Send
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </form>
+                        )}
+                    </div>
                     <div className="flex items-center justify-center gap-6 pt-4 border-t border-border/30">
                         <Link href="/legal/privacy" className="text-[9px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground">Privacy</Link>
                         <div className="w-1 h-1 bg-border rounded-full"></div>
