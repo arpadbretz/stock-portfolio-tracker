@@ -78,6 +78,19 @@
 |----|------|--------|--------|-------|
 | MOB-001 | Bottom Tab Bar | ✅ | 3h | Implemented Jan 12, 2026 |
 | MOB-002 | Pull to Refresh | ✅ | 2h | Component created Jan 12, 2026 |
+
+## ⬆️ Promoted from Medium Priority
+
+> These tasks were moved from Medium to High priority based on beta launch importance.
+
+| ID | Task | Status | Effort | Notes |
+|----|------|--------|--------|-------|
+| DASH-004 | Market Overview Widget | ⬜ | 4h | S&P, NASDAQ, DOW - Essential context |
+| DASH-008 | Performance Timeframes | ⬜ | 3h | 1W, 1M, 3M, YTD, 1Y, All |
+| UX-005 | Onboarding Tour | ⬜ | 4h | Critical for new users |
+| UX-006 | Empty State Designs | ⬜ | 3h | Better no-data messages |
+| DASH-010 | Benchmark Comparison | ⬜ | 6h | vs S&P 500 chart |
+
 ---
 
 # 🚀 BETA LAUNCH REQUIREMENTS
@@ -415,14 +428,17 @@
 
 | Priority | Total | Done | Remaining |
 |----------|-------|------|-----------|
-| 🔴 High Priority | 31 | 24 | 7 |
+| 🔴 High Priority | 36 | 24 | 12 |
 | 🚀 Beta Launch | 62 | 11 | 51 |
-| 🟡 Medium Priority | 38 | 0 | 38 |
+| 🟡 Medium Priority | 33 | 0 | 33 |
 | 🟢 Low Priority | 20 | 0 | 20 |
 | ✅ Pre-Completed | 43 | 43 | 0 |
 | **TOTAL** | **194** | **78** | **116** |
 
 **Overall Completion:** 40.2%
+
+> 📋 **Reprioritization Note (Jan 12, 2026):** Moved 5 tasks from Medium to High priority:
+> DASH-004 (Market Overview), DASH-008 (Timeframes), DASH-010 (Benchmark), UX-005 (Onboarding), UX-006 (Empty States)
 
 ### Beta Readiness Breakdown
 
