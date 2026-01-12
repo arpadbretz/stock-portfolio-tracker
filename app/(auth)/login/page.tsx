@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { TrendingUp, Mail, Lock, CheckCircle2, ArrowRight, Github } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -17,14 +17,23 @@ const GoogleIcon = () => (
     </svg>
 );
 
-export default function LoginPage() {
+function LoginPageContent() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [oauthLoading, setOauthLoading] = useState<string | null>(null);
+    const [verified, setVerified] = useState(false);
     const supabase = createClient();
     const router = useRouter();
+    const searchParams = useSearchParams();
+
+    useEffect(() => {
+        if (searchParams.get('verified') === 'true') {
+            setVerified(true);
+            toast.success('Email verified!', { description: 'You can now log in.' });
+        }
+    }, [searchParams]);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -97,6 +106,17 @@ export default function LoginPage() {
                 </div>
 
                 <div className="bg-card/40 backdrop-blur-3xl border border-border/50 p-10 rounded-[48px] shadow-2xl shadow-black/20">
+                    {/* Verification Success Banner */}
+                    {verified && (
+                        <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center gap-3">
+                            <CheckCircle2 className="text-emerald-500 shrink-0" size={20} />
+                            <div>
+                                <p className="text-sm font-bold text-emerald-500">Email Verified!</p>
+                                <p className="text-xs text-muted-foreground">Sign in to access your dashboard.</p>
+                            </div>
+                        </div>
+                    )}
+
                     {/* OAuth Buttons First */}
                     <div className="space-y-3 mb-8">
                         <button
@@ -221,5 +241,17 @@ export default function LoginPage() {
                 </div>
             </motion.div >
         </div >
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center min-h-screen bg-background">
+                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+        }>
+            <LoginPageContent />
+        </Suspense>
     );
 }

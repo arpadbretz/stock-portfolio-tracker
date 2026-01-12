@@ -499,7 +499,7 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
                             </Link>
 
                             {/* Quick Trade Button */}
-                            {user && portfolios.length > 0 && (
+                            {user && (
                                 <button
                                     onClick={openQuickTrade}
                                     className="mt-2 flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 hover:bg-emerald-500/20 transition-all"
@@ -1132,8 +1132,8 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
                                             type="button"
                                             onClick={() => setTradeType('buy')}
                                             className={`flex-1 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${tradeType === 'buy'
-                                                    ? 'bg-emerald-500 text-white'
-                                                    : 'bg-muted text-muted-foreground border border-border'
+                                                ? 'bg-emerald-500 text-white'
+                                                : 'bg-muted text-muted-foreground border border-border'
                                                 }`}
                                         >
                                             <Plus size={16} />
@@ -1143,8 +1143,8 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
                                             type="button"
                                             onClick={() => setTradeType('sell')}
                                             className={`flex-1 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${tradeType === 'sell'
-                                                    ? 'bg-rose-500 text-white'
-                                                    : 'bg-muted text-muted-foreground border border-border'
+                                                ? 'bg-rose-500 text-white'
+                                                : 'bg-muted text-muted-foreground border border-border'
                                                 }`}
                                         >
                                             <TrendingDown size={16} />
@@ -1157,15 +1157,27 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
                                         <label className="text-sm font-bold text-muted-foreground mb-2 block">
                                             Portfolio
                                         </label>
-                                        <select
-                                            value={selectedPortfolio}
-                                            onChange={(e) => setSelectedPortfolio(e.target.value)}
-                                            className="w-full px-4 py-3 bg-muted border border-border rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-primary/30"
-                                        >
-                                            {portfolios.map((p) => (
-                                                <option key={p.id} value={p.id}>{p.name}</option>
-                                            ))}
-                                        </select>
+                                        {portfolios.length === 0 ? (
+                                            <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-center">
+                                                <p className="text-sm text-amber-500 font-bold mb-2">No portfolios found</p>
+                                                <Link
+                                                    href="/dashboard/portfolios/manage"
+                                                    className="text-xs text-primary hover:underline"
+                                                >
+                                                    Create a portfolio first →
+                                                </Link>
+                                            </div>
+                                        ) : (
+                                            <select
+                                                value={selectedPortfolio}
+                                                onChange={(e) => setSelectedPortfolio(e.target.value)}
+                                                className="w-full px-4 py-3 bg-muted border border-border rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                            >
+                                                {portfolios.map((p) => (
+                                                    <option key={p.id} value={p.id}>{p.name}</option>
+                                                ))}
+                                            </select>
+                                        )}
                                     </div>
 
                                     {/* Quantity */}
@@ -1216,8 +1228,8 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
                                         type="submit"
                                         disabled={isSubmittingTrade || !tradeQuantity || !tradePrice}
                                         className={`w-full py-4 rounded-xl font-black flex items-center justify-center gap-2 transition-all disabled:opacity-50 ${tradeType === 'buy'
-                                                ? 'bg-emerald-500 text-white hover:bg-emerald-600'
-                                                : 'bg-rose-500 text-white hover:bg-rose-600'
+                                            ? 'bg-emerald-500 text-white hover:bg-emerald-600'
+                                            : 'bg-rose-500 text-white hover:bg-rose-600'
                                             }`}
                                     >
                                         {isSubmittingTrade ? (
