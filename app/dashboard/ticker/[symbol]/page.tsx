@@ -187,11 +187,13 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
             try {
                 const res = await fetch('/api/portfolios');
                 const data = await res.json();
-                if (data.success && data.data) {
-                    setPortfolios(data.data);
-                    if (data.data.length > 0) {
-                        setSelectedPortfolio(data.data[0].id);
-                    }
+                console.log('Portfolios API response:', data);
+
+                // The API returns { portfolios: [], defaultPortfolioId: ... }
+                if (data.portfolios && data.portfolios.length > 0) {
+                    setPortfolios(data.portfolios);
+                    // Use default portfolio if available, otherwise first
+                    setSelectedPortfolio(data.defaultPortfolioId || data.portfolios[0].id);
                 }
             } catch (err) {
                 console.error('Error fetching portfolios:', err);
