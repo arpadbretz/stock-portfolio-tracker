@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Download, Trash2, AlertCircle, Shield, User, ChevronRight, Lock, Globe, Check, DollarSign, Loader2, Eye, EyeOff, Key } from 'lucide-react';
+import { ArrowLeft, Download, Trash2, AlertCircle, Shield, User, ChevronRight, Lock, Globe, Check, DollarSign, Loader2, Eye, EyeOff, Key, Edit3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
@@ -34,13 +34,27 @@ export default function AccountPage() {
     const [showPasswords, setShowPasswords] = useState(false);
     const [passwordLoading, setPasswordLoading] = useState(false);
     const [passwordSuccess, setPasswordSuccess] = useState(false);
+
+    // Display name states
+    const [displayName, setDisplayName] = useState('');
+    const [displayNameLoading, setDisplayNameLoading] = useState(false);
+    const [displayNameSuccess, setDisplayNameSuccess] = useState(false);
     const supabase = createClient();
 
     useEffect(() => {
         // Load saved currency preference
         const saved = localStorage.getItem('preferredCurrency');
         if (saved) setCurrency(saved);
-    }, []);
+
+        // Load display name from user metadata
+        const fetchUserData = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user?.user_metadata?.display_name) {
+                setDisplayName(user.user_metadata.display_name);
+            }
+        };
+        fetchUserData();
+    }, [supabase.auth]);
 
     const handleCurrencyChange = async (newCurrency: string) => {
         setSavingCurrency(true);
@@ -49,6 +63,31 @@ export default function AccountPage() {
         // Small delay for visual feedback
         await new Promise(r => setTimeout(r, 300));
         setSavingCurrency(false);
+    };
+
+    const handleDisplayNameUpdate = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setDisplayNameLoading(true);
+        setDisplayNameSuccess(false);
+        setError(null);
+
+        try {
+            const { error } = await supabase.auth.updateUser({
+                data: { display_name: displayName.trim() }
+            });
+
+            if (error) {
+                throw error;
+            }
+
+            setDisplayNameSuccess(true);
+            toast.success('Display name updated!');
+        } catch (err: any) {
+            setError(err.message || 'Failed to update display name');
+            toast.error('Failed to update', { description: err.message });
+        } finally {
+            setDisplayNameLoading(false);
+        }
     };
 
     const handlePasswordChange = async (e: React.FormEvent) => {
@@ -171,10 +210,40 @@ export default function AccountPage() {
                     <div className="lg:col-span-1 space-y-6">
                         <div className="bg-card border border-border p-8 rounded-[40px] text-center">
                             <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center text-primary font-black text-2xl mx-auto mb-6 shadow-inner">
-                                {user.email?.[0].toUpperCase()}
+                                {displayName ? displayName[0].toUpperCase() : user.email?.[0].toUpperCase()}
                             </div>
-                            <h2 className="font-black text-lg mb-1">{user.email?.split('@')[0]}</h2>
+                            <h2 className="font-black text-lg mb-1">{displayName || user.email?.split('@')[0]}</h2>
                             <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mb-6">{user.email}</p>
+
+                            {/* Display Name Editor */}
+                            <form onSubmit={handleDisplayNameUpdate} className="mb-6 text-left">
+                                <label className="text-[10px] text-muted-foreground font-black uppercase tracking-tighter mb-2 block flex items-center gap-2">
+                                    <Edit3 size={12} />
+                                    Display Name
+                                </label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={displayName}
+                                        onChange={(e) => setDisplayName(e.target.value)}
+                                        placeholder="Your name"
+                                        className="flex-1 px-3 py-2 bg-muted border border-border rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                    />
+                                    <button
+                                        type="submit"
+                                        disabled={displayNameLoading}
+                                        className="px-3 py-2 bg-primary text-primary-foreground rounded-xl font-bold text-sm disabled:opacity-50"
+                                    >
+                                        {displayNameLoading ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                                    </button>
+                                </div>
+                                {displayNameSuccess && (
+                                    <p className="text-xs text-emerald-500 mt-2 flex items-center gap-1">
+                                        <Check size={12} /> Saved!
+                                    </p>
+                                )}
+                            </form>
+
                             <div className="pt-6 border-t border-border/50 text-left">
                                 <div className="text-[10px] text-muted-foreground font-black uppercase tracking-tighter mb-2 text-primary">Member Reference</div>
                                 <code className="text-[10px] bg-primary/5 border border-primary/10 px-3 py-1.5 rounded-xl block font-mono text-center text-primary/80 break-all">{user.id}</code>
