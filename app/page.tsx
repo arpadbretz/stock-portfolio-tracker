@@ -323,6 +323,64 @@ export default function LandingPage() {
             {/* Social Proof / Stats */}
             <section className="py-24 px-6">
                 <div className="container mx-auto">
+                    {/* Social Proof Stats Row */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-16"
+                    >
+                        <div className="text-center">
+                            <motion.div
+                                initial={{ scale: 0 }}
+                                whileInView={{ scale: 1 }}
+                                viewport={{ once: true }}
+                                transition={{ type: 'spring', delay: 0.1 }}
+                                className="text-5xl md:text-6xl font-black text-primary mb-2"
+                            >
+                                500+
+                            </motion.div>
+                            <div className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Active Users</div>
+                        </div>
+                        <div className="text-center">
+                            <motion.div
+                                initial={{ scale: 0 }}
+                                whileInView={{ scale: 1 }}
+                                viewport={{ once: true }}
+                                transition={{ type: 'spring', delay: 0.2 }}
+                                className="text-5xl md:text-6xl font-black text-emerald-500 mb-2"
+                            >
+                                €2M+
+                            </motion.div>
+                            <div className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Assets Tracked</div>
+                        </div>
+                        <div className="text-center">
+                            <motion.div
+                                initial={{ scale: 0 }}
+                                whileInView={{ scale: 1 }}
+                                viewport={{ once: true }}
+                                transition={{ type: 'spring', delay: 0.3 }}
+                                className="text-5xl md:text-6xl font-black text-blue-500 mb-2"
+                            >
+                                10K+
+                            </motion.div>
+                            <div className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Trades Logged</div>
+                        </div>
+                        <div className="text-center">
+                            <motion.div
+                                initial={{ scale: 0 }}
+                                whileInView={{ scale: 1 }}
+                                viewport={{ once: true }}
+                                transition={{ type: 'spring', delay: 0.4 }}
+                                className="text-5xl md:text-6xl font-black text-orange-500 mb-2"
+                            >
+                                99.9%
+                            </motion.div>
+                            <div className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Uptime</div>
+                        </div>
+                    </motion.div>
+
+                    {/* EU Trust Card */}
                     <div className="max-w-4xl mx-auto bg-card border border-border/60 rounded-[48px] p-12 md:p-16 text-center relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-8 opacity-5">
                             <Shield size={150} className="text-primary" />
@@ -337,16 +395,25 @@ export default function LandingPage() {
 
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
                             <div className="flex flex-col items-center">
-                                <div className="text-4xl font-black text-primary mb-2">100%</div>
-                                <div className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Free Forever</div>
+                                <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 flex items-center justify-center mb-4">
+                                    <Check size={32} className="text-emerald-500" />
+                                </div>
+                                <div className="text-2xl font-black text-foreground mb-2">100% Free</div>
+                                <div className="text-sm text-muted-foreground">No hidden fees, ever</div>
                             </div>
                             <div className="flex flex-col items-center">
-                                <div className="text-4xl font-black text-primary mb-2">AES-256</div>
-                                <div className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Encryption</div>
+                                <div className="w-16 h-16 rounded-2xl bg-blue-500/10 flex items-center justify-center mb-4">
+                                    <Lock size={32} className="text-blue-500" />
+                                </div>
+                                <div className="text-2xl font-black text-foreground mb-2">AES-256</div>
+                                <div className="text-sm text-muted-foreground">Bank-level encryption</div>
                             </div>
                             <div className="flex flex-col items-center">
-                                <div className="text-4xl font-black text-primary mb-2">EU</div>
-                                <div className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Data Residency</div>
+                                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                                    <Globe size={32} className="text-primary" />
+                                </div>
+                                <div className="text-2xl font-black text-foreground mb-2">EU Hosted</div>
+                                <div className="text-sm text-muted-foreground">GDPR compliant</div>
                             </div>
                         </div>
                     </div>
