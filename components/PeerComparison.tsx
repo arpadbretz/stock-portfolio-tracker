@@ -40,36 +40,132 @@ const SECTOR_PEERS: Record<string, string[]> = {
     'Real Estate': ['PLD', 'AMT', 'EQIX', 'CCI', 'PSA', 'O', 'SPG'],
 };
 
-// Specific industries (sub-sectors)
+// Specific industries (sub-sectors) - includes Yahoo Finance industry names
 const INDUSTRY_PEERS: Record<string, string[]> = {
+    // Technology
     'Semiconductors': ['NVDA', 'TSM', 'AVGO', 'AMD', 'INTC', 'QCOM', 'TXN', 'MU', 'AMAT', 'LRCX'],
+    'Semiconductor Equipment & Materials': ['AMAT', 'LRCX', 'KLAC', 'ASML', 'TER'],
     'Software—Infrastructure': ['MSFT', 'ADBE', 'CRM', 'NOW', 'INTU', 'SNOW', 'PLTR', 'DDOG', 'ZS'],
     'Software—Application': ['MSFT', 'ADBE', 'CRM', 'NOW', 'INTU', 'SNOW', 'PLTR', 'DDOG', 'ZS'],
+    'Software - Infrastructure': ['MSFT', 'ADBE', 'CRM', 'NOW', 'INTU', 'SNOW', 'DDOG'],
+    'Software - Application': ['MSFT', 'ADBE', 'CRM', 'NOW', 'INTU', 'PLTR'],
+    'Information Technology Services': ['ACN', 'IBM', 'CTSH', 'INFY', 'WIT'],
+
+    // Consumer Electronics (Apple's actual industry)
+    'Consumer Electronics': ['AAPL', 'SONY', 'SSNLF', 'LPL', 'GPRO', 'SONO', 'HEAR'],
+    'Electronic Components': ['APH', 'TEL', 'GLW', 'JBL', 'FLEX'],
+    'Computer Hardware': ['AAPL', 'DELL', 'HPQ', 'HPE', 'LOGI'],
+
+    // Healthcare/Pharma
     'Biotechnology': ['VRTX', 'REGN', 'AMGN', 'GILD', 'MRNA', 'BIIB', 'ILMN', 'ALNY', 'BNTX'],
-    'Banks—Diversified': ['JPM', 'BAC', 'WFC', 'C', 'HSBC', 'RY', 'TD', 'USB', 'PNC', 'TFC'],
-    'Banks—Regional': ['JPM', 'BAC', 'WFC', 'C', 'USB', 'PNC', 'TFC', 'FITB', 'KEY'],
-    'Auto Manufacturers': ['TSLA', 'TM', 'F', 'GM', 'STLA', 'HMC', 'RIVN', 'LCID', 'NIO', 'LI'],
-    'Aerospace & Defense': ['RTX', 'LMT', 'BA', 'NOC', 'GD', 'LHX', 'TDG', 'HII', 'TXT'],
-    'Specialty Retail': ['AMZN', 'WMT', 'COST', 'HD', 'TGT', 'LOW', 'TJX', 'ROST', 'DLTR', 'DG'],
-    'Discount Stores': ['WMT', 'COST', 'TGT', 'DG', 'DLTR', 'BJ', 'OLLI'],
-    'Travel Services': ['BKNG', 'ABNB', 'EXPE', 'TCOM', 'TRIP'],
-    'Airlines': ['DAL', 'UAL', 'LUV', 'AAL', 'JBLU', 'ALK', 'SAVE'],
-    'Lodging': ['MAR', 'HLT', 'H', 'WH', 'IHG', 'CHH'],
-    'Credit Services': ['V', 'MA', 'AXP', 'PYPL', 'SQ', 'FIS', 'FISV', 'GPN', 'AFRM'],
-    'Copper': ['BHP', 'RIO', 'FCX', 'SCCO', 'TECK'],
-    'Gold': ['NEM', 'GOLD', 'AEM', 'WPM', 'FNV'],
-    'Steel': ['AA', 'CLF', 'X', 'NUE', 'STLD'],
-    'Restaurants': ['MCD', 'SBUX', 'CMG', 'YUM', 'DRI', 'DARDEN', 'WING'],
-    'Internet Retail': ['AMZN', 'BABA', 'JD', 'PDD', 'MELI', 'SE', 'SHOP'],
-    'Drug Manufacturers': ['LLY', 'JNJ', 'MRK', 'ABBV', 'PFE', 'NVS', 'AZN', 'BMY'],
+    'Drug Manufacturers—General': ['LLY', 'JNJ', 'MRK', 'ABBV', 'PFE', 'NVS', 'AZN', 'BMY'],
+    'Drug Manufacturers - Major': ['LLY', 'JNJ', 'MRK', 'ABBV', 'PFE', 'NVS', 'AZN'],
+    'Drug Manufacturers—Specialty & Generic': ['TEVA', 'VTRS', 'PRGO', 'JAZZ'],
     'Medical Devices': ['ABT', 'MDT', 'SYK', 'BSX', 'ISRG', 'EW', 'BDX'],
+    'Medical Instruments & Supplies': ['ABT', 'SYK', 'BSX', 'ISRG', 'EW'],
+    'Diagnostics & Research': ['TMO', 'DHR', 'A', 'ILMN', 'PKI'],
+
+    // Financial
+    'Banks—Diversified': ['JPM', 'BAC', 'WFC', 'C', 'HSBC', 'RY', 'TD', 'USB', 'PNC', 'TFC'],
+    'Banks - Diversified': ['JPM', 'BAC', 'WFC', 'C', 'HSBC'],
+    'Banks—Regional': ['JPM', 'BAC', 'WFC', 'C', 'USB', 'PNC', 'TFC', 'FITB', 'KEY'],
+    'Banks - Regional': ['USB', 'PNC', 'TFC', 'FITB', 'KEY', 'MTB'],
+    'Credit Services': ['V', 'MA', 'AXP', 'PYPL', 'SQ', 'FIS', 'FISV', 'GPN', 'AFRM'],
+    'Insurance—Life': ['MET', 'PRU', 'AFL', 'LNC', 'PFG'],
+    'Insurance - Life': ['MET', 'PRU', 'AFL', 'LNC'],
     'Insurance—Diversified': ['BRK.B', 'UNH', 'AIG', 'MET', 'PRU', 'AFL'],
     'Asset Management': ['BLK', 'BX', 'KKR', 'APO', 'CG', 'ARES'],
+    'Capital Markets': ['GS', 'MS', 'SCHW', 'BLK', 'CME'],
+
+    // Automotive
+    'Auto Manufacturers': ['TSLA', 'TM', 'F', 'GM', 'STLA', 'HMC', 'RIVN', 'LCID', 'NIO', 'LI'],
+    'Automobiles': ['TSLA', 'TM', 'F', 'GM', 'STLA', 'HMC'],
+    'Auto Parts': ['APTV', 'BWA', 'LEA', 'VC', 'ALV'],
+
+    // Retail & Consumer
+    'Internet Retail': ['AMZN', 'BABA', 'JD', 'PDD', 'MELI', 'SE', 'SHOP', 'EBAY'],
+    'Specialty Retail': ['AMZN', 'HD', 'TJX', 'ROST', 'ORLY', 'AZO', 'ULTA'],
+    'Discount Stores': ['WMT', 'COST', 'TGT', 'DG', 'DLTR', 'BJ'],
+    'Home Improvement Retail': ['HD', 'LOW', 'FND', 'TSCO'],
+    'Restaurants': ['MCD', 'SBUX', 'CMG', 'YUM', 'DRI', 'QSR', 'WING'],
+    'Apparel Retail': ['TJX', 'ROST', 'GPS', 'ANF', 'AEO'],
+    'Footwear & Accessories': ['NKE', 'LULU', 'DECK', 'CROX', 'SKX'],
+
+    // Industrial
+    'Aerospace & Defense': ['RTX', 'LMT', 'BA', 'NOC', 'GD', 'LHX', 'TDG', 'HII'],
+    'Airlines': ['DAL', 'UAL', 'LUV', 'AAL', 'JBLU', 'ALK'],
+    'Railroads': ['UNP', 'CSX', 'NSC', 'CP', 'CNI'],
+    'Industrial Conglomerates': ['HON', 'MMM', 'GE', 'ITW', 'EMR'],
+    'Farm & Heavy Construction Machinery': ['CAT', 'DE', 'AGCO', 'CNHI'],
+
+    // Energy
     'Oil & Gas Integrated': ['XOM', 'CVX', 'SHEL', 'TTE', 'BP', 'COP'],
     'Oil & Gas E&P': ['COP', 'EOG', 'PXD', 'DVN', 'OXY', 'FANG'],
-    'Solar': ['ENPH', 'FSLR', 'SEDG', 'RUN', 'SPWR', 'JKS'],
+    'Oil & Gas Refining & Marketing': ['MPC', 'VLO', 'PSX'],
+
+    // Communication/Media
+    'Internet Content & Information': ['GOOGL', 'META', 'SNAP', 'PINS', 'TWTR'],
+    'Entertainment': ['NFLX', 'DIS', 'WBD', 'PARA', 'LYV'],
+    'Broadcasting': ['CMCSA', 'FOXA', 'NXST', 'SBGI'],
+    'Telecom Services': ['T', 'VZ', 'TMUS', 'LUMN'],
+
+    // Materials & Mining
+    'Copper': ['BHP', 'RIO', 'FCX', 'SCCO', 'TECK'],
+    'Gold': ['NEM', 'GOLD', 'AEM', 'WPM', 'FNV'],
+    'Steel': ['NUE', 'CLF', 'X', 'STLD', 'RS'],
+    'Specialty Chemicals': ['SHW', 'APD', 'ECL', 'PPG', 'DD'],
+
+    // Real Estate
+    'REIT—Diversified': ['PLD', 'AMT', 'EQIX', 'CCI', 'PSA'],
+    'REIT - Diversified': ['PLD', 'AMT', 'EQIX', 'CCI'],
+    'REIT—Retail': ['SPG', 'O', 'REG', 'KIM'],
+
+    // Travel & Leisure
+    'Travel Services': ['BKNG', 'ABNB', 'EXPE', 'TCOM', 'TRIP'],
+    'Lodging': ['MAR', 'HLT', 'H', 'WH', 'IHG'],
+    'Resorts & Casinos': ['LVS', 'WYNN', 'MGM', 'CZR'],
+
+    // Utilities
+    'Utilities—Regulated Electric': ['NEE', 'DUK', 'SO', 'D', 'AEP'],
+    'Utilities - Regulated Electric': ['NEE', 'SO', 'DUK', 'D'],
     'Utilities—Renewable': ['NEE', 'AES', 'CWEN', 'HASI', 'BEPC'],
+    'Solar': ['ENPH', 'FSLR', 'SEDG', 'RUN', 'JKS'],
 };
+
+// Function to find best matching peers
+function findPeers(industry: string, sector: string): string[] {
+    // Direct match
+    if (INDUSTRY_PEERS[industry]) {
+        return INDUSTRY_PEERS[industry];
+    }
+
+    // Try partial match on industry (case-insensitive)
+    const industryLower = industry.toLowerCase();
+    for (const [key, peers] of Object.entries(INDUSTRY_PEERS)) {
+        if (key.toLowerCase().includes(industryLower) || industryLower.includes(key.toLowerCase())) {
+            return peers;
+        }
+    }
+
+    // Try keyword matching
+    const keywords = industryLower.split(/[\s\-—]+/);
+    for (const keyword of keywords) {
+        if (keyword.length < 4) continue;
+        for (const [key, peers] of Object.entries(INDUSTRY_PEERS)) {
+            if (key.toLowerCase().includes(keyword)) {
+                return peers;
+            }
+        }
+    }
+
+    // Fall back to sector
+    if (SECTOR_PEERS[sector]) {
+        return SECTOR_PEERS[sector];
+    }
+
+    // Ultimate fallback
+    return SECTOR_PEERS['Technology'];
+}
 
 function formatMarketCap(value: number): string {
     if (value >= 1e12) return `$${(value / 1e12).toFixed(2)}T`;
@@ -97,8 +193,8 @@ export default function PeerComparison({
             setError(null);
 
             try {
-                // Try industry-specific peers first, then fall back to sector
-                let peerSymbols = INDUSTRY_PEERS[industry] || SECTOR_PEERS[sector] || SECTOR_PEERS['Technology'];
+                // Use smart matching to find peers
+                const peerSymbols = findPeers(industry, sector);
 
                 // Filter out the current symbol and take top 6
                 const filteredPeers = peerSymbols.filter(s => s !== symbol).slice(0, 6);

@@ -45,7 +45,7 @@
 
 | ID | Task | Status | Effort | Notes |
 |----|------|--------|--------|-------|
-| ALRT-001 | Email Notifications | ⬜ | 4h | Edge Function + Resend |
+| ALRT-001 | Email Notifications | ✅ | 4h | Implemented Jan 12, 2026 |
 | ALRT-002 | Edit Existing Alerts | ✅ | 2h | Implemented Jan 11, 2026 |
 
 ## UX/UI Global
@@ -88,7 +88,7 @@
 | DASH-004 | Market Overview Widget | ⬜ | 4h | S&P, NASDAQ, DOW - Essential context |
 | DASH-008 | Performance Timeframes | ⬜ | 3h | 1W, 1M, 3M, YTD, 1Y, All |
 | UX-005 | Onboarding Tour | ⬜ | 4h | Critical for new users |
-| UX-006 | Empty State Designs | ⬜ | 3h | Better no-data messages |
+| UX-006 | Empty State Designs | ✅ | 3h | Implemented Jan 12, 2026 |
 | DASH-010 | Benchmark Comparison | ⬜ | 6h | vs S&P 500 chart |
 
 ---
@@ -428,14 +428,14 @@
 
 | Priority | Total | Done | Remaining |
 |----------|-------|------|-----------|
-| 🔴 High Priority | 36 | 24 | 12 |
+| 🔴 High Priority | 36 | 26 | 10 |
 | 🚀 Beta Launch | 62 | 11 | 51 |
 | 🟡 Medium Priority | 33 | 0 | 33 |
 | 🟢 Low Priority | 20 | 0 | 20 |
 | ✅ Pre-Completed | 43 | 43 | 0 |
-| **TOTAL** | **194** | **78** | **116** |
+| **TOTAL** | **194** | **80** | **114** |
 
-**Overall Completion:** 40.2%
+**Overall Completion:** 41.2%
 
 > 📋 **Reprioritization Note (Jan 12, 2026):** Moved 5 tasks from Medium to High priority:
 > DASH-004 (Market Overview), DASH-008 (Timeframes), DASH-010 (Benchmark), UX-005 (Onboarding), UX-006 (Empty States)
