@@ -21,7 +21,13 @@ import {
   Database,
   PieChart as PieChartIcon,
   Layers as LayersIcon,
-  ChevronRight
+  ChevronRight,
+  CalendarDays,
+  Download,
+  LineChart,
+  ArrowUpRight,
+  ArrowDownRight,
+  Zap
 } from 'lucide-react';
 import AddTradeForm from '@/components/AddTradeForm';
 import HoldingsTable from '@/components/HoldingsTable';
@@ -106,6 +112,17 @@ export default function DashboardPage() {
   const trades = portfolio?.trades || [];
   const lastUpdated = portfolio?.lastUpdated;
   const rates = summary?.exchangeRates || { USD: 1, EUR: 0.92, HUF: 350 };
+
+  // Calculate Daily P&L from holdings (using any extended properties from API)
+  const dailyPnL = (summary?.holdings || []).reduce((total, holding: any) => {
+    // Use dayChange if available, otherwise calculate from change percent
+    const dayChange = holding.dayChange || (holding.changePercent ? (holding.currentPrice * holding.changePercent / 100) : 0);
+    return total + (dayChange * holding.shares);
+  }, 0);
+
+  const dailyPnLPercent = summary?.totalMarketValue
+    ? (dailyPnL / (summary.totalMarketValue - dailyPnL)) * 100
+    : 0;
 
   return (
     <div className="min-h-screen text-foreground scroll-smooth relative">
@@ -213,6 +230,43 @@ export default function DashboardPage() {
             </div>
           </motion.div>
 
+          {/* Card: Daily P&L */}
+          <motion.div
+            whileHover={{ y: -8 }}
+            className={`p-10 border rounded-[48px] shadow-2xl shadow-black/5 relative overflow-hidden group ${dailyPnL >= 0
+              ? 'bg-emerald-500/5 border-emerald-500/20'
+              : 'bg-rose-500/5 border-rose-500/20'
+              }`}
+          >
+            <div className="flex items-center justify-between mb-8">
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg border ${dailyPnL >= 0
+                ? 'bg-emerald-500/20 shadow-emerald-500/10 border-emerald-500/20'
+                : 'bg-rose-500/20 shadow-rose-500/10 border-rose-500/20'
+                }`}>
+                {dailyPnL >= 0
+                  ? <ArrowUpRight size={20} className="text-emerald-500" />
+                  : <ArrowDownRight size={20} className="text-rose-500" />
+                }
+              </div>
+              <div className="flex items-center gap-2">
+                <CalendarDays size={12} className="text-muted-foreground" />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Today's P&L</span>
+              </div>
+            </div>
+            <h2 className={`text-4xl font-black tracking-tighter mb-2 ${dailyPnL >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+              {dailyPnL >= 0 ? '+' : ''}{formatCurrency(convertCurrency(dailyPnL, currency, rates), currency)}
+            </h2>
+            <div className={`inline-flex px-3 py-1 rounded-xl text-sm font-black ${dailyPnL >= 0
+              ? 'bg-emerald-500/10 text-emerald-500'
+              : 'bg-rose-500/10 text-rose-500'
+              }`}>
+              {dailyPnLPercent >= 0 ? '+' : ''}{dailyPnLPercent.toFixed(2)}%
+            </div>
+            <div className="mt-6 text-[8px] font-black uppercase tracking-widest text-muted-foreground">
+              Based on previous close
+            </div>
+          </motion.div>
+
           {/* Card: Performance Yield */}
           <motion.div
             whileHover={{ y: -8 }}
@@ -255,6 +309,55 @@ export default function DashboardPage() {
             </div>
           </motion.div>
         </section>
+
+        {/* Quick Actions Bar */}
+        <div className="flex flex-wrap gap-3 mb-8 p-4 bg-card/30 backdrop-blur-md border border-border/30 rounded-2xl">
+          <button
+            onClick={() => fetchPortfolio(true)}
+            disabled={isRefreshing}
+            className="flex items-center gap-2 px-4 py-2.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl font-bold text-sm transition-all disabled:opacity-50"
+          >
+            <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
+            Refresh Prices
+          </button>
+
+          <button
+            onClick={() => setIsFormOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded-xl font-bold text-sm transition-all"
+          >
+            <PlusCircle size={16} />
+            Add Trade
+          </button>
+
+          <Link
+            href="/dashboard/report"
+            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-500 rounded-xl font-bold text-sm transition-all"
+          >
+            <LineChart size={16} />
+            Full Report
+          </Link>
+
+          <a
+            href={`data:text/csv;charset=utf-8,${encodeURIComponent(
+              'Symbol,Shares,Avg Price,Current Price,Market Value,Gain/Loss\n' +
+              (summary?.holdings || []).map(h =>
+                `${h.ticker},${h.shares},${h.avgCostBasis.toFixed(2)},${h.currentPrice.toFixed(2)},${h.marketValue.toFixed(2)},${h.unrealizedGain.toFixed(2)}`
+              ).join('\n')
+            )}`}
+            download={`portfolio-${new Date().toISOString().split('T')[0]}.csv`}
+            className="flex items-center gap-2 px-4 py-2.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 rounded-xl font-bold text-sm transition-all"
+          >
+            <Download size={16} />
+            Export CSV
+          </a>
+
+          <div className="flex-1 flex items-center justify-end">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Zap size={14} className="text-primary" />
+              <span className="font-bold">Quick Actions</span>
+            </div>
+          </div>
+        </div>
 
         {/* Rapid Action Layer */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-20">
