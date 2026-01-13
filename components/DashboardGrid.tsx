@@ -1,7 +1,28 @@
 'use client';
 
-import { useMemo, ReactNode, useState, useCallback, useRef, useEffect } from 'react';
-import { motion, AnimatePresence, PanInfo } from 'framer-motion';
+import { useMemo, ReactNode, useState, useCallback, useEffect } from 'react';
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    DragEndEvent,
+    DragOverlay,
+    DragStartEvent,
+    UniqueIdentifier,
+    MeasuringStrategy,
+} from '@dnd-kit/core';
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    useSortable,
+    rectSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     Minus,
     GripVertical,
@@ -54,7 +75,7 @@ interface DashboardGridProps {
     onLayoutChange: (layouts: { [key: string]: WidgetLayout[] }) => void;
     onRemoveWidget: (widgetId: string) => void;
     onResizeWidget: (widgetId: string, size: WidgetSize) => void;
-    renderWidget: (widgetId: string) => ReactNode;
+    renderWidget: (widgetId: string, size: WidgetSize) => ReactNode;
     widgetRegistry: WidgetDefinition[];
 }
 
@@ -203,16 +224,15 @@ export const WIDGET_DEFINITIONS: WidgetDefinition[] = [
 ];
 
 // Size classes and heights
-const SIZE_CONFIG: Record<WidgetSize, { colSpan: string; height: string }> = {
-    small: { colSpan: 'col-span-1', height: 'h-[220px]' },
-    medium: { colSpan: 'col-span-1', height: 'h-[300px]' },
-    large: { colSpan: 'col-span-1 lg:col-span-2', height: 'h-[400px]' },
+const SIZE_CONFIG: Record<WidgetSize, { colSpan: string; height: string; gridSpan: number }> = {
+    small: { colSpan: 'col-span-1', height: 'h-[200px]', gridSpan: 1 },
+    medium: { colSpan: 'col-span-1', height: 'h-[300px]', gridSpan: 1 },
+    large: { colSpan: 'col-span-1 lg:col-span-2', height: 'h-[420px]', gridSpan: 2 },
 };
 
-// ============ DRAGGABLE WIDGET CARD ============
-interface DraggableWidgetCardProps {
+// ============ SORTABLE WIDGET CARD ============
+interface SortableWidgetCardProps {
     id: string;
-    index: number;
     title: string;
     icon: ReactNode;
     size: WidgetSize;
@@ -220,14 +240,11 @@ interface DraggableWidgetCardProps {
     isEditing: boolean;
     onRemove: () => void;
     onResize: (size: WidgetSize) => void;
-    onDragEnd: (fromIndex: number, toIndex: number) => void;
-    totalWidgets: number;
     children: ReactNode;
 }
 
-function DraggableWidgetCard({
+function SortableWidgetCard({
     id,
-    index,
     title,
     icon,
     size,
@@ -235,99 +252,100 @@ function DraggableWidgetCard({
     isEditing,
     onRemove,
     onResize,
-    onDragEnd,
-    totalWidgets,
     children,
-}: DraggableWidgetCardProps) {
-    const [isDragging, setIsDragging] = useState(false);
-    const cardRef = useRef<HTMLDivElement>(null);
+}: SortableWidgetCardProps) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 1000 : undefined,
+    };
 
     const config = SIZE_CONFIG[size];
 
-    const handleDragEnd = useCallback(
-        (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-            setIsDragging(false);
-
-            // Calculate which position we dragged to based on movement
-            const threshold = 100; // pixels needed to move to swap
-            const moveAmount = Math.round(info.offset.y / threshold);
-
-            if (moveAmount !== 0) {
-                const newIndex = Math.max(0, Math.min(totalWidgets - 1, index + moveAmount));
-                if (newIndex !== index) {
-                    onDragEnd(index, newIndex);
-                }
-            }
-        },
-        [index, totalWidgets, onDragEnd]
-    );
-
     return (
         <motion.div
-            ref={cardRef}
+            ref={setNodeRef}
+            style={style}
             layout
             layoutId={id}
-            drag={isEditing ? "y" : false}
-            dragSnapToOrigin
-            dragElastic={0.1}
-            dragMomentum={false}
-            onDragStart={() => setIsDragging(true)}
-            onDragEnd={handleDragEnd}
-            whileDrag={{ scale: 1.02, zIndex: 50, boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)" }}
             initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
+            animate={{
+                opacity: isDragging ? 0.8 : 1,
+                scale: isDragging ? 1.02 : 1,
+            }}
             exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ duration: 0.2 }}
-            className={`${config.colSpan} ${config.height}`}
+            className={`${config.colSpan} ${config.height} transition-all duration-200`}
         >
             <div
                 className={`
                     h-full w-full bg-card border rounded-[24px] overflow-hidden relative
                     transition-all duration-200
                     ${isEditing ? 'border-primary/40 shadow-lg shadow-primary/10' : 'border-border/60 shadow-xl shadow-black/5'}
-                    ${isDragging ? 'cursor-grabbing' : isEditing ? 'cursor-grab' : ''}
+                    ${isDragging ? 'shadow-2xl shadow-primary/30 ring-2 ring-primary/40' : ''}
                 `}
             >
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-3 border-b border-border/40 bg-card/80 backdrop-blur-sm">
                     <div className="flex items-center gap-2.5">
                         {isEditing && (
-                            <div className="text-muted-foreground hover:text-foreground transition-colors touch-none">
-                                <GripVertical size={14} />
+                            <div
+                                {...attributes}
+                                {...listeners}
+                                className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-primary transition-colors touch-none p-1 -ml-1 rounded hover:bg-primary/10"
+                            >
+                                <GripVertical size={16} />
                             </div>
                         )}
                         {icon}
                         <span className="font-bold text-xs uppercase tracking-wide">{title}</span>
                     </div>
                     {isEditing && (
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-2">
                             {/* Size toggle buttons */}
-                            <div className="flex items-center gap-0.5 bg-muted/50 rounded-lg p-0.5">
+                            <div className="flex items-center bg-muted/50 rounded-lg p-0.5 border border-border/50">
                                 {allowedSizes.includes('small') && (
                                     <button
                                         onClick={(e) => { e.stopPropagation(); onResize('small'); }}
-                                        className={`p-1.5 rounded-md transition-colors ${size === 'small' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                                        className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all ${size === 'small'
+                                            ? 'bg-primary text-primary-foreground shadow-sm'
+                                            : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                                            }`}
                                         title="Small"
                                     >
-                                        <Minimize2 size={12} />
+                                        S
                                     </button>
                                 )}
                                 {allowedSizes.includes('medium') && (
                                     <button
                                         onClick={(e) => { e.stopPropagation(); onResize('medium'); }}
-                                        className={`p-1.5 rounded-md transition-colors ${size === 'medium' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                                        className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all ${size === 'medium'
+                                            ? 'bg-primary text-primary-foreground shadow-sm'
+                                            : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                                            }`}
                                         title="Medium"
                                     >
-                                        <Square size={12} />
+                                        M
                                     </button>
                                 )}
                                 {allowedSizes.includes('large') && (
                                     <button
                                         onClick={(e) => { e.stopPropagation(); onResize('large'); }}
-                                        className={`p-1.5 rounded-md transition-colors ${size === 'large' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                                        className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all ${size === 'large'
+                                            ? 'bg-primary text-primary-foreground shadow-sm'
+                                            : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                                            }`}
                                         title="Large (2 columns)"
                                     >
-                                        <Maximize2 size={12} />
+                                        L
                                     </button>
                                 )}
                             </div>
@@ -337,7 +355,7 @@ function DraggableWidgetCard({
                                     e.stopPropagation();
                                     onRemove();
                                 }}
-                                className="w-7 h-7 rounded-full bg-rose-500/10 hover:bg-rose-500/20 flex items-center justify-center text-rose-500 transition-colors"
+                                className="w-7 h-7 rounded-full bg-rose-500/10 hover:bg-rose-500 hover:text-white flex items-center justify-center text-rose-500 transition-all"
                             >
                                 <Minus size={14} />
                             </button>
@@ -350,12 +368,48 @@ function DraggableWidgetCard({
                     {children}
                 </div>
 
-                {/* Edit mode overlay */}
+                {/* Edit mode indicator */}
                 {isEditing && !isDragging && (
                     <div className="absolute inset-0 pointer-events-none rounded-[24px] border-2 border-dashed border-primary/20" />
                 )}
             </div>
         </motion.div>
+    );
+}
+
+// ============ DRAG OVERLAY CARD ============
+function DragOverlayCard({
+    title,
+    icon,
+    size,
+}: {
+    title: string;
+    icon: ReactNode;
+    size: WidgetSize;
+}) {
+    const config = SIZE_CONFIG[size];
+
+    return (
+        <div className={`${config.height} w-80 max-w-md`}>
+            <div className="h-full w-full bg-card border-2 border-primary rounded-[24px] shadow-2xl shadow-primary/40 rotate-2">
+                <div className="flex items-center gap-2.5 px-4 py-3 border-b border-border/40 bg-card">
+                    <GripVertical size={16} className="text-primary" />
+                    {icon}
+                    <span className="font-bold text-xs uppercase tracking-wide">{title}</span>
+                </div>
+                <div className="p-4 flex items-center justify-center h-[calc(100%-52px)]">
+                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                        <motion.div
+                            animate={{ y: [0, -5, 0] }}
+                            transition={{ repeat: Infinity, duration: 1.5 }}
+                        >
+                            <Layers size={32} className="text-primary/50" />
+                        </motion.div>
+                        <span className="text-sm font-medium">Drop to reposition</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 }
 
@@ -371,7 +425,7 @@ export default function DashboardGrid({
     renderWidget,
     widgetRegistry = WIDGET_DEFINITIONS,
 }: DashboardGridProps) {
-    // Get ordered widgets from layouts or use visible widgets order
+    const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
     const [orderedWidgets, setOrderedWidgets] = useState<string[]>([]);
 
     // Initialize order from layouts or visibleWidgets
@@ -390,26 +444,48 @@ export default function DashboardGrid({
         }
     }, [layouts, visibleWidgets]);
 
-    // Handle reorder after drag
-    const handleReorder = useCallback((fromIndex: number, toIndex: number) => {
-        const newOrder = [...orderedWidgets];
-        const [removed] = newOrder.splice(fromIndex, 1);
-        newOrder.splice(toIndex, 0, removed);
+    // Setup dnd-kit sensors with better activation constraints
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 10, // 10px movement before drag starts
+            },
+        }),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
 
-        setOrderedWidgets(newOrder);
+    const handleDragStart = useCallback((event: DragStartEvent) => {
+        setActiveId(event.active.id);
+    }, []);
 
-        // Generate new layout positions
-        const newLayouts: WidgetLayout[] = newOrder.map((widgetId, idx) => ({
-            i: widgetId,
-            x: idx % 2,
-            y: Math.floor(idx / 2),
-            w: 1,
-            h: 1,
-            size: widgetSizes[widgetId],
-        }));
+    const handleDragEnd = useCallback((event: DragEndEvent) => {
+        const { active, over } = event;
+        setActiveId(null);
 
-        onLayoutChange({ lg: newLayouts, md: newLayouts, sm: newLayouts });
+        if (over && active.id !== over.id) {
+            const oldIndex = orderedWidgets.indexOf(active.id as string);
+            const newIndex = orderedWidgets.indexOf(over.id as string);
+
+            const newOrder = arrayMove(orderedWidgets, oldIndex, newIndex);
+            setOrderedWidgets(newOrder);
+
+            // Generate new layout positions
+            const newLayouts: WidgetLayout[] = newOrder.map((widgetId, idx) => ({
+                i: widgetId,
+                x: idx % 2,
+                y: Math.floor(idx / 2),
+                w: 1,
+                h: 1,
+                size: widgetSizes[widgetId],
+            }));
+
+            onLayoutChange({ lg: newLayouts, md: newLayouts, sm: newLayouts });
+        }
     }, [orderedWidgets, widgetSizes, onLayoutChange]);
+
+    const activeWidget = activeId ? widgetRegistry.find(w => w.id === activeId) : null;
 
     if (visibleWidgets.length === 0) {
         return (
@@ -428,45 +504,84 @@ export default function DashboardGrid({
     return (
         <div className="dashboard-grid">
             {isEditing && (
-                <div className="mb-4 p-3 bg-primary/5 border border-primary/20 rounded-xl text-center">
-                    <p className="text-sm text-primary font-medium">
-                        ✨ Edit Mode: Drag widgets to reorder • Use size buttons to resize • Click minus to remove
-                    </p>
-                </div>
+                <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-6 p-4 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 rounded-2xl"
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-primary/20 rounded-xl">
+                            <Layers size={18} className="text-primary" />
+                        </div>
+                        <div>
+                            <p className="font-bold text-sm text-foreground">Edit Mode Active</p>
+                            <p className="text-xs text-muted-foreground">
+                                Drag widgets to reorder • Use S/M/L buttons to resize • Click ✕ to remove
+                            </p>
+                        </div>
+                    </div>
+                </motion.div>
             )}
 
-            <motion.div
-                layout
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 auto-rows-auto"
+            <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+                measuring={{
+                    droppable: {
+                        strategy: MeasuringStrategy.Always,
+                    },
+                }}
             >
-                <AnimatePresence mode="popLayout">
-                    {orderedWidgets.map((widgetId, index) => {
-                        const def = widgetRegistry.find(w => w.id === widgetId);
-                        if (!def) return null;
+                {/* @ts-expect-error - React 19 JSX types issue with dnd-kit */}
+                <SortableContext items={orderedWidgets} strategy={rectSortingStrategy}>
+                    <motion.div
+                        layout
+                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6"
+                    >
+                        <AnimatePresence mode="popLayout">
+                            {orderedWidgets.map((widgetId) => {
+                                const def = widgetRegistry.find(w => w.id === widgetId);
+                                if (!def) return null;
 
-                        const size = widgetSizes[widgetId] || def.defaultSize;
+                                const size = widgetSizes[widgetId] || def.defaultSize;
 
-                        return (
-                            <DraggableWidgetCard
-                                key={widgetId}
-                                id={widgetId}
-                                index={index}
-                                title={def.title}
-                                icon={def.icon}
-                                size={size}
-                                allowedSizes={def.allowedSizes}
-                                isEditing={isEditing}
-                                onRemove={() => onRemoveWidget(widgetId)}
-                                onResize={(newSize) => onResizeWidget(widgetId, newSize)}
-                                onDragEnd={handleReorder}
-                                totalWidgets={orderedWidgets.length}
-                            >
-                                {renderWidget(widgetId)}
-                            </DraggableWidgetCard>
-                        );
-                    })}
-                </AnimatePresence>
-            </motion.div>
+                                return (
+                                    <SortableWidgetCard
+                                        key={widgetId}
+                                        id={widgetId}
+                                        title={def.title}
+                                        icon={def.icon}
+                                        size={size}
+                                        allowedSizes={def.allowedSizes}
+                                        isEditing={isEditing}
+                                        onRemove={() => onRemoveWidget(widgetId)}
+                                        onResize={(newSize) => onResizeWidget(widgetId, newSize)}
+                                    >
+                                        {renderWidget(widgetId, size)}
+                                    </SortableWidgetCard>
+                                );
+                            })}
+                        </AnimatePresence>
+                    </motion.div>
+                </SortableContext>
+
+                {/* Drag Overlay - Shows floating card while dragging */}
+                {/* @ts-expect-error - React 19 JSX types issue with dnd-kit */}
+                <DragOverlay dropAnimation={{
+                    duration: 200,
+                    easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+                }}>
+                    {activeId && activeWidget ? (
+                        <DragOverlayCard
+                            title={activeWidget.title}
+                            icon={activeWidget.icon}
+                            size={widgetSizes[activeId as string] || activeWidget.defaultSize}
+                        />
+                    ) : null}
+                </DragOverlay>
+            </DndContext>
 
             <style jsx global>{`
                 .custom-scrollbar::-webkit-scrollbar {

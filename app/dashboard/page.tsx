@@ -179,49 +179,84 @@ export default function DashboardPage() {
   }));
 
   // ============ WIDGET CONTENT RENDERER ============
-  const renderWidgetContent = (widgetId: string): ReactNode => {
+  // Now receives size parameter to adapt content
+  type WidgetSize = 'small' | 'medium' | 'large';
+
+  const renderWidgetContent = (widgetId: string, size: WidgetSize = 'medium'): ReactNode => {
+    const isSmall = size === 'small';
+    const isLarge = size === 'large';
+
     switch (widgetId) {
       // Core Metrics
       case 'portfolio-value':
         return (
           <div className="h-full flex flex-col justify-between">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center">
-                <Wallet size={18} className="text-emerald-500" />
+            <div className={`flex items-center gap-3 ${isSmall ? 'mb-2' : 'mb-4'}`}>
+              <div className={`${isSmall ? 'w-8 h-8' : 'w-10 h-10'} bg-emerald-500/20 rounded-xl flex items-center justify-center`}>
+                <Wallet size={isSmall ? 14 : 18} className="text-emerald-500" />
               </div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Net Asset Value</span>
+              {!isSmall && <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Net Asset Value</span>}
             </div>
-            <h2 className="text-3xl font-black tracking-tight mb-3">
+            <h2 className={`${isSmall ? 'text-2xl' : isLarge ? 'text-5xl' : 'text-3xl'} font-black tracking-tight ${isSmall ? 'mb-1' : 'mb-3'}`}>
               {formatCurrency(convertCurrency(summary?.totalMarketValue || 0, currency, rates), currency)}
             </h2>
-            <div className="flex items-center gap-2">
-              <div className="h-1.5 flex-1 bg-muted rounded-full overflow-hidden">
-                <motion.div initial={{ width: 0 }} animate={{ width: "100%" }} className="h-full bg-emerald-500" />
+            {!isSmall && (
+              <div className="flex items-center gap-2">
+                <div className="h-1.5 flex-1 bg-muted rounded-full overflow-hidden">
+                  <motion.div initial={{ width: 0 }} animate={{ width: "100%" }} className="h-full bg-emerald-500" />
+                </div>
               </div>
-            </div>
-            <div className="mt-auto pt-3 flex items-center justify-between text-[10px]">
+            )}
+            <div className={`mt-auto ${isSmall ? 'pt-1' : 'pt-3'} flex items-center justify-between text-[10px]`}>
               <span className="font-bold text-muted-foreground">{holdings.length} Holdings</span>
               <span className="font-bold text-emerald-500">LIVE</span>
             </div>
+            {isLarge && (
+              <div className="mt-4 pt-4 border-t border-border/50 grid grid-cols-2 gap-4">
+                <div className="p-3 bg-muted/30 rounded-xl">
+                  <div className="text-[10px] text-muted-foreground font-bold mb-1">Cost Basis</div>
+                  <div className="font-black">{formatCurrency(convertCurrency(summary?.totalInvested || 0, currency, rates), currency)}</div>
+                </div>
+                <div className="p-3 bg-muted/30 rounded-xl">
+                  <div className="text-[10px] text-muted-foreground font-bold mb-1">Unrealized</div>
+                  <div className={`font-black ${(summary?.totalGain || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                    {formatCurrency(convertCurrency(summary?.totalGain || 0, currency, rates), currency)}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         );
 
       case 'total-invested':
         return (
           <div className="h-full flex flex-col justify-between">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                <BarChart3 size={18} className="text-blue-500" />
+            <div className={`flex items-center gap-3 ${isSmall ? 'mb-2' : 'mb-4'}`}>
+              <div className={`${isSmall ? 'w-8 h-8' : 'w-10 h-10'} bg-blue-500/20 rounded-xl flex items-center justify-center`}>
+                <BarChart3 size={isSmall ? 14 : 18} className="text-blue-500" />
               </div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Capital Deployed</span>
+              {!isSmall && <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Capital Deployed</span>}
             </div>
-            <h2 className="text-3xl font-black tracking-tight mb-3">
+            <h2 className={`${isSmall ? 'text-2xl' : isLarge ? 'text-5xl' : 'text-3xl'} font-black tracking-tight ${isSmall ? 'mb-1' : 'mb-3'}`}>
               {formatCurrency(convertCurrency(summary?.totalInvested || 0, currency, rates), currency)}
             </h2>
             <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground">
               <div className="w-2 h-2 rounded-full bg-blue-500" />
               COST BASIS
             </div>
+            {isLarge && summary && (
+              <div className="mt-4 pt-4 border-t border-border/50">
+                <div className="text-xs text-muted-foreground mb-2">Top Allocations</div>
+                <div className="space-y-2">
+                  {holdings.slice(0, 5).map(h => (
+                    <div key={h.ticker} className="flex items-center justify-between">
+                      <span className="font-bold text-sm">{h.ticker}</span>
+                      <span className="text-sm text-muted-foreground">{formatCurrency(convertCurrency(h.totalInvested, currency, rates), currency)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         );
 
@@ -229,24 +264,47 @@ export default function DashboardPage() {
         const isPnLPositive = dailyPnL >= 0;
         return (
           <div className="h-full flex flex-col justify-between">
-            <div className="flex items-center gap-3 mb-4">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isPnLPositive ? 'bg-emerald-500/20' : 'bg-rose-500/20'}`}>
-                {isPnLPositive ? <ArrowUpRight size={18} className="text-emerald-500" /> : <ArrowDownRight size={18} className="text-rose-500" />}
+            <div className={`flex items-center gap-3 ${isSmall ? 'mb-2' : 'mb-4'}`}>
+              <div className={`${isSmall ? 'w-8 h-8' : 'w-10 h-10'} rounded-xl flex items-center justify-center ${isPnLPositive ? 'bg-emerald-500/20' : 'bg-rose-500/20'}`}>
+                {isPnLPositive ? <ArrowUpRight size={isSmall ? 14 : 18} className="text-emerald-500" /> : <ArrowDownRight size={isSmall ? 14 : 18} className="text-rose-500" />}
               </div>
-              <div className="flex items-center gap-2">
-                <CalendarDays size={12} className="text-muted-foreground" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Today's P&L</span>
-              </div>
+              {!isSmall && (
+                <div className="flex items-center gap-2">
+                  <CalendarDays size={12} className="text-muted-foreground" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Today's P&L</span>
+                </div>
+              )}
             </div>
-            <h2 className={`text-3xl font-black tracking-tight mb-2 ${isPnLPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
+            <h2 className={`${isSmall ? 'text-2xl' : isLarge ? 'text-5xl' : 'text-3xl'} font-black tracking-tight mb-2 ${isPnLPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
               {isPnLPositive ? '+' : ''}{formatCurrency(convertCurrency(dailyPnL, currency, rates), currency)}
             </h2>
-            <div className={`inline-flex px-3 py-1 rounded-xl text-sm font-black w-fit ${isPnLPositive ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
+            <div className={`inline-flex px-3 py-1 rounded-xl ${isSmall ? 'text-xs' : 'text-sm'} font-black w-fit ${isPnLPositive ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
               {dailyPnLPercent >= 0 ? '+' : ''}{dailyPnLPercent.toFixed(2)}%
             </div>
-            <div className="mt-auto pt-2 text-[10px] font-bold text-muted-foreground">
-              vs Previous Close
-            </div>
+            {!isSmall && (
+              <div className="mt-auto pt-2 text-[10px] font-bold text-muted-foreground">
+                vs Previous Close
+              </div>
+            )}
+            {isLarge && (
+              <div className="mt-4 pt-4 border-t border-border/50">
+                <div className="text-xs text-muted-foreground mb-2">Biggest Movers Today</div>
+                <div className="space-y-2">
+                  {holdings
+                    .filter(h => h.dayChange)
+                    .sort((a, b) => Math.abs(b.dayChange || 0) - Math.abs(a.dayChange || 0))
+                    .slice(0, 4)
+                    .map(h => (
+                      <div key={h.ticker} className="flex items-center justify-between">
+                        <span className="font-bold text-sm">{h.ticker}</span>
+                        <span className={`text-sm font-bold ${(h.dayChangePercent || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                          {((h.dayChangePercent || 0) >= 0 ? '+' : '')}{(h.dayChangePercent || 0).toFixed(2)}%
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
           </div>
         );
 
@@ -262,7 +320,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="flex items-baseline gap-4 mb-4 flex-wrap">
-              <h2 className={`text-4xl font-black tracking-tight ${isGainPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
+              <h2 className={`${isLarge ? 'text-5xl' : 'text-4xl'} font-black tracking-tight ${isGainPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
                 {formatCurrency(convertCurrency(summary?.totalGain || 0, currency, rates), currency)}
               </h2>
               <div className={`px-4 py-1.5 rounded-xl text-base font-black ${isGainPositive ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
@@ -270,26 +328,51 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="h-2 w-full bg-muted rounded-full overflow-hidden mt-auto">
+            <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${Math.min(100, Math.abs(summary?.totalGainPercent || 0) * 2)}%` }}
                 className={`h-full ${isGainPositive ? 'bg-emerald-500' : 'bg-rose-500'}`}
               />
             </div>
+
+            {isLarge && (
+              <div className="mt-auto pt-6 grid grid-cols-3 gap-4">
+                <div className="text-center p-3 bg-muted/30 rounded-xl">
+                  <div className="text-[10px] text-muted-foreground font-bold mb-1">Invested</div>
+                  <div className="font-black text-sm">{formatCurrency(convertCurrency(summary?.totalInvested || 0, currency, rates), currency)}</div>
+                </div>
+                <div className="text-center p-3 bg-muted/30 rounded-xl">
+                  <div className="text-[10px] text-muted-foreground font-bold mb-1">Current</div>
+                  <div className="font-black text-sm">{formatCurrency(convertCurrency(summary?.totalMarketValue || 0, currency, rates), currency)}</div>
+                </div>
+                <div className="text-center p-3 bg-muted/30 rounded-xl">
+                  <div className="text-[10px] text-muted-foreground font-bold mb-1">Today</div>
+                  <div className={`font-black text-sm ${dailyPnL >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                    {dailyPnL >= 0 ? '+' : ''}{formatCurrency(convertCurrency(dailyPnL, currency, rates), currency)}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         );
 
       // Portfolio Widgets
       case 'holdings':
+        const holdingsLimit = isLarge ? holdings.length : 5;
         return (
           <div className="h-full overflow-auto -mx-2">
             <HoldingsTable
-              holdings={holdings}
+              holdings={holdings.slice(0, holdingsLimit)}
               currency={currency}
               exchangeRates={rates}
               compact
             />
+            {!isLarge && holdings.length > 5 && (
+              <div className="text-center mt-2 text-xs text-muted-foreground">
+                +{holdings.length - 5} more holdings
+              </div>
+            )}
           </div>
         );
 
@@ -303,10 +386,11 @@ export default function DashboardPage() {
         );
 
       case 'recent-trades':
+        const tradesLimit = isLarge ? 15 : isSmall ? 3 : 8;
         return (
           <div className="h-full overflow-auto -mx-2">
             <TradeHistory
-              trades={trades.slice(0, 10)}
+              trades={trades.slice(0, tradesLimit)}
               currency={currency}
               exchangeRates={rates}
               onTradeDeleted={() => fetchPortfolio(true)}
@@ -317,33 +401,35 @@ export default function DashboardPage() {
         );
 
       case 'top-performers':
-        return <TopPerformersWidget holdings={holdingsForPerformers} />;
+        const topLimit = isLarge ? 10 : isSmall ? 3 : 5;
+        return <TopPerformersWidget holdings={holdingsForPerformers} limit={topLimit} showChart={isLarge} />;
 
       case 'worst-performers':
-        return <WorstPerformersWidget holdings={holdingsForPerformers} />;
+        const worstLimit = isLarge ? 10 : isSmall ? 3 : 5;
+        return <WorstPerformersWidget holdings={holdingsForPerformers} limit={worstLimit} showChart={isLarge} />;
 
       // Market Widgets
       case 'market-overview':
-        return <MarketOverviewWidget />;
+        return <MarketOverviewWidget expanded={isLarge} />;
 
       case 'watchlist-mini':
-        return <WatchlistMiniWidget />;
+        return <WatchlistMiniWidget limit={isLarge ? 10 : isSmall ? 3 : 5} />;
 
       case 'market-news':
-        return <MarketNewsWidget />;
+        return <MarketNewsWidget limit={isLarge ? 8 : isSmall ? 2 : 4} showImages={isLarge} />;
 
       case 'upcoming-earnings':
-        return <UpcomingEarningsWidget />;
+        return <UpcomingEarningsWidget limit={isLarge ? 10 : isSmall ? 3 : 5} />;
 
       // Tool Widgets
       case 'quick-actions':
-        return <QuickActionsWidget />;
+        return <QuickActionsWidget compact={isSmall} />;
 
       case 'price-alerts':
-        return <PriceAlertsWidget />;
+        return <PriceAlertsWidget limit={isLarge ? 10 : isSmall ? 2 : 4} />;
 
       case 'dividend-tracker':
-        return <DividendTrackerWidget />;
+        return <DividendTrackerWidget limit={isLarge ? 10 : isSmall ? 3 : 5} showChart={isLarge} />;
 
       case 'performance-chart':
         return (

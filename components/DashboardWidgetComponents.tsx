@@ -28,7 +28,7 @@ interface MarketIndex {
     changePercent: number;
 }
 
-export function MarketOverviewWidget() {
+export function MarketOverviewWidget({ expanded = false }: { expanded?: boolean }) {
     const [indices, setIndices] = useState<MarketIndex[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -69,7 +69,7 @@ export function MarketOverviewWidget() {
 
     if (isLoading) {
         return (
-            <div className="grid grid-cols-2 gap-3">
+            <div className={`grid ${expanded ? 'grid-cols-4' : 'grid-cols-2'} gap-3`}>
                 {[1, 2, 3, 4].map(i => (
                     <div key={i} className="h-16 bg-muted/50 rounded-xl animate-pulse" />
                 ))}
@@ -78,7 +78,7 @@ export function MarketOverviewWidget() {
     }
 
     return (
-        <div className="grid grid-cols-2 gap-3">
+        <div className={`grid ${expanded ? 'grid-cols-4' : 'grid-cols-2'} gap-3`}>
             {indices.map((index) => {
                 const isPositive = index.change >= 0;
                 return (
@@ -87,11 +87,16 @@ export function MarketOverviewWidget() {
                         className={`p-3 rounded-xl border ${isPositive ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-rose-500/5 border-rose-500/20'}`}
                     >
                         <div className="text-xs font-bold text-muted-foreground mb-1">{index.name}</div>
-                        <div className="font-black text-lg">{index.price.toLocaleString()}</div>
+                        <div className={`font-black ${expanded ? 'text-xl' : 'text-lg'}`}>{index.price.toLocaleString()}</div>
                         <div className={`text-xs font-bold flex items-center gap-1 ${isPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
                             {isPositive ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
                             {isPositive ? '+' : ''}{index.changePercent.toFixed(2)}%
                         </div>
+                        {expanded && (
+                            <div className="text-[10px] text-muted-foreground mt-1">
+                                {isPositive ? '+' : ''}{index.change.toFixed(2)} pts
+                            </div>
+                        )}
                     </div>
                 );
             })}
@@ -107,10 +112,12 @@ interface PerformerProps {
         gainPercent: number;
         gain: number;
     }>;
+    limit?: number;
+    showChart?: boolean;
 }
 
-export function TopPerformersWidget({ holdings = [] }: PerformerProps) {
-    const sorted = [...holdings].sort((a, b) => b.gainPercent - a.gainPercent).slice(0, 5);
+export function TopPerformersWidget({ holdings = [], limit = 5, showChart = false }: PerformerProps) {
+    const sorted = [...holdings].sort((a, b) => b.gainPercent - a.gainPercent).slice(0, limit);
 
     if (sorted.length === 0) {
         return (
@@ -120,6 +127,9 @@ export function TopPerformersWidget({ holdings = [] }: PerformerProps) {
             </div>
         );
     }
+
+    // Calculate max gain for chart scale
+    const maxGain = Math.max(...sorted.map(h => Math.abs(h.gainPercent)));
 
     return (
         <div className="space-y-2">
@@ -135,11 +145,19 @@ export function TopPerformersWidget({ holdings = [] }: PerformerProps) {
                         </div>
                         <div>
                             <div className="font-bold text-sm group-hover:text-primary transition-colors">{holding.symbol}</div>
-                            <div className="text-xs text-muted-foreground truncate max-w-[100px]">{holding.name}</div>
+                            {showChart && <div className="text-xs text-muted-foreground truncate max-w-[100px]">{holding.name}</div>}
                         </div>
                     </div>
-                    <div className="text-right">
-                        <div className="text-emerald-500 font-bold text-sm">+{holding.gainPercent.toFixed(2)}%</div>
+                    <div className="flex items-center gap-3">
+                        {showChart && (
+                            <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
+                                <div
+                                    className="h-full bg-emerald-500 rounded-full"
+                                    style={{ width: `${(holding.gainPercent / maxGain) * 100}%` }}
+                                />
+                            </div>
+                        )}
+                        <div className="text-emerald-500 font-bold text-sm w-16 text-right">+{holding.gainPercent.toFixed(2)}%</div>
                     </div>
                 </Link>
             ))}
@@ -148,8 +166,8 @@ export function TopPerformersWidget({ holdings = [] }: PerformerProps) {
 }
 
 // ============ WORST PERFORMERS WIDGET ============
-export function WorstPerformersWidget({ holdings = [] }: PerformerProps) {
-    const sorted = [...holdings].sort((a, b) => a.gainPercent - b.gainPercent).slice(0, 5);
+export function WorstPerformersWidget({ holdings = [], limit = 5, showChart = false }: PerformerProps) {
+    const sorted = [...holdings].sort((a, b) => a.gainPercent - b.gainPercent).slice(0, limit);
 
     if (sorted.length === 0) {
         return (
@@ -159,6 +177,9 @@ export function WorstPerformersWidget({ holdings = [] }: PerformerProps) {
             </div>
         );
     }
+
+    // Calculate max loss for chart scale
+    const maxLoss = Math.max(...sorted.map(h => Math.abs(h.gainPercent)));
 
     return (
         <div className="space-y-2">
@@ -174,11 +195,19 @@ export function WorstPerformersWidget({ holdings = [] }: PerformerProps) {
                         </div>
                         <div>
                             <div className="font-bold text-sm group-hover:text-primary transition-colors">{holding.symbol}</div>
-                            <div className="text-xs text-muted-foreground truncate max-w-[100px]">{holding.name}</div>
+                            {showChart && <div className="text-xs text-muted-foreground truncate max-w-[100px]">{holding.name}</div>}
                         </div>
                     </div>
-                    <div className="text-right">
-                        <div className="text-rose-500 font-bold text-sm">{holding.gainPercent.toFixed(2)}%</div>
+                    <div className="flex items-center gap-3">
+                        {showChart && (
+                            <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
+                                <div
+                                    className="h-full bg-rose-500 rounded-full"
+                                    style={{ width: `${(Math.abs(holding.gainPercent) / maxLoss) * 100}%` }}
+                                />
+                            </div>
+                        )}
+                        <div className="text-rose-500 font-bold text-sm w-16 text-right">{holding.gainPercent.toFixed(2)}%</div>
                     </div>
                 </Link>
             ))}
@@ -194,7 +223,7 @@ interface WatchlistItem {
     changePercent: number;
 }
 
-export function WatchlistMiniWidget() {
+export function WatchlistMiniWidget({ limit = 5 }: { limit?: number }) {
     const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -204,7 +233,7 @@ export function WatchlistMiniWidget() {
                 const res = await fetch('/api/watchlist');
                 const data = await res.json();
                 if (data.success && data.watchlist) {
-                    setWatchlist(data.watchlist.slice(0, 5));
+                    setWatchlist(data.watchlist.slice(0, limit));
                 }
             } catch (e) {
                 console.error('Failed to fetch watchlist:', e);
@@ -265,24 +294,24 @@ export function WatchlistMiniWidget() {
 }
 
 // ============ QUICK ACTIONS WIDGET ============
-export function QuickActionsWidget() {
+export function QuickActionsWidget({ compact = false }: { compact?: boolean }) {
     const actions = [
-        { icon: <Plus size={16} />, label: 'Trade', href: '/dashboard', color: 'bg-emerald-500/10 text-emerald-500' },
-        { icon: <Search size={16} />, label: 'Search', href: '/dashboard/stocks', color: 'bg-blue-500/10 text-blue-500' },
-        { icon: <Bell size={16} />, label: 'Alerts', href: '/dashboard/alerts', color: 'bg-orange-500/10 text-orange-500' },
-        { icon: <FileText size={16} />, label: 'Report', href: '/dashboard/report', color: 'bg-purple-500/10 text-purple-500' },
+        { icon: <Plus size={compact ? 14 : 16} />, label: 'Trade', href: '/dashboard', color: 'bg-emerald-500/10 text-emerald-500' },
+        { icon: <Search size={compact ? 14 : 16} />, label: 'Search', href: '/dashboard/stocks', color: 'bg-blue-500/10 text-blue-500' },
+        { icon: <Bell size={compact ? 14 : 16} />, label: 'Alerts', href: '/dashboard/alerts', color: 'bg-orange-500/10 text-orange-500' },
+        { icon: <FileText size={compact ? 14 : 16} />, label: 'Report', href: '/dashboard/report', color: 'bg-purple-500/10 text-purple-500' },
     ];
 
     return (
-        <div className="grid grid-cols-2 gap-2">
+        <div className={`grid ${compact ? 'grid-cols-4 gap-1' : 'grid-cols-2 gap-2'}`}>
             {actions.map((action) => (
                 <Link
                     key={action.label}
                     href={action.href}
-                    className={`flex flex-col items-center justify-center p-3 rounded-xl ${action.color} hover:opacity-80 transition-opacity`}
+                    className={`flex flex-col items-center justify-center ${compact ? 'p-2' : 'p-3'} rounded-xl ${action.color} hover:opacity-80 transition-opacity`}
                 >
                     {action.icon}
-                    <span className="text-xs font-bold mt-1">{action.label}</span>
+                    <span className={`${compact ? 'text-[9px]' : 'text-xs'} font-bold mt-1`}>{action.label}</span>
                 </Link>
             ))}
         </div>
@@ -298,7 +327,7 @@ interface Alert {
     currentPrice?: number;
 }
 
-export function PriceAlertsWidget() {
+export function PriceAlertsWidget({ limit = 5 }: { limit?: number }) {
     const [alerts, setAlerts] = useState<Alert[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -308,7 +337,7 @@ export function PriceAlertsWidget() {
                 const res = await fetch('/api/alerts');
                 const data = await res.json();
                 if (data.success) {
-                    setAlerts(data.alerts?.slice(0, 5) || []);
+                    setAlerts(data.alerts?.slice(0, limit) || []);
                 }
             } catch (e) {
                 console.error('Failed to fetch alerts:', e);
@@ -365,12 +394,12 @@ export function PriceAlertsWidget() {
 }
 
 // ============ DIVIDEND TRACKER WIDGET ============
-export function DividendTrackerWidget() {
+export function DividendTrackerWidget({ limit = 5, showChart = false }: { limit?: number; showChart?: boolean }) {
     // Placeholder - would fetch from API
     const upcomingDividends = [
         { symbol: 'AAPL', date: '2024-02-15', amount: 0.24 },
         { symbol: 'MSFT', date: '2024-02-20', amount: 0.75 },
-    ];
+    ].slice(0, limit);
 
     return (
         <div className="space-y-3">
@@ -396,17 +425,24 @@ export function DividendTrackerWidget() {
                     </div>
                 ))
             )}
+            {showChart && upcomingDividends.length > 0 && (
+                <div className="pt-3 border-t border-border/50">
+                    <div className="text-xs text-muted-foreground mb-2">Annual Dividend Income</div>
+                    <div className="text-2xl font-black text-green-500">$1,250</div>
+                    <div className="text-xs text-muted-foreground">Estimated yearly</div>
+                </div>
+            )}
         </div>
     );
 }
 
 // ============ UPCOMING EARNINGS WIDGET ============
-export function UpcomingEarningsWidget() {
+export function UpcomingEarningsWidget({ limit = 5 }: { limit?: number }) {
     // Placeholder - would fetch from API
     const earnings = [
         { symbol: 'NVDA', date: '2024-02-21', estimate: '$4.50' },
         { symbol: 'TSLA', date: '2024-01-24', estimate: '$0.74' },
-    ];
+    ].slice(0, limit);
 
     return (
         <div className="space-y-2">
@@ -459,7 +495,7 @@ interface NewsItem {
     time: string;
 }
 
-export function MarketNewsWidget() {
+export function MarketNewsWidget({ limit = 4, showImages = false }: { limit?: number; showImages?: boolean }) {
     const [news, setNews] = useState<NewsItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -469,14 +505,19 @@ export function MarketNewsWidget() {
             { title: 'Fed signals potential rate cuts in 2024', source: 'Reuters', url: '#', time: '2h ago' },
             { title: 'Tech stocks rally on earnings optimism', source: 'Bloomberg', url: '#', time: '4h ago' },
             { title: 'Oil prices stabilize amid global tensions', source: 'CNBC', url: '#', time: '6h ago' },
-        ]);
+            { title: 'Crypto markets see renewed interest', source: 'CoinDesk', url: '#', time: '8h ago' },
+            { title: 'European markets close higher', source: 'FT', url: '#', time: '10h ago' },
+            { title: 'Asian shares mixed as investors assess data', source: 'Reuters', url: '#', time: '12h ago' },
+            { title: 'Gold prices hit new highs on safe-haven demand', source: 'Bloomberg', url: '#', time: '14h ago' },
+            { title: 'Bond yields fall after inflation data', source: 'WSJ', url: '#', time: '16h ago' },
+        ].slice(0, limit));
         setIsLoading(false);
-    }, []);
+    }, [limit]);
 
     if (isLoading) {
         return (
             <div className="space-y-3">
-                {[1, 2, 3].map(i => (
+                {Array.from({ length: Math.min(3, limit) }).map((_, i) => (
                     <div key={i} className="h-16 bg-muted/50 rounded-xl animate-pulse" />
                 ))}
             </div>
@@ -484,16 +525,21 @@ export function MarketNewsWidget() {
     }
 
     return (
-        <div className="space-y-3">
+        <div className={`space-y-3 ${showImages ? 'grid grid-cols-2 gap-4' : ''}`}>
             {news.map((item, i) => (
                 <a
                     key={i}
                     href={item.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block p-3 rounded-xl hover:bg-muted/50 transition-colors group"
+                    className={`block p-3 rounded-xl hover:bg-muted/50 transition-colors group ${showImages ? 'border border-border/50' : ''}`}
                 >
-                    <div className="font-medium text-sm group-hover:text-primary transition-colors line-clamp-2">
+                    {showImages && (
+                        <div className="w-full h-20 bg-muted rounded-lg mb-2 flex items-center justify-center">
+                            <ExternalLink size={20} className="text-muted-foreground/30" />
+                        </div>
+                    )}
+                    <div className={`font-medium ${showImages ? 'text-xs' : 'text-sm'} group-hover:text-primary transition-colors line-clamp-2`}>
                         {item.title}
                     </div>
                     <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
