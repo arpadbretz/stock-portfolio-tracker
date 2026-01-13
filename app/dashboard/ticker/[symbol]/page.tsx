@@ -466,52 +466,55 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
                                 </span>
                             </div>
 
-                            {/* Add to Watchlist Button */}
-                            <button
-                                onClick={handleWatchlistToggle}
-                                disabled={watchlistLoading}
-                                className={`mt-4 flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${isInWatchlist
-                                    ? 'bg-primary/10 text-primary border border-primary/30'
-                                    : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border'
-                                    }`}
-                            >
-                                {watchlistLoading ? (
-                                    <Loader2 size={16} className="animate-spin" />
-                                ) : isInWatchlist ? (
-                                    <><Check size={16} /> In Watchlist</>
-                                ) : (
-                                    <><Star size={16} /> Add to Watchlist</>
-                                )}
-                            </button>
-
-                            {/* Set Price Alert Button */}
-                            <Link
-                                href={`/dashboard/alerts`}
-                                className="mt-2 flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm bg-orange-500/10 text-orange-500 border border-orange-500/30 hover:bg-orange-500/20 transition-all"
-                            >
-                                <Bell size={16} />
-                                Set Price Alert
-                            </Link>
-
-                            {/* DCF Calculator Button */}
-                            <Link
-                                href={`/dashboard/dcf?symbol=${symbol}`}
-                                className="mt-2 flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm bg-indigo-500/10 text-indigo-500 border border-indigo-500/30 hover:bg-indigo-500/20 transition-all"
-                            >
-                                <Target size={16} />
-                                Calculate DCF
-                            </Link>
-
-                            {/* Quick Trade Button */}
-                            {user && (
+                            {/* Action Buttons Row */}
+                            <div className="mt-6 flex flex-wrap items-center gap-3">
+                                {/* Add to Watchlist Button */}
                                 <button
-                                    onClick={openQuickTrade}
-                                    className="mt-2 flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 hover:bg-emerald-500/20 transition-all"
+                                    onClick={handleWatchlistToggle}
+                                    disabled={watchlistLoading}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all ${isInWatchlist
+                                        ? 'bg-primary/10 text-primary border border-primary/30'
+                                        : 'bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border'
+                                        }`}
                                 >
-                                    <ShoppingCart size={16} />
-                                    Quick Trade
+                                    {watchlistLoading ? (
+                                        <Loader2 size={14} className="animate-spin" />
+                                    ) : isInWatchlist ? (
+                                        <><Check size={14} /> Watching</>
+                                    ) : (
+                                        <><Star size={14} /> Watch</>
+                                    )}
                                 </button>
-                            )}
+
+                                {/* Set Price Alert Button */}
+                                <Link
+                                    href={`/dashboard/alerts`}
+                                    className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm bg-orange-500/10 text-orange-500 border border-orange-500/30 hover:bg-orange-500/20 transition-all"
+                                >
+                                    <Bell size={14} />
+                                    Alert
+                                </Link>
+
+                                {/* DCF Calculator Button */}
+                                <Link
+                                    href={`/dashboard/dcf?symbol=${symbol}`}
+                                    className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm bg-indigo-500/10 text-indigo-500 border border-indigo-500/30 hover:bg-indigo-500/20 transition-all"
+                                >
+                                    <Target size={14} />
+                                    DCF
+                                </Link>
+
+                                {/* Quick Trade Button */}
+                                {user && (
+                                    <button
+                                        onClick={openQuickTrade}
+                                        className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 hover:bg-emerald-500/20 transition-all"
+                                    >
+                                        <ShoppingCart size={14} />
+                                        Trade
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>

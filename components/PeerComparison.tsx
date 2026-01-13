@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Users, TrendingUp, TrendingDown, Minus, ExternalLink, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Users, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface PeerStock {
     symbol: string;
@@ -182,80 +182,12 @@ export default function PeerComparison({
     currentPE,
     currentMarketCap
 }: PeerComparisonProps) {
-    const [peers, setPeers] = useState<PeerStock[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
     const [isExpanded, setIsExpanded] = useState(true);
-    const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        const fetchPeers = async () => {
-            setIsLoading(true);
-            setError(null);
+    // Get peers statically from our mapping
+    const peerSymbols = findPeers(industry, sector).filter(s => s !== symbol).slice(0, 8);
 
-            try {
-                // Use smart matching to find peers
-                const peerSymbols = findPeers(industry, sector);
-                console.log(`[PeerComparison] Finding peers for ${symbol} in ${industry} / ${sector}`);
-                console.log(`[PeerComparison] Found peer symbols:`, peerSymbols);
-
-                // Filter out the current symbol and take top 6
-                const filteredPeers = peerSymbols.filter(s => s !== symbol).slice(0, 6);
-                console.log(`[PeerComparison] Filtered peers to fetch:`, filteredPeers);
-
-                if (filteredPeers.length === 0) {
-                    console.log(`[PeerComparison] No peers to fetch`);
-                    setPeers([]);
-                    setIsLoading(false);
-                    return;
-                }
-
-                // Fetch quotes for all peers in parallel
-                const peerPromises = filteredPeers.map(async (peerSymbol) => {
-                    try {
-                        const res = await fetch(`/api/stock/${peerSymbol}`);
-                        if (!res.ok) {
-                            console.warn(`[PeerComparison] HTTP ${res.status} for ${peerSymbol}`);
-                            return null;
-                        }
-                        const data = await res.json();
-                        if (data.success && data.data) {
-                            return {
-                                symbol: peerSymbol,
-                                name: data.data.name || data.data.shortName || peerSymbol,
-                                price: data.data.price || data.data.regularMarketPrice || 0,
-                                changePercent: data.data.changePercent || data.data.regularMarketChangePercent || 0,
-                                marketCap: data.data.marketCap || 0,
-                                pe: data.data.trailingPE || data.data.forwardPE || null,
-                                revenue: null,
-                            };
-                        } else {
-                            console.warn(`[PeerComparison] No data for ${peerSymbol}:`, data);
-                        }
-                    } catch (e) {
-                        console.error(`[PeerComparison] Error fetching ${peerSymbol}:`, e);
-                    }
-                    return null;
-                });
-
-                const results = await Promise.all(peerPromises);
-                const peerData = results.filter((p): p is NonNullable<typeof p> => p !== null);
-                console.log(`[PeerComparison] Successfully fetched ${peerData.length} peers`);
-
-                setPeers(peerData);
-            } catch (e) {
-                console.error('[PeerComparison] Failed to fetch peers:', e);
-                setError('Failed to load peer comparison');
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        if (sector || industry) {
-            fetchPeers();
-        }
-    }, [symbol, sector, industry]);
-
-    if (!sector) {
+    if (!sector || peerSymbols.length === 0) {
         return null;
     }
 
@@ -275,7 +207,7 @@ export default function PeerComparison({
                         <Users className="text-blue-400" size={24} />
                     </div>
                     <div>
-                        <h3 className="font-black text-lg">Peer Comparison</h3>
+                        <h3 className="font-black text-lg">Similar Stocks</h3>
                         <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
                             {sector} • {industry}
                         </p>
@@ -290,140 +222,55 @@ export default function PeerComparison({
 
             {isExpanded && (
                 <div className="p-6">
-                    {isLoading ? (
-                        <div className="flex items-center justify-center py-12">
-                            <Loader2 className="animate-spin text-primary" size={32} />
-                        </div>
-                    ) : error ? (
-                        <div className="text-center py-8 text-muted-foreground">
-                            <p>{error}</p>
-                        </div>
-                    ) : peers.length === 0 ? (
-                        <div className="text-center py-8 text-muted-foreground">
-                            <p>No peer data available for this sector</p>
-                        </div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="text-left text-[10px] text-muted-foreground uppercase tracking-widest">
-                                        <th className="pb-4 font-bold">Company</th>
-                                        <th className="pb-4 font-bold text-right">Price</th>
-                                        <th className="pb-4 font-bold text-right">Change</th>
-                                        <th className="pb-4 font-bold text-right">Market Cap</th>
-                                        <th className="pb-4 font-bold text-right">P/E</th>
-                                        <th className="pb-4 font-bold text-right"></th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-border/50">
-                                    {/* Current Stock Row (highlighted) */}
-                                    <tr className="bg-primary/5">
-                                        <td className="py-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-primary font-black text-xs">
-                                                    {symbol.slice(0, 2)}
-                                                </div>
-                                                <div>
-                                                    <div className="font-black text-sm">{symbol}</div>
-                                                    <div className="text-[10px] text-muted-foreground">Current</div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="py-4 text-right font-bold">
-                                            ${currentPrice.toFixed(2)}
-                                        </td>
-                                        <td className="py-4 text-right">-</td>
-                                        <td className="py-4 text-right font-bold">
-                                            {formatMarketCap(currentMarketCap)}
-                                        </td>
-                                        <td className="py-4 text-right font-bold">
-                                            {currentPE ? currentPE.toFixed(1) : '-'}
-                                        </td>
-                                        <td className="py-4 text-right">-</td>
-                                    </tr>
+                    <p className="text-sm text-muted-foreground mb-6">
+                        Compare {symbol} with other stocks in the {industry} industry:
+                    </p>
 
-                                    {/* Peer Rows */}
-                                    {peers.map((peer) => {
-                                        const isPositive = peer.changePercent >= 0;
+                    {/* Peer Grid - Static Links */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {peerSymbols.map((peerSymbol) => (
+                            <Link
+                                key={peerSymbol}
+                                href={`/dashboard/ticker/${peerSymbol}`}
+                                className="group p-4 bg-muted/30 hover:bg-primary/10 border border-border hover:border-primary/30 rounded-2xl transition-all text-center"
+                            >
+                                <div className="w-10 h-10 mx-auto mb-2 rounded-xl bg-muted group-hover:bg-primary/20 flex items-center justify-center text-muted-foreground group-hover:text-primary font-black text-sm transition-colors">
+                                    {peerSymbol.slice(0, 2)}
+                                </div>
+                                <div className="font-bold text-sm group-hover:text-primary transition-colors">
+                                    {peerSymbol}
+                                </div>
+                                <div className="text-[10px] text-muted-foreground mt-1 flex items-center justify-center gap-1">
+                                    <ExternalLink size={10} />
+                                    View
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
 
-                                        return (
-                                            <tr key={peer.symbol} className="hover:bg-muted/30 transition-colors">
-                                                <td className="py-4">
-                                                    <Link href={`/dashboard/ticker/${peer.symbol}`} className="flex items-center gap-3 group">
-                                                        <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-muted-foreground font-black text-xs group-hover:bg-primary/20 group-hover:text-primary transition-colors">
-                                                            {peer.symbol.slice(0, 2)}
-                                                        </div>
-                                                        <div>
-                                                            <div className="font-bold text-sm group-hover:text-primary transition-colors">{peer.symbol}</div>
-                                                            <div className="text-[10px] text-muted-foreground truncate max-w-[120px]">{peer.name}</div>
-                                                        </div>
-                                                    </Link>
-                                                </td>
-                                                <td className="py-4 text-right font-bold">
-                                                    ${peer.price.toFixed(2)}
-                                                </td>
-                                                <td className="py-4 text-right">
-                                                    <span className={`inline-flex items-center gap-1 ${isPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                                        {isPositive ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                                                        <span className="font-bold text-sm">
-                                                            {isPositive ? '+' : ''}{peer.changePercent.toFixed(2)}%
-                                                        </span>
-                                                    </span>
-                                                </td>
-                                                <td className="py-4 text-right text-sm font-bold">
-                                                    {formatMarketCap(peer.marketCap)}
-                                                </td>
-                                                <td className="py-4 text-right text-sm">
-                                                    {peer.pe ? peer.pe.toFixed(1) : '-'}
-                                                </td>
-                                                <td className="py-4 text-right">
-                                                    <Link
-                                                        href={`/dashboard/ticker/${peer.symbol}`}
-                                                        className="p-2 hover:bg-primary/10 rounded-lg transition-colors inline-flex"
-                                                    >
-                                                        <ExternalLink size={14} className="text-muted-foreground" />
-                                                    </Link>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-
-                    {/* Average Comparison */}
-                    {peers.length > 0 && (
-                        <div className="mt-6 pt-6 border-t border-border">
-                            <h4 className="text-sm font-bold text-muted-foreground mb-4">Sector Averages</h4>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <div className="bg-muted/30 rounded-xl p-4 text-center">
-                                    <div className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Avg P/E</div>
-                                    <div className="font-black text-lg">
-                                        {(peers.filter(p => p.pe).reduce((acc, p) => acc + (p.pe || 0), 0) / peers.filter(p => p.pe).length || 0).toFixed(1)}
-                                    </div>
+                    {/* Current Stock Highlight */}
+                    <div className="mt-6 pt-6 border-t border-border">
+                        <div className="flex items-center justify-between bg-primary/5 rounded-2xl p-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center text-primary font-black">
+                                    {symbol.slice(0, 2)}
                                 </div>
-                                <div className="bg-muted/30 rounded-xl p-4 text-center">
-                                    <div className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Your P/E</div>
-                                    <div className={`font-black text-lg ${currentPE && currentPE < (peers.filter(p => p.pe).reduce((acc, p) => acc + (p.pe || 0), 0) / peers.filter(p => p.pe).length || 0) ? 'text-emerald-500' : ''}`}>
-                                        {currentPE?.toFixed(1) || '-'}
-                                    </div>
+                                <div>
+                                    <div className="font-black">{symbol}</div>
+                                    <div className="text-xs text-muted-foreground">Current Stock</div>
                                 </div>
-                                <div className="bg-muted/30 rounded-xl p-4 text-center">
-                                    <div className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Avg Change</div>
-                                    <div className={`font-black text-lg ${(peers.reduce((acc, p) => acc + p.changePercent, 0) / peers.length) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                        {(peers.reduce((acc, p) => acc + p.changePercent, 0) / peers.length).toFixed(2)}%
-                                    </div>
-                                </div>
-                                <div className="bg-muted/30 rounded-xl p-4 text-center">
-                                    <div className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Peers</div>
-                                    <div className="font-black text-lg">{peers.length}</div>
+                            </div>
+                            <div className="text-right">
+                                <div className="font-black text-lg">${currentPrice.toFixed(2)}</div>
+                                <div className="text-xs text-muted-foreground">
+                                    P/E: {currentPE ? currentPE.toFixed(1) : 'N/A'} • {formatMarketCap(currentMarketCap)}
                                 </div>
                             </div>
                         </div>
-                    )}
+                    </div>
                 </div>
             )}
         </motion.div>
     );
 }
+
