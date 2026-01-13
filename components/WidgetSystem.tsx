@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, ReactNode, useRef } from 'react';
+import { useState, useEffect, useCallback, ReactNode, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Settings2,
@@ -521,6 +521,28 @@ export function useWidgetSystem() {
         toast.success('Dashboard reset to default');
     }, [saveToCloud]);
 
+    // Resize widget
+    const resizeWidget = useCallback((widgetId: string, newSize: 'small' | 'medium' | 'large') => {
+        setWidgetStates(prev => {
+            const newStates = {
+                ...prev,
+                [widgetId]: {
+                    ...prev[widgetId],
+                    size: newSize,
+                },
+            };
+
+            try {
+                localStorage.setItem(STORAGE_KEY_VISIBILITY, JSON.stringify(newStates));
+            } catch (e) {
+                console.error('LocalStorage save failed:', e);
+            }
+
+            saveToCloud(null, newStates);
+            return newStates;
+        });
+    }, [saveToCloud]);
+
     // Check if widget is visible
     const isWidgetVisible = useCallback((widgetId: string) => {
         return widgetStates[widgetId]?.visible ?? DEFAULT_VISIBLE.includes(widgetId);
@@ -531,15 +553,35 @@ export function useWidgetSystem() {
     const hiddenWidgets = WIDGET_REGISTRY.filter(w => !isWidgetVisible(w.id));
     const visibleWidgetIds = visibleWidgets.map(w => w.id);
 
+    // Get widget sizes as a simple lookup object
+    const widgetSizes = useMemo(() => {
+        const sizes: { [key: string]: 'small' | 'medium' | 'large' } = {};
+        WIDGET_REGISTRY.forEach(widget => {
+            const state = widgetStates[widget.id];
+            // Map old size types to new ones
+            const sizeMap: { [key: string]: 'small' | 'medium' | 'large' } = {
+                'small': 'small',
+                'medium': 'medium',
+                'large': 'large',
+                'wide': 'large',
+                'tall': 'large',
+            };
+            sizes[widget.id] = sizeMap[state?.size] || sizeMap[widget.defaultSize] || 'medium';
+        });
+        return sizes;
+    }, [widgetStates]);
+
     return {
         layouts,
         saveLayouts,
         widgetStates,
+        widgetSizes,
         isEditing,
         setIsEditing,
         toggleWidget,
         removeWidget,
         addWidget,
+        resizeWidget,
         resetLayout,
         isWidgetVisible,
         visibleWidgets,

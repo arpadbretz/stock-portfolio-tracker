@@ -83,10 +83,12 @@ export default function DashboardPage() {
   const {
     layouts,
     saveLayouts,
+    widgetSizes,
     isEditing,
     setIsEditing,
     removeWidget,
     addWidget,
+    resizeWidget,
     resetLayout,
     hiddenWidgets,
     visibleWidgetIds,
@@ -582,8 +584,10 @@ export default function DashboardPage() {
             isEditing={isEditing}
             layouts={layouts}
             visibleWidgets={visibleWidgetIds}
+            widgetSizes={widgetSizes}
             onLayoutChange={saveLayouts}
             onRemoveWidget={removeWidget}
+            onResizeWidget={resizeWidget}
             renderWidget={renderWidgetContent}
             widgetRegistry={WIDGET_DEFINITIONS}
           />
