@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, ReactNode } from 'react';
+import { useState, useEffect, useCallback, ReactNode, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Settings2,
@@ -8,8 +8,6 @@ import {
     Plus,
     RotateCcw,
     Minus,
-    Maximize2,
-    Minimize2,
     GripVertical,
     Wallet,
     TrendingUp,
@@ -26,12 +24,23 @@ import {
     Bell,
     Zap,
     Eye,
-    Target,
     Layers,
+    Cloud,
+    CloudOff,
+    Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 // ============ TYPES ============
+// Custom layout type (compatible with DashboardGrid)
+export interface WidgetLayout {
+    i: string;
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+}
+
 export interface WidgetConfig {
     id: string;
     title: string;
@@ -50,18 +59,18 @@ interface WidgetState {
     size: 'small' | 'medium' | 'large' | 'wide' | 'tall';
 }
 
-// ============ CONSTANTS ============
-const STORAGE_KEY = 'dashboard-widget-layouts-v2';
-const VISIBILITY_KEY = 'dashboard-widget-visibility-v2';
+interface CloudPreferences {
+    layouts: { [key: string]: WidgetLayout[] } | null;
+    visibility: { [key: string]: WidgetState } | null;
+}
 
-// Size presets for widgets
-const SIZE_PRESETS = {
-    small: { w: 3, h: 3 },
-    medium: { w: 4, h: 4 },
-    large: { w: 6, h: 5 },
-    wide: { w: 8, h: 3 },
-    tall: { w: 4, h: 6 },
-};
+// ============ CONSTANTS ============
+// Fallback to localStorage if cloud fails
+const STORAGE_KEY_LAYOUTS = 'dashboard-widget-layouts-v3';
+const STORAGE_KEY_VISIBILITY = 'dashboard-widget-visibility-v3';
+
+// Debounce delay for cloud saves (don't save on every micro-change)
+const CLOUD_SAVE_DEBOUNCE_MS = 1500;
 
 // ============ WIDGET REGISTRY ============
 export const WIDGET_REGISTRY: WidgetConfig[] = [
@@ -233,7 +242,7 @@ export const WIDGET_REGISTRY: WidgetConfig[] = [
         id: 'performance-chart',
         title: 'Performance Chart',
         description: 'Portfolio value over time',
-        icon: <Target size={18} className="text-pink-500" />,
+        icon: <Activity size={18} className="text-pink-500" />,
         category: 'tools',
         defaultSize: 'large',
         minW: 4,
@@ -241,45 +250,141 @@ export const WIDGET_REGISTRY: WidgetConfig[] = [
     },
 ];
 
-// Default visible widgets
+// Default visible widgets for new users
 const DEFAULT_VISIBLE = [
     'portfolio-value',
     'total-invested',
     'daily-pnl',
     'total-gain',
+    'top-performers',
+    'worst-performers',
     'holdings',
     'sector-allocation',
-    'recent-trades',
 ];
 
-// ============ HOOK ============
+// ============ CLOUD SYNC HOOK ============
+function useCloudSync() {
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [lastSyncError, setLastSyncError] = useState<string | null>(null);
+    const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    const loadFromCloud = useCallback(async (): Promise<CloudPreferences | null> => {
+        try {
+            const response = await fetch('/api/widget-preferences');
+            if (!response.ok) {
+                throw new Error('Failed to load preferences');
+            }
+            const data = await response.json();
+            if (data.success) {
+                return {
+                    layouts: data.layouts,
+                    visibility: data.visibility,
+                };
+            }
+            return null;
+        } catch (error) {
+            console.error('Cloud load error:', error);
+            setLastSyncError('Failed to load from cloud');
+            return null;
+        }
+    }, []);
+
+    const saveToCloud = useCallback(async (
+        layouts: { [key: string]: WidgetLayout[] } | null,
+        visibility: { [key: string]: WidgetState } | null
+    ) => {
+        // Clear any pending save
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+        }
+
+        // Debounce the save
+        saveTimeoutRef.current = setTimeout(async () => {
+            setIsSyncing(true);
+            setLastSyncError(null);
+            try {
+                const response = await fetch('/api/widget-preferences', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ layouts, visibility }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to save preferences');
+                }
+
+                const data = await response.json();
+                if (!data.success) {
+                    throw new Error(data.error || 'Unknown error');
+                }
+            } catch (error) {
+                console.error('Cloud save error:', error);
+                setLastSyncError('Failed to save to cloud');
+                // Fallback: save to localStorage
+                try {
+                    if (layouts) localStorage.setItem(STORAGE_KEY_LAYOUTS, JSON.stringify(layouts));
+                    if (visibility) localStorage.setItem(STORAGE_KEY_VISIBILITY, JSON.stringify(visibility));
+                } catch (e) {
+                    console.error('LocalStorage fallback failed:', e);
+                }
+            } finally {
+                setIsSyncing(false);
+            }
+        }, CLOUD_SAVE_DEBOUNCE_MS);
+    }, []);
+
+    return { loadFromCloud, saveToCloud, isSyncing, lastSyncError };
+}
+
+// ============ MAIN HOOK ============
 export function useWidgetSystem() {
-    const [layouts, setLayouts] = useState<Record<string, unknown[]>>({});
+    const [layouts, setLayouts] = useState<{ [key: string]: WidgetLayout[] }>({});
     const [widgetStates, setWidgetStates] = useState<{ [key: string]: WidgetState }>({});
     const [isEditing, setIsEditing] = useState(false);
     const [hasLoaded, setHasLoaded] = useState(false);
 
-    // Initialize default states
+    const { loadFromCloud, saveToCloud, isSyncing, lastSyncError } = useCloudSync();
+
+    // Initialize - load from cloud first, fallback to localStorage
     useEffect(() => {
-        const savedLayouts = localStorage.getItem(STORAGE_KEY);
-        const savedStates = localStorage.getItem(VISIBILITY_KEY);
+        const initialize = async () => {
+            // Try cloud first
+            const cloudData = await loadFromCloud();
 
-        if (savedLayouts) {
-            try {
-                setLayouts(JSON.parse(savedLayouts));
-            } catch (e) {
-                console.error('Failed to parse saved layouts:', e);
-            }
-        }
+            if (cloudData) {
+                if (cloudData.layouts) {
+                    setLayouts(cloudData.layouts);
+                }
+                if (cloudData.visibility) {
+                    setWidgetStates(cloudData.visibility);
+                } else {
+                    // Initialize defaults if no visibility saved
+                    initializeDefaults();
+                }
+            } else {
+                // Fallback to localStorage
+                try {
+                    const savedLayouts = localStorage.getItem(STORAGE_KEY_LAYOUTS);
+                    const savedStates = localStorage.getItem(STORAGE_KEY_VISIBILITY);
 
-        if (savedStates) {
-            try {
-                setWidgetStates(JSON.parse(savedStates));
-            } catch (e) {
-                console.error('Failed to parse saved states:', e);
+                    if (savedLayouts) {
+                        setLayouts(JSON.parse(savedLayouts));
+                    }
+                    if (savedStates) {
+                        setWidgetStates(JSON.parse(savedStates));
+                    } else {
+                        initializeDefaults();
+                    }
+                } catch (e) {
+                    console.error('Failed to parse localStorage:', e);
+                    initializeDefaults();
+                }
             }
-        } else {
-            // Initialize with defaults
+
+            setHasLoaded(true);
+        };
+
+        const initializeDefaults = () => {
             const defaultStates: { [key: string]: WidgetState } = {};
             WIDGET_REGISTRY.forEach(widget => {
                 defaultStates[widget.id] = {
@@ -288,30 +393,47 @@ export function useWidgetSystem() {
                 };
             });
             setWidgetStates(defaultStates);
-        }
+        };
 
-        setHasLoaded(true);
-    }, []);
+        initialize();
+    }, [loadFromCloud]);
 
-    // Save layouts (placeholder for future drag-drop support)
-    const saveLayouts = useCallback((newLayouts: Record<string, unknown[]>) => {
+    // Save layouts to cloud when they change
+    const saveLayouts = useCallback((newLayouts: { [key: string]: WidgetLayout[] }) => {
         setLayouts(newLayouts);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(newLayouts));
-    }, []);
+        // Also save locally for instant feedback
+        try {
+            localStorage.setItem(STORAGE_KEY_LAYOUTS, JSON.stringify(newLayouts));
+        } catch (e) {
+            console.error('LocalStorage save failed:', e);
+        }
+        // Sync to cloud (debounced)
+        saveToCloud(newLayouts, null);
+    }, [saveToCloud]);
 
     // Toggle widget visibility
     const toggleWidget = useCallback((widgetId: string) => {
         setWidgetStates(prev => {
+            const widget = WIDGET_REGISTRY.find(w => w.id === widgetId);
             const newStates = {
                 ...prev,
                 [widgetId]: {
                     ...prev[widgetId],
                     visible: !prev[widgetId]?.visible,
+                    size: prev[widgetId]?.size || widget?.defaultSize || 'medium',
                 },
             };
-            localStorage.setItem(VISIBILITY_KEY, JSON.stringify(newStates));
 
-            const widget = WIDGET_REGISTRY.find(w => w.id === widgetId);
+            // Save locally
+            try {
+                localStorage.setItem(STORAGE_KEY_VISIBILITY, JSON.stringify(newStates));
+            } catch (e) {
+                console.error('LocalStorage save failed:', e);
+            }
+
+            // Sync to cloud
+            saveToCloud(null, newStates);
+
             if (newStates[widgetId]?.visible) {
                 toast.success(`Added "${widget?.title}" to dashboard`);
             } else {
@@ -320,9 +442,9 @@ export function useWidgetSystem() {
 
             return newStates;
         });
-    }, []);
+    }, [saveToCloud]);
 
-    // Remove widget (same as toggle off)
+    // Remove widget
     const removeWidget = useCallback((widgetId: string) => {
         setWidgetStates(prev => {
             const newStates = {
@@ -332,14 +454,21 @@ export function useWidgetSystem() {
                     visible: false,
                 },
             };
-            localStorage.setItem(VISIBILITY_KEY, JSON.stringify(newStates));
+
+            try {
+                localStorage.setItem(STORAGE_KEY_VISIBILITY, JSON.stringify(newStates));
+            } catch (e) {
+                console.error('LocalStorage save failed:', e);
+            }
+
+            saveToCloud(null, newStates);
 
             const widget = WIDGET_REGISTRY.find(w => w.id === widgetId);
             toast.success(`Removed "${widget?.title}"`);
 
             return newStates;
         });
-    }, []);
+    }, [saveToCloud]);
 
     // Add widget
     const addWidget = useCallback((widgetId: string) => {
@@ -352,11 +481,19 @@ export function useWidgetSystem() {
                     size: widget?.defaultSize || 'medium',
                 },
             };
-            localStorage.setItem(VISIBILITY_KEY, JSON.stringify(newStates));
+
+            try {
+                localStorage.setItem(STORAGE_KEY_VISIBILITY, JSON.stringify(newStates));
+            } catch (e) {
+                console.error('LocalStorage save failed:', e);
+            }
+
+            saveToCloud(null, newStates);
             toast.success(`Added "${widget?.title}" to dashboard`);
+
             return newStates;
         });
-    }, []);
+    }, [saveToCloud]);
 
     // Reset to defaults
     const resetLayout = useCallback(() => {
@@ -367,21 +504,32 @@ export function useWidgetSystem() {
                 size: widget.defaultSize,
             };
         });
+
         setWidgetStates(defaultStates);
         setLayouts({});
-        localStorage.removeItem(STORAGE_KEY);
-        localStorage.setItem(VISIBILITY_KEY, JSON.stringify(defaultStates));
+
+        // Clear local storage
+        try {
+            localStorage.removeItem(STORAGE_KEY_LAYOUTS);
+            localStorage.setItem(STORAGE_KEY_VISIBILITY, JSON.stringify(defaultStates));
+        } catch (e) {
+            console.error('LocalStorage clear failed:', e);
+        }
+
+        // Sync to cloud
+        saveToCloud({}, defaultStates);
         toast.success('Dashboard reset to default');
-    }, []);
+    }, [saveToCloud]);
 
     // Check if widget is visible
     const isWidgetVisible = useCallback((widgetId: string) => {
         return widgetStates[widgetId]?.visible ?? DEFAULT_VISIBLE.includes(widgetId);
     }, [widgetStates]);
 
-    // Get visible widgets
+    // Get visible/hidden widgets
     const visibleWidgets = WIDGET_REGISTRY.filter(w => isWidgetVisible(w.id));
     const hiddenWidgets = WIDGET_REGISTRY.filter(w => !isWidgetVisible(w.id));
+    const visibleWidgetIds = visibleWidgets.map(w => w.id);
 
     return {
         layouts,
@@ -395,57 +543,12 @@ export function useWidgetSystem() {
         resetLayout,
         isWidgetVisible,
         visibleWidgets,
+        visibleWidgetIds,
         hiddenWidgets,
         hasLoaded,
+        isSyncing,
+        lastSyncError,
     };
-}
-
-// ============ WIDGET WRAPPER ============
-interface WidgetWrapperProps {
-    id: string;
-    title: string;
-    icon: ReactNode;
-    isEditing: boolean;
-    onRemove: () => void;
-    children: ReactNode;
-}
-
-export function WidgetWrapper({ id, title, icon, isEditing, onRemove, children }: WidgetWrapperProps) {
-    return (
-        <div className="h-full w-full bg-card border border-border rounded-[28px] overflow-hidden relative group">
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-border/50">
-                <div className="flex items-center gap-3">
-                    {isEditing && (
-                        <div className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground transition-colors widget-drag-handle">
-                            <GripVertical size={16} />
-                        </div>
-                    )}
-                    {icon}
-                    <span className="font-bold text-sm">{title}</span>
-                </div>
-                {isEditing && (
-                    <motion.button
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        onClick={onRemove}
-                        className="w-6 h-6 rounded-full bg-rose-500/10 hover:bg-rose-500/20 flex items-center justify-center text-rose-500 transition-colors"
-                    >
-                        <Minus size={14} />
-                    </motion.button>
-                )}
-            </div>
-            {/* Content */}
-            <div className="p-5 h-[calc(100%-57px)] overflow-auto">
-                {children}
-            </div>
-
-            {/* Edit mode overlay */}
-            {isEditing && (
-                <div className="absolute inset-0 bg-primary/5 pointer-events-none rounded-[28px] border-2 border-dashed border-primary/30" />
-            )}
-        </div>
-    );
 }
 
 // ============ WIDGET GALLERY ============
@@ -589,9 +692,10 @@ interface EditToolbarProps {
     onToggleEdit: () => void;
     onOpenGallery: () => void;
     hiddenCount: number;
+    isSyncing?: boolean;
 }
 
-export function EditToolbar({ isEditing, onToggleEdit, onOpenGallery, hiddenCount }: EditToolbarProps) {
+export function EditToolbar({ isEditing, onToggleEdit, onOpenGallery, hiddenCount, isSyncing }: EditToolbarProps) {
     return (
         <AnimatePresence>
             {isEditing && (
@@ -604,6 +708,9 @@ export function EditToolbar({ isEditing, onToggleEdit, onOpenGallery, hiddenCoun
                     <div className="flex items-center gap-2 pr-4 border-r border-border">
                         <Settings2 size={18} className="text-primary" />
                         <span className="font-bold text-sm">Edit Mode</span>
+                        {isSyncing && (
+                            <Loader2 size={14} className="animate-spin text-muted-foreground" />
+                        )}
                     </div>
 
                     <button

@@ -13,6 +13,7 @@ interface TradeHistoryProps {
     onTradeDeleted?: () => void;
     onTradeEdit?: (trade: Trade) => void;
     readOnly?: boolean;
+    compact?: boolean;
 }
 
 export default function TradeHistory({
@@ -21,7 +22,8 @@ export default function TradeHistory({
     exchangeRates,
     onTradeDeleted,
     onTradeEdit,
-    readOnly = false
+    readOnly = false,
+    compact = false
 }: TradeHistoryProps) {
     const [isDeleting, setIsDeleting] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -55,6 +57,50 @@ export default function TradeHistory({
 
     if (trades.length === 0) {
         return null;
+    }
+
+    // Compact mode for widgets - simple list view
+    if (compact) {
+        return (
+            <div className="space-y-2">
+                {sortedTrades.slice(0, 8).map((trade) => {
+                    const isBuy = trade.action === 'BUY';
+                    const date = new Date(trade.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    const convertedTotal = convertCurrency(trade.totalCost, currency, exchangeRates);
+
+                    return (
+                        <div
+                            key={trade.id}
+                            className="flex items-center justify-between p-2.5 rounded-xl hover:bg-muted/50 transition-colors"
+                        >
+                            <div className="flex items-center gap-2.5">
+                                <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${isBuy ? 'bg-emerald-500/10 text-emerald-500' : 'bg-blue-500/10 text-blue-500'}`}>
+                                    {isBuy ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+                                </div>
+                                <div>
+                                    <div className="font-bold text-sm flex items-center gap-1.5">
+                                        {trade.ticker}
+                                        <span className={`text-[8px] font-black px-1 py-0.5 rounded ${isBuy ? 'bg-emerald-500/10 text-emerald-500' : 'bg-blue-500/10 text-blue-500'}`}>
+                                            {trade.action}
+                                        </span>
+                                    </div>
+                                    <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                        <Clock size={9} />
+                                        {date}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <div className="font-bold text-sm">{formatCurrency(convertedTotal, currency)}</div>
+                                <div className="text-[10px] text-muted-foreground">
+                                    {formatNumber(trade.quantity)} × {formatCurrency(convertCurrency(trade.pricePerShare, currency, exchangeRates), currency)}
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        );
     }
 
     return (

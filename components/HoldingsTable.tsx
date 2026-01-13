@@ -16,9 +16,10 @@ interface HoldingsTableProps {
     currency: CurrencyCode;
     exchangeRates: Record<CurrencyCode, number>;
     isLoading?: boolean;
+    compact?: boolean;
 }
 
-export default function HoldingsTable({ holdings, currency, exchangeRates, isLoading }: HoldingsTableProps) {
+export default function HoldingsTable({ holdings, currency, exchangeRates, isLoading, compact = false }: HoldingsTableProps) {
     if (isLoading) {
         return (
             <div className="bg-card rounded-[40px] border border-border p-8">
@@ -41,7 +42,7 @@ export default function HoldingsTable({ holdings, currency, exchangeRates, isLoa
 
     if (holdings.length === 0) {
         return (
-            <div className="bg-card rounded-[40px] border border-border p-12 text-center">
+            <div className={compact ? "text-center py-8" : "bg-card rounded-[40px] border border-border p-12 text-center"}>
                 <div className="w-16 h-16 bg-muted rounded-3xl flex items-center justify-center mx-auto mb-6">
                     <TrendingUp className="text-muted-foreground" size={32} />
                 </div>
@@ -49,6 +50,46 @@ export default function HoldingsTable({ holdings, currency, exchangeRates, isLoa
                 <p className="text-muted-foreground max-w-xs mx-auto mb-8 text-sm">
                     Add your trades to see your portfolio performance and analytics.
                 </p>
+            </div>
+        );
+    }
+
+    // Compact mode for widgets - simple list view
+    if (compact) {
+        return (
+            <div className="space-y-2">
+                {holdings.map((holding) => {
+                    const isPositive = holding.unrealizedGain > 0;
+                    const isNegative = holding.unrealizedGain < 0;
+
+                    return (
+                        <Link
+                            key={holding.ticker}
+                            href={`/dashboard/ticker/${holding.ticker}`}
+                            className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors group"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center text-primary font-black text-[10px]">
+                                    {holding.ticker.slice(0, 3)}
+                                </div>
+                                <div>
+                                    <div className="font-bold text-sm group-hover:text-primary transition-colors">{holding.ticker}</div>
+                                    <div className="text-[10px] text-muted-foreground">
+                                        {formatNumber(holding.shares, holding.shares % 1 !== 0 ? 2 : 0)} shares
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <div className="font-bold text-sm">
+                                    {formatCurrency(convertCurrency(holding.marketValue, currency, exchangeRates), currency)}
+                                </div>
+                                <div className={`text-[10px] font-bold ${isPositive ? 'text-emerald-500' : isNegative ? 'text-rose-500' : 'text-muted-foreground'}`}>
+                                    {formatPercentage(holding.unrealizedGainPercent)}
+                                </div>
+                            </div>
+                        </Link>
+                    );
+                })}
             </div>
         );
     }

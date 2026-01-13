@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { PortfolioSummary, CurrencyCode, Trade } from '@/types/portfolio';
+import { useState, useEffect, useCallback, ReactNode } from 'react';
+import { PortfolioSummary, CurrencyCode, Trade, Holding } from '@/types/portfolio';
 import {
   convertCurrency,
   formatCurrency,
@@ -15,8 +15,6 @@ import {
   RefreshCw,
   PlusCircle,
   Clock,
-  LayoutDashboard,
-  History,
   Upload,
   Database,
   PieChart as PieChartIcon,
@@ -29,9 +27,7 @@ import {
   ArrowDownRight,
   Zap,
   Settings2,
-  Plus,
-  Minus,
-  GripVertical,
+  Activity,
 } from 'lucide-react';
 import AddTradeForm from '@/components/AddTradeForm';
 import HoldingsTable from '@/components/HoldingsTable';
@@ -48,8 +44,8 @@ import {
   useWidgetSystem,
   WidgetGallery,
   EditToolbar,
-  WIDGET_REGISTRY,
 } from '@/components/WidgetSystem';
+import DashboardGrid, { WIDGET_DEFINITIONS } from '@/components/DashboardGrid';
 import {
   TopPerformersWidget,
   WorstPerformersWidget,
@@ -82,16 +78,20 @@ export default function DashboardPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
 
-  // Widget customization - new system
+  // Widget customization system
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const {
+    layouts,
+    saveLayouts,
     isEditing,
     setIsEditing,
-    isWidgetVisible,
     removeWidget,
     addWidget,
     resetLayout,
     hiddenWidgets,
+    visibleWidgetIds,
+    hasLoaded: widgetsLoaded,
+    isSyncing,
   } = useWidgetSystem();
 
   // Load saved currency preference
@@ -148,7 +148,7 @@ export default function DashboardPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  if (authLoading || (isLoading && !portfolio)) {
+  if (authLoading || (isLoading && !portfolio) || !widgetsLoaded) {
     return <SkeletonDashboard />;
   }
 
@@ -156,10 +156,10 @@ export default function DashboardPage() {
   const trades = portfolio?.trades || [];
   const lastUpdated = portfolio?.lastUpdated;
   const rates = summary?.exchangeRates || { USD: 1, EUR: 0.92, HUF: 350 };
+  const holdings = summary?.holdings || [];
 
   // Calculate Daily P&L from holdings
-  const dailyPnL = (summary?.holdings || []).reduce((total, holding) => {
-    // Each holding now has dayChange (per share price change today)
+  const dailyPnL = holdings.reduce((total, holding) => {
     const dayChange = holding.dayChange || 0;
     return total + (dayChange * holding.shares);
   }, 0);
@@ -168,11 +168,204 @@ export default function DashboardPage() {
     ? (dailyPnL / (summary.totalMarketValue - dailyPnL)) * 100
     : 0;
 
+  // Prepare holdings data for performer widgets
+  const holdingsForPerformers = holdings.map(h => ({
+    symbol: h.ticker,
+    name: h.ticker, // Holding type doesn't have name, use ticker
+    gainPercent: h.unrealizedGainPercent || 0,
+    gain: h.unrealizedGain || 0,
+  }));
+
+  // ============ WIDGET CONTENT RENDERER ============
+  const renderWidgetContent = (widgetId: string): ReactNode => {
+    switch (widgetId) {
+      // Core Metrics
+      case 'portfolio-value':
+        return (
+          <div className="h-full flex flex-col justify-between">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center">
+                <Wallet size={18} className="text-emerald-500" />
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Net Asset Value</span>
+            </div>
+            <h2 className="text-3xl font-black tracking-tight mb-3">
+              {formatCurrency(convertCurrency(summary?.totalMarketValue || 0, currency, rates), currency)}
+            </h2>
+            <div className="flex items-center gap-2">
+              <div className="h-1.5 flex-1 bg-muted rounded-full overflow-hidden">
+                <motion.div initial={{ width: 0 }} animate={{ width: "100%" }} className="h-full bg-emerald-500" />
+              </div>
+            </div>
+            <div className="mt-auto pt-3 flex items-center justify-between text-[10px]">
+              <span className="font-bold text-muted-foreground">{holdings.length} Holdings</span>
+              <span className="font-bold text-emerald-500">LIVE</span>
+            </div>
+          </div>
+        );
+
+      case 'total-invested':
+        return (
+          <div className="h-full flex flex-col justify-between">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                <BarChart3 size={18} className="text-blue-500" />
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Capital Deployed</span>
+            </div>
+            <h2 className="text-3xl font-black tracking-tight mb-3">
+              {formatCurrency(convertCurrency(summary?.totalInvested || 0, currency, rates), currency)}
+            </h2>
+            <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground">
+              <div className="w-2 h-2 rounded-full bg-blue-500" />
+              COST BASIS
+            </div>
+          </div>
+        );
+
+      case 'daily-pnl':
+        const isPnLPositive = dailyPnL >= 0;
+        return (
+          <div className="h-full flex flex-col justify-between">
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isPnLPositive ? 'bg-emerald-500/20' : 'bg-rose-500/20'}`}>
+                {isPnLPositive ? <ArrowUpRight size={18} className="text-emerald-500" /> : <ArrowDownRight size={18} className="text-rose-500" />}
+              </div>
+              <div className="flex items-center gap-2">
+                <CalendarDays size={12} className="text-muted-foreground" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Today's P&L</span>
+              </div>
+            </div>
+            <h2 className={`text-3xl font-black tracking-tight mb-2 ${isPnLPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
+              {isPnLPositive ? '+' : ''}{formatCurrency(convertCurrency(dailyPnL, currency, rates), currency)}
+            </h2>
+            <div className={`inline-flex px-3 py-1 rounded-xl text-sm font-black w-fit ${isPnLPositive ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
+              {dailyPnLPercent >= 0 ? '+' : ''}{dailyPnLPercent.toFixed(2)}%
+            </div>
+            <div className="mt-auto pt-2 text-[10px] font-bold text-muted-foreground">
+              vs Previous Close
+            </div>
+          </div>
+        );
+
+      case 'total-gain':
+        const isGainPositive = (summary?.totalGain || 0) >= 0;
+        return (
+          <div className="h-full flex flex-col">
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`p-2 rounded-xl ${isGainPositive ? 'bg-emerald-500/10' : 'bg-rose-500/10'}`}>
+                {isGainPositive ? <TrendingUp className="text-emerald-500" size={20} /> : <TrendingDown className="text-rose-500" size={20} />}
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">All-Time Performance</span>
+            </div>
+
+            <div className="flex items-baseline gap-4 mb-4 flex-wrap">
+              <h2 className={`text-4xl font-black tracking-tight ${isGainPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
+                {formatCurrency(convertCurrency(summary?.totalGain || 0, currency, rates), currency)}
+              </h2>
+              <div className={`px-4 py-1.5 rounded-xl text-base font-black ${isGainPositive ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
+                {formatPercentage(summary?.totalGainPercent || 0)}
+              </div>
+            </div>
+
+            <div className="h-2 w-full bg-muted rounded-full overflow-hidden mt-auto">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${Math.min(100, Math.abs(summary?.totalGainPercent || 0) * 2)}%` }}
+                className={`h-full ${isGainPositive ? 'bg-emerald-500' : 'bg-rose-500'}`}
+              />
+            </div>
+          </div>
+        );
+
+      // Portfolio Widgets
+      case 'holdings':
+        return (
+          <div className="h-full overflow-auto -mx-2">
+            <HoldingsTable
+              holdings={holdings}
+              currency={currency}
+              exchangeRates={rates}
+              compact
+            />
+          </div>
+        );
+
+      case 'sector-allocation':
+        return (
+          <SectorAllocationChart
+            holdings={holdings}
+            currency={currency}
+            exchangeRates={rates}
+          />
+        );
+
+      case 'recent-trades':
+        return (
+          <div className="h-full overflow-auto -mx-2">
+            <TradeHistory
+              trades={trades.slice(0, 10)}
+              currency={currency}
+              exchangeRates={rates}
+              onTradeDeleted={() => fetchPortfolio(true)}
+              onTradeEdit={handleEditTrade}
+              compact
+            />
+          </div>
+        );
+
+      case 'top-performers':
+        return <TopPerformersWidget holdings={holdingsForPerformers} />;
+
+      case 'worst-performers':
+        return <WorstPerformersWidget holdings={holdingsForPerformers} />;
+
+      // Market Widgets
+      case 'market-overview':
+        return <MarketOverviewWidget />;
+
+      case 'watchlist-mini':
+        return <WatchlistMiniWidget />;
+
+      case 'market-news':
+        return <MarketNewsWidget />;
+
+      case 'upcoming-earnings':
+        return <UpcomingEarningsWidget />;
+
+      // Tool Widgets
+      case 'quick-actions':
+        return <QuickActionsWidget />;
+
+      case 'price-alerts':
+        return <PriceAlertsWidget />;
+
+      case 'dividend-tracker':
+        return <DividendTrackerWidget />;
+
+      case 'performance-chart':
+        return (
+          <PerformanceChart
+            holdings={holdings}
+            currency={currency}
+            exchangeRates={rates}
+          />
+        );
+
+      default:
+        return (
+          <div className="h-full flex items-center justify-center text-muted-foreground">
+            Widget not found
+          </div>
+        );
+    }
+  };
+
   return (
     <div className="min-h-screen text-foreground scroll-smooth relative">
       <main className="px-6 py-10 lg:px-12 max-w-[1600px] mx-auto">
         {/* Intelligence Header */}
-        <header className="flex flex-col gap-10 mb-16">
+        <header className="flex flex-col gap-10 mb-12">
           <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-8">
             <div className="space-y-2">
               <div className="flex items-center gap-3">
@@ -259,191 +452,8 @@ export default function DashboardPage() {
           onToggleEdit={() => setIsEditing(false)}
           onOpenGallery={() => setIsGalleryOpen(true)}
           hiddenCount={hiddenWidgets.length}
+          isSyncing={isSyncing}
         />
-
-
-        {/* Global Metric Clusters */}
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-12">
-          {/* Card: Net Asset Value */}
-          {isWidgetVisible('portfolio-value') && (
-            <motion.div
-              layout
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              whileHover={!isEditing ? { y: -8 } : {}}
-              className={`p-10 bg-card border border-border/80 rounded-[48px] shadow-2xl shadow-black/5 relative overflow-hidden group ${isEditing ? 'ring-2 ring-dashed ring-primary/30' : ''}`}
-            >
-              {isEditing && (
-                <button
-                  onClick={() => removeWidget('portfolio-value')}
-                  className="absolute top-4 right-4 z-10 w-7 h-7 rounded-full bg-rose-500/10 hover:bg-rose-500/20 flex items-center justify-center text-rose-500 transition-colors"
-                >
-                  <Minus size={14} />
-                </button>
-              )}
-              <div className="flex items-center justify-between mb-8">
-                <div className="w-12 h-12 bg-primary/20 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/10 border border-primary/20">
-                  <Wallet size={20} className="text-primary" />
-                </div>
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Net Asset Value</span>
-              </div>
-              <h2 className="text-4xl font-black tracking-tighter mb-4">
-                {formatCurrency(convertCurrency(summary?.totalMarketValue || 0, currency, rates), currency)}
-              </h2>
-              <div className="flex items-center gap-2">
-                <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden shadow-inner">
-                  <motion.div initial={{ width: 0 }} animate={{ width: "100%" }} className="h-full bg-primary" />
-                </div>
-              </div>
-              <div className="mt-6 flex items-center justify-between">
-                <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">{summary?.holdings?.length || 0} Holdings</span>
-                <span className="text-[8px] font-black text-primary">LIVE SYNC</span>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Card: Capital Distribution */}
-          {isWidgetVisible('total-invested') && (
-            <motion.div
-              layout
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              whileHover={!isEditing ? { y: -8 } : {}}
-              className={`p-10 bg-card border border-border/80 rounded-[48px] shadow-2xl shadow-black/5 relative overflow-hidden group ${isEditing ? 'ring-2 ring-dashed ring-primary/30' : ''}`}
-            >
-              {isEditing && (
-                <button
-                  onClick={() => removeWidget('total-invested')}
-                  className="absolute top-4 right-4 z-10 w-7 h-7 rounded-full bg-rose-500/10 hover:bg-rose-500/20 flex items-center justify-center text-rose-500 transition-colors"
-                >
-                  <Minus size={14} />
-                </button>
-              )}
-              <div className="flex items-center justify-between mb-8">
-                <div className="w-12 h-12 bg-accent/20 rounded-2xl flex items-center justify-center shadow-lg shadow-accent/10 border border-accent/20">
-                  <BarChart3 size={20} className="text-accent" />
-                </div>
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Total Deployed</span>
-              </div>
-              <h2 className="text-4xl font-black tracking-tighter mb-4">
-                {formatCurrency(convertCurrency(summary?.totalInvested || 0, currency, rates), currency)}
-              </h2>
-              <div className="text-[10px] font-black text-muted-foreground flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-accent" />
-                CORE COST BASIS
-              </div>
-            </motion.div>
-          )}
-
-          {/* Card: Daily P&L */}
-          {isWidgetVisible('daily-pnl') && (
-            <motion.div
-              layout
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              whileHover={!isEditing ? { y: -8 } : {}}
-              className={`p-10 border rounded-[48px] shadow-2xl shadow-black/5 relative overflow-hidden group ${dailyPnL >= 0
-                ? 'bg-emerald-500/5 border-emerald-500/20'
-                : 'bg-rose-500/5 border-rose-500/20'
-                } ${isEditing ? 'ring-2 ring-dashed ring-primary/30' : ''}`}
-            >
-              {isEditing && (
-                <button
-                  onClick={() => removeWidget('daily-pnl')}
-                  className="absolute top-4 right-4 z-10 w-7 h-7 rounded-full bg-rose-500/10 hover:bg-rose-500/20 flex items-center justify-center text-rose-500 transition-colors"
-                >
-                  <Minus size={14} />
-                </button>
-              )}
-              <div className="flex items-center justify-between mb-8">
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg border ${dailyPnL >= 0
-                  ? 'bg-emerald-500/20 shadow-emerald-500/10 border-emerald-500/20'
-                  : 'bg-rose-500/20 shadow-rose-500/10 border-rose-500/20'
-                  }`}>
-                  {dailyPnL >= 0
-                    ? <ArrowUpRight size={20} className="text-emerald-500" />
-                    : <ArrowDownRight size={20} className="text-rose-500" />
-                  }
-                </div>
-                <div className="flex items-center gap-2">
-                  <CalendarDays size={12} className="text-muted-foreground" />
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Today's P&L</span>
-                </div>
-              </div>
-              <h2 className={`text-4xl font-black tracking-tighter mb-2 ${dailyPnL >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                {dailyPnL >= 0 ? '+' : ''}{formatCurrency(convertCurrency(dailyPnL, currency, rates), currency)}
-              </h2>
-              <div className={`inline-flex px-3 py-1 rounded-xl text-sm font-black ${dailyPnL >= 0
-                ? 'bg-emerald-500/10 text-emerald-500'
-                : 'bg-rose-500/10 text-rose-500'
-                }`}>
-                {dailyPnLPercent >= 0 ? '+' : ''}{dailyPnLPercent.toFixed(2)}%
-              </div>
-              <div className="mt-6 text-[8px] font-black uppercase tracking-widest text-muted-foreground">
-                Based on previous close
-              </div>
-            </motion.div>
-          )}
-
-          {/* Card: Performance Yield */}
-          {isWidgetVisible('total-gain') && (
-            <motion.div
-              layout
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              whileHover={!isEditing ? { y: -8 } : {}}
-              className={`md:col-span-2 p-10 bg-card/40 backdrop-blur-2xl border border-border/80 rounded-[48px] shadow-2xl shadow-black/10 relative overflow-hidden group ${isEditing ? 'ring-2 ring-dashed ring-primary/30' : ''}`}
-            >
-              {isEditing && (
-                <button
-                  onClick={() => removeWidget('total-gain')}
-                  className="absolute top-4 right-4 z-10 w-7 h-7 rounded-full bg-rose-500/10 hover:bg-rose-500/20 flex items-center justify-center text-rose-500 transition-colors"
-                >
-                  <Minus size={14} />
-                </button>
-              )}
-              <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-10 h-full">
-                <div className="flex-1 w-full xl:w-auto">
-                  <div className="flex items-center gap-4 mb-8">
-                    <div className={`p-3 rounded-2xl ${(summary?.totalGain || 0) >= 0 ? 'bg-emerald-500/10' : 'bg-rose-500/10'}`}>
-                      {(summary?.totalGain || 0) >= 0 ? (
-                        <TrendingUp className="text-emerald-500" size={24} />
-                      ) : (
-                        <TrendingDown className="text-rose-500" size={24} />
-                      )}
-                    </div>
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Portfolio Yield Metrics</span>
-                  </div>
-
-                  <div className="flex flex-wrap items-baseline gap-6 mb-8">
-                    <h2 className={`text-6xl font-black tracking-tighter ${(summary?.totalGain || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                      {formatCurrency(convertCurrency(summary?.totalGain || 0, currency, rates), currency)}
-                    </h2>
-                    <div className={`px-5 py-2 rounded-2xl text-lg font-black border ${(summary?.totalGain || 0) >= 0 ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border-rose-500/20'}`}>
-                      {formatPercentage(summary?.totalGainPercent || 0)}
-                    </div>
-                  </div>
-
-                  <div className="h-2.5 w-full bg-muted rounded-full overflow-hidden shadow-inner">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${Math.min(100, Math.abs(summary?.totalGainPercent || 0) * 2)}%` }}
-                      className={`h-full ${(summary?.totalGain || 0) >= 0 ? 'bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.4)]' : 'bg-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.4)]'}`}
-                    />
-                  </div>
-                </div>
-
-                <div className="hidden xl:flex w-32 h-32 rounded-[40px] bg-muted/30 border border-border/50 items-center justify-center shrink-0">
-                  <PieChartIcon className={(summary?.totalGain || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'} size={60} />
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </section>
 
         {/* Quick Actions Bar */}
         <div className="flex flex-wrap gap-3 mb-8 p-4 bg-card/30 backdrop-blur-md border border-border/30 rounded-2xl">
@@ -475,7 +485,7 @@ export default function DashboardPage() {
           <a
             href={`data:text/csv;charset=utf-8,${encodeURIComponent(
               'Symbol,Shares,Avg Price,Current Price,Market Value,Gain/Loss\n' +
-              (summary?.holdings || []).map(h =>
+              holdings.map(h =>
                 `${h.ticker},${h.shares},${h.avgCostBasis.toFixed(2)},${h.currentPrice.toFixed(2)},${h.marketValue.toFixed(2)},${h.unrealizedGain.toFixed(2)}`
               ).join('\n')
             )}`}
@@ -494,8 +504,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Rapid Action Layer */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-20">
+        {/* Rapid Action Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
           <Link
             href="/dashboard/import"
             className="flex items-center justify-between p-8 bg-card/60 backdrop-blur-md border border-border/40 rounded-[32px] hover:border-primary/30 transition-all group overflow-hidden relative shadow-lg shadow-black/5"
@@ -505,8 +515,8 @@ export default function DashboardPage() {
                 <Upload size={24} className="text-foreground" />
               </div>
               <div>
-                <h3 className="font-black text-lg tracking-tight">Bulk Import Engineering</h3>
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Batch trade CSV processing</p>
+                <h3 className="font-black text-lg tracking-tight">Bulk Import</h3>
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">CSV trade upload</p>
               </div>
             </div>
             <ChevronRight size={24} className="text-muted-foreground group-hover:translate-x-1 group-hover:text-primary transition-all" />
@@ -527,8 +537,8 @@ export default function DashboardPage() {
                 <PlusCircle size={28} />
               </div>
               <div className="text-left">
-                <h3 className="font-black text-lg tracking-tight">Execute New Trade</h3>
-                <p className="text-xs text-primary-foreground/70 font-black uppercase tracking-widest">Manual position entry</p>
+                <h3 className="font-black text-lg tracking-tight">New Trade</h3>
+                <p className="text-xs text-primary-foreground/70 font-black uppercase tracking-widest">Manual entry</p>
               </div>
             </div>
             <ChevronRight size={24} />
@@ -538,127 +548,76 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        {/* Central Terminal Display */}
-        <div className="space-y-20">
-          <AnimatePresence>
-            {(isFormOpen || editingTrade) && (
-              <motion.div
-                initial={{ opacity: 0, height: 0, y: -40 }}
-                animate={{ opacity: 1, height: 'auto', y: 0 }}
-                exit={{ opacity: 0, height: 0, y: -40 }}
-                className="overflow-hidden"
-              >
-                <div className="pb-16 pt-4">
-                  <AddTradeForm
-                    portfolioId={portfolio?.id || ''}
-                    editTrade={editingTrade}
-                    onCancel={() => {
-                      setIsFormOpen(false);
-                      setEditingTrade(null);
-                    }}
-                    onTradeAdded={() => {
-                      fetchPortfolio(true);
-                      setIsFormOpen(false);
-                      setEditingTrade(null);
-                    }}
-                  />
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <div className="grid grid-cols-1 gap-20">
-            {/* Primary Analysis - Full Width */}
-            <div className="space-y-20">
-              <section>
-                <div className="flex items-center gap-4 mb-10 pl-2">
-                  <div className="w-1.5 h-8 bg-primary rounded-full shadow-[0_0_15px_rgba(16,185,129,0.5)]" />
-                  <h3 className="text-3xl font-black tracking-tight">Active Holdings</h3>
-                </div>
-                <HoldingsTable
-                  holdings={summary?.holdings || []}
-                  currency={currency}
-                  exchangeRates={rates}
-                />
-              </section>
-
-              {/* Data Visualization Grid - Moving here from sidebar */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                <div className="p-10 bg-card border border-border/60 rounded-[48px] shadow-2xl shadow-black/5 backdrop-blur-3xl overflow-hidden">
-                  <h3 className="text-xl font-black mb-10 flex items-center gap-4 px-2">
-                    <div className="p-2 bg-primary/10 rounded-xl">
-                      <PieChartIcon className="text-primary" size={20} />
-                    </div>
-                    Performance Attribution
-                  </h3>
-                  <PerformanceChart
-                    holdings={summary?.holdings || []}
-                    currency={currency}
-                    exchangeRates={rates}
-                  />
-                </div>
-
-                <div className="p-10 bg-card border border-border/60 rounded-[48px] shadow-2xl shadow-black/5 backdrop-blur-3xl overflow-hidden">
-                  <h3 className="text-xl font-black mb-10 flex items-center gap-4 px-2">
-                    <div className="p-2 bg-accent/10 rounded-xl">
-                      <LayersIcon className="text-accent" size={20} />
-                    </div>
-                    Fundamental Allocation
-                  </h3>
-                  <SectorAllocationChart
-                    holdings={summary?.holdings || []}
-                    currency={currency}
-                    exchangeRates={rates}
-                  />
-                </div>
-              </div>
-
-              <section>
-                <div className="flex items-center gap-4 mb-10 pl-2">
-                  <div className="w-1.5 h-8 bg-accent rounded-full shadow-[0_0_15px_rgba(96,165,250,0.5)]" />
-                  <h3 className="text-3xl font-black tracking-tight">Log History</h3>
-                </div>
-                <TradeHistory
-                  trades={trades}
-                  currency={currency}
-                  exchangeRates={rates}
-                  onTradeDeleted={() => fetchPortfolio(true)}
-                  onTradeEdit={handleEditTrade}
-                />
-              </section>
-            </div>
-
-            {/* Neural Hub - Full Width Footer style */}
+        {/* Trade Form */}
+        <AnimatePresence>
+          {(isFormOpen || editingTrade) && (
             <motion.div
-              whileHover={{ scale: 1.01 }}
-              className="p-12 bg-gradient-to-br from-primary/5 via-accent/5 to-transparent border border-white/5 rounded-[64px] relative overflow-hidden group shadow-2xl"
+              initial={{ opacity: 0, height: 0, y: -40 }}
+              animate={{ opacity: 1, height: 'auto', y: 0 }}
+              exit={{ opacity: 0, height: 0, y: -40 }}
+              className="overflow-hidden mb-12"
             >
-              <div className="relative z-10 flex flex-col md:flex-row items-center gap-12">
-                <div className="p-6 bg-primary/20 rounded-3xl shadow-inner shrink-0">
-                  <Database className="text-primary" size={40} />
-                </div>
-                <div className="flex-1 text-center md:text-left">
-                  <h3 className="text-4xl font-black tracking-tighter mb-4 leading-none">Valuation Neural Hub</h3>
-                  <p className="text-muted-foreground text-lg font-medium max-w-2xl leading-relaxed">
-                    Institutional-grade DCF and comparative valuation models launching in Q1. Unified alpha discovery for sophisticated capital management.
-                  </p>
-                </div>
-                <div className="flex items-center gap-6">
-                  <div className="flex flex-col items-end">
-                    <span className="px-4 py-1.5 bg-muted rounded-full text-[10px] font-black uppercase tracking-widest text-muted-foreground">Operational Alpha</span>
-                    <div className="flex items-center gap-2 mt-2">
-                      <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-                      <span className="text-[10px] font-black uppercase tracking-widest text-primary">System Encoding</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="absolute -bottom-20 -right-20 opacity-5 rotate-12">
-                <Database size={300} className="text-primary" />
+              <div className="pb-8 pt-4">
+                <AddTradeForm
+                  portfolioId={portfolio?.id || ''}
+                  editTrade={editingTrade}
+                  onCancel={() => {
+                    setIsFormOpen(false);
+                    setEditingTrade(null);
+                  }}
+                  onTradeAdded={() => {
+                    fetchPortfolio(true);
+                    setIsFormOpen(false);
+                    setEditingTrade(null);
+                  }}
+                />
               </div>
             </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ============ WIDGET GRID ============ */}
+        <section className="mb-12">
+          <DashboardGrid
+            isEditing={isEditing}
+            layouts={layouts}
+            visibleWidgets={visibleWidgetIds}
+            onLayoutChange={saveLayouts}
+            onRemoveWidget={removeWidget}
+            renderWidget={renderWidgetContent}
+            widgetRegistry={WIDGET_DEFINITIONS}
+          />
+        </section>
+
+        {/* Neural Hub Footer */}
+        <motion.div
+          whileHover={{ scale: 1.01 }}
+          className="p-12 bg-gradient-to-br from-primary/5 via-accent/5 to-transparent border border-white/5 rounded-[64px] relative overflow-hidden group shadow-2xl"
+        >
+          <div className="relative z-10 flex flex-col md:flex-row items-center gap-12">
+            <div className="p-6 bg-primary/20 rounded-3xl shadow-inner shrink-0">
+              <Database className="text-primary" size={40} />
+            </div>
+            <div className="flex-1 text-center md:text-left">
+              <h3 className="text-4xl font-black tracking-tighter mb-4 leading-none">Valuation Neural Hub</h3>
+              <p className="text-muted-foreground text-lg font-medium max-w-2xl leading-relaxed">
+                Institutional-grade DCF and comparative valuation models launching in Q1. Unified alpha discovery for sophisticated capital management.
+              </p>
+            </div>
+            <div className="flex items-center gap-6">
+              <div className="flex flex-col items-end">
+                <span className="px-4 py-1.5 bg-muted rounded-full text-[10px] font-black uppercase tracking-widest text-muted-foreground">Operational Alpha</span>
+                <div className="flex items-center gap-2 mt-2">
+                  <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-primary">System Encoding</span>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+          <div className="absolute -bottom-20 -right-20 opacity-5 rotate-12">
+            <Database size={300} className="text-primary" />
+          </div>
+        </motion.div>
       </main>
 
       <style jsx global>{`
