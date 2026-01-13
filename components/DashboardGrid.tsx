@@ -534,7 +534,7 @@ export default function DashboardGrid({
                     },
                 }}
             >
-                {/* @ts-expect-error - React 19 JSX types issue with dnd-kit */}
+                {/* @ts-ignore - React 19 types support varies by environment */}
                 <SortableContext items={orderedWidgets} strategy={rectSortingStrategy}>
                     <motion.div
                         layout
@@ -568,7 +568,7 @@ export default function DashboardGrid({
                 </SortableContext>
 
                 {/* Drag Overlay - Shows floating card while dragging */}
-                {/* @ts-expect-error - React 19 JSX types issue with dnd-kit */}
+                {/* @ts-ignore - React 19 types support varies by environment */}
                 <DragOverlay dropAnimation={{
                     duration: 200,
                     easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
