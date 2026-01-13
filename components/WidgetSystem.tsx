@@ -259,7 +259,8 @@ const DEFAULT_VISIBLE = [
     'top-performers',
     'worst-performers',
     'holdings',
-    'sector-allocation',
+    'performance-chart',
+    'quick-actions',
 ];
 
 // ============ CLOUD SYNC HOOK ============

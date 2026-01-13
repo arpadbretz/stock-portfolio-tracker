@@ -437,6 +437,7 @@ export default function DashboardPage() {
             holdings={holdings}
             currency={currency}
             exchangeRates={rates}
+            size={size}
           />
         );
 

@@ -8,6 +8,7 @@ interface PerformanceChartProps {
     currency: CurrencyCode;
     exchangeRates: Record<CurrencyCode, number>;
     isLoading?: boolean;
+    size?: 'small' | 'medium' | 'large';
 }
 
 const COLORS = [
@@ -21,10 +22,10 @@ const COLORS = [
     '#d946ef', // fuchsia-500
 ];
 
-export default function PerformanceChart({ holdings, currency, exchangeRates, isLoading }: PerformanceChartProps) {
+export default function PerformanceChart({ holdings, currency, exchangeRates, isLoading, size = 'medium' }: PerformanceChartProps) {
     if (isLoading) {
         return (
-            <div className="h-[300px] flex flex-col justify-center items-center">
+            <div className="h-full flex flex-col justify-center items-center">
                 <div className="w-10 h-10 border-4 border-muted border-t-primary rounded-full animate-spin mb-4"></div>
                 <p className="text-muted-foreground text-xs animate-pulse font-black uppercase tracking-widest">Calculating...</p>
             </div>
@@ -33,7 +34,7 @@ export default function PerformanceChart({ holdings, currency, exchangeRates, is
 
     if (holdings.length === 0) {
         return (
-            <div className="h-[300px] flex flex-col justify-center items-center text-center">
+            <div className="h-full flex flex-col justify-center items-center text-center">
                 <div className="bg-muted p-4 rounded-full mb-4">
                     <ChartIcon size={24} className="text-muted-foreground" />
                 </div>
@@ -50,11 +51,13 @@ export default function PerformanceChart({ holdings, currency, exchangeRates, is
         }))
         .sort((a, b) => b.value - a.value);
 
+    const isLarge = size === 'large';
+
     return (
-        <div className="flex flex-col lg:grid lg:grid-cols-2 gap-8 lg:gap-10 items-center">
+        <div className={`h-full flex flex-col ${isLarge ? 'lg:grid lg:grid-cols-2 lg:gap-6' : ''} items-center`}>
             {/* Chart Container */}
             <div className="w-full flex items-center justify-center">
-                <div className="relative w-full max-w-[280px] aspect-square">
+                <div className={`relative w-full max-w-[240px] aspect-square`}>
                     <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                             <Pie
@@ -80,7 +83,7 @@ export default function PerformanceChart({ holdings, currency, exchangeRates, is
                                     if (active && payload && payload.length) {
                                         const data = payload[0].payload;
                                         return (
-                                            <div className="bg-card/90 backdrop-blur-xl border border-border p-4 rounded-2xl shadow-2xl">
+                                            <div className="bg-card/90 backdrop-blur-xl border border-border p-3 rounded-xl shadow-2xl z-50">
                                                 <p className="text-foreground font-black mb-1 flex items-center gap-2">
                                                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: payload[0].color }}></div>
                                                     {data.name}
@@ -98,29 +101,30 @@ export default function PerformanceChart({ holdings, currency, exchangeRates, is
 
                     <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                         <span className="text-muted-foreground text-[10px] font-black uppercase tracking-widest">Assets</span>
-                        <span className="text-2xl font-black text-foreground">{data.length}</span>
+                        <span className="text-xl font-black text-foreground">{data.length}</span>
                     </div>
                 </div>
             </div>
 
-            {/* Legend */}
-            <div className="w-full space-y-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
-                {data.map((item, index) => (
-                    <div key={item.name} className="flex items-center justify-between p-4 rounded-[20px] bg-muted/20 border border-transparent hover:border-border/50 hover:bg-muted/40 transition-all group/item shadow-sm">
-                        <div className="flex items-center gap-4 min-w-0 flex-1">
-                            <div
-                                className="w-3 h-3 rounded-full flex-shrink-0 shadow-lg"
-                                style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                            />
-                            <span className="text-foreground font-black text-sm uppercase tracking-wider group-hover/item:text-primary transition-colors truncate">{item.name}</span>
+            {/* Legend - Only show if large */}
+            {isLarge && (
+                <div className="w-full space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar lg:mt-0 mt-4">
+                    {data.map((item, index) => (
+                        <div key={item.name} className="flex items-center justify-between p-2 rounded-xl bg-muted/20 border border-transparent hover:border-border/50 hover:bg-muted/40 transition-all group/item">
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                                <div
+                                    className="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-sm"
+                                    style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                                />
+                                <span className="text-foreground font-bold text-xs uppercase group-hover/item:text-primary transition-colors truncate">{item.name}</span>
+                            </div>
+                            <div className="text-right flex-shrink-0 ml-2">
+                                <div className="text-xs font-black text-foreground">{item.percentage.toFixed(1)}%</div>
+                            </div>
                         </div>
-                        <div className="text-right flex-shrink-0 ml-4">
-                            <div className="text-sm font-black text-foreground mb-0.5 whitespace-nowrap">{formatCurrency(item.value, currency)}</div>
-                            <div className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.1em]">{(item.percentage).toFixed(1)}% Weight</div>
-                        </div>
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }

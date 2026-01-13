@@ -90,10 +90,7 @@
 | UX-005 | Onboarding Tour | ⬜ | 4h | Critical for new users |
 | UX-006 | Empty State Designs | ✅ | 3h | Implemented Jan 12, 2026 |
 | DASH-010 | Benchmark Comparison | ⬜ | 6h | vs S&P 500 chart |
-| DASH-011 | Upcoming Earnings Widget | ⬜ | 3h | Fetch earnings dates for holdings/watchlist via Yahoo Finance |
-| DASH-012 | Dividend Tracker Widget | ⬜ | 4h | Calculate dividends from holdings, show annual income |
-| DASH-013 | Market News API | ⬜ | 3h | Integrate real news API (Alpha Vantage/Finnhub) |
-| DASH-014 | Performance Chart Widget | ⬜ | 5h | Historical portfolio value tracking with Recharts |
+| DASH-014 | Portfolio Allocation Chart | ✅ | 2h | Implemented Jan 13, 2026 - Stocks by % weight |
 
 ---
 
@@ -202,6 +199,8 @@
 | ID | Task | Status | Effort | Notes |
 |----|------|--------|--------|-------|
 | AUTH-005 | Facebook Login | ⬜ | 1h | Supabase provider |
+| DASH-011 | Upcoming Earnings Widget | ⬜ | 3h | Moved from high priority - Earnings calendar |
+| DASH-013 | Market News API | ⬜ | 3h | Moved from high priority - Real news integration |
 | AUTH-006 | Microsoft/LinkedIn | ⬜ | 2h | Business users |
 | AUTH-007 | Remember Me Checkbox | ⬜ | 1h | Session duration control |
 | AUTH-008 | Magic Link Login | ⬜ | 2h | Passwordless option |
@@ -302,6 +301,7 @@
 |----|------|--------|--------|-------|
 | DASH-009 | Goals/Targets Widget | ⬜ | 6h | Savings goals tracker |
 | DASH-010 | Benchmark Comparison | ⬜ | 6h | vs S&P 500 chart |
+| DASH-012 | Dividend Tracker Widget | ⬜ | 4h | Moved from high priority - Dividend yield/tracking |
 
 ## Stock Research
 
