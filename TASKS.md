@@ -85,11 +85,15 @@
 
 | ID | Task | Status | Effort | Notes |
 |----|------|--------|--------|-------|
-| DASH-004 | Market Overview Widget | ⬜ | 4h | S&P, NASDAQ, DOW - Essential context |
+| DASH-004 | Market Overview Widget | ✅ | 4h | Implemented Jan 13, 2026 - Shows S&P, NASDAQ, DOW, VIX with error states |
 | DASH-008 | Performance Timeframes | ⬜ | 3h | 1W, 1M, 3M, YTD, 1Y, All |
 | UX-005 | Onboarding Tour | ⬜ | 4h | Critical for new users |
 | UX-006 | Empty State Designs | ✅ | 3h | Implemented Jan 12, 2026 |
 | DASH-010 | Benchmark Comparison | ⬜ | 6h | vs S&P 500 chart |
+| DASH-011 | Upcoming Earnings Widget | ⬜ | 3h | Fetch earnings dates for holdings/watchlist via Yahoo Finance |
+| DASH-012 | Dividend Tracker Widget | ⬜ | 4h | Calculate dividends from holdings, show annual income |
+| DASH-013 | Market News API | ⬜ | 3h | Integrate real news API (Alpha Vantage/Finnhub) |
+| DASH-014 | Performance Chart Widget | ⬜ | 5h | Historical portfolio value tracking with Recharts |
 
 ---
 

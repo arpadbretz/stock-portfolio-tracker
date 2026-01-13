@@ -416,14 +416,14 @@ export default function DashboardPage() {
         return <WatchlistMiniWidget limit={isLarge ? 10 : isSmall ? 3 : 5} />;
 
       case 'market-news':
-        return <MarketNewsWidget limit={isLarge ? 8 : isSmall ? 2 : 4} showImages={isLarge} />;
+        return <MarketNewsWidget limit={isLarge ? 8 : isSmall ? 2 : 4} />;
 
       case 'upcoming-earnings':
         return <UpcomingEarningsWidget limit={isLarge ? 10 : isSmall ? 3 : 5} />;
 
       // Tool Widgets
       case 'quick-actions':
-        return <QuickActionsWidget compact={isSmall} />;
+        return <QuickActionsWidget compact={isSmall} onEditDashboard={() => setIsEditing(true)} />;
 
       case 'price-alerts':
         return <PriceAlertsWidget limit={isLarge ? 10 : isSmall ? 2 : 4} />;

@@ -17,6 +17,7 @@ import {
     Search,
     FileText,
     Activity,
+    Settings,
 } from 'lucide-react';
 
 // ============ MARKET OVERVIEW WIDGET ============
@@ -31,32 +32,42 @@ interface MarketIndex {
 export function MarketOverviewWidget({ expanded = false }: { expanded?: boolean }) {
     const [indices, setIndices] = useState<MarketIndex[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [hasError, setHasError] = useState(false);
 
     useEffect(() => {
         // Fetch market indices
         const fetchIndices = async () => {
             try {
+                setHasError(false);
                 const symbols = ['^GSPC', '^IXIC', '^DJI', '^VIX'];
                 const promises = symbols.map(async (symbol) => {
-                    const res = await fetch(`/api/stock/${encodeURIComponent(symbol)}`);
-                    const data = await res.json();
-                    if (data.success) {
-                        return {
-                            symbol,
-                            name: symbol === '^GSPC' ? 'S&P 500' :
-                                symbol === '^IXIC' ? 'NASDAQ' :
-                                    symbol === '^DJI' ? 'DOW' : 'VIX',
-                            price: data.data?.price || 0,
-                            change: data.data?.change || 0,
-                            changePercent: data.data?.changePercent || 0,
-                        };
+                    try {
+                        const res = await fetch(`/api/stock/${encodeURIComponent(symbol)}`);
+                        const data = await res.json();
+                        if (data.success && data.data?.price) {
+                            return {
+                                symbol,
+                                name: symbol === '^GSPC' ? 'S&P 500' :
+                                    symbol === '^IXIC' ? 'NASDAQ' :
+                                        symbol === '^DJI' ? 'DOW' : 'VIX',
+                                price: data.data.price,
+                                change: data.data.change || 0,
+                                changePercent: data.data.changePercent || 0,
+                            };
+                        }
+                    } catch {
+                        return null;
                     }
                     return null;
                 });
                 const results = (await Promise.all(promises)).filter(Boolean) as MarketIndex[];
                 setIndices(results);
+                if (results.length === 0) {
+                    setHasError(true);
+                }
             } catch (e) {
                 console.error('Failed to fetch market indices:', e);
+                setHasError(true);
             } finally {
                 setIsLoading(false);
             }
@@ -71,8 +82,18 @@ export function MarketOverviewWidget({ expanded = false }: { expanded?: boolean 
         return (
             <div className={`grid ${expanded ? 'grid-cols-4' : 'grid-cols-2'} gap-3`}>
                 {[1, 2, 3, 4].map(i => (
-                    <div key={i} className="h-16 bg-muted/50 rounded-xl animate-pulse" />
+                    <div key={i} className="h-20 bg-muted/50 rounded-xl animate-pulse" />
                 ))}
+            </div>
+        );
+    }
+
+    if (hasError || indices.length === 0) {
+        return (
+            <div className="text-center py-8">
+                <Activity size={32} className="mx-auto mb-2 text-muted-foreground/50" />
+                <p className="text-sm text-muted-foreground">Market data unavailable</p>
+                <p className="text-xs text-muted-foreground/70 mt-1">Check back during market hours</p>
             </div>
         );
     }
@@ -294,7 +315,13 @@ export function WatchlistMiniWidget({ limit = 5 }: { limit?: number }) {
 }
 
 // ============ QUICK ACTIONS WIDGET ============
-export function QuickActionsWidget({ compact = false }: { compact?: boolean }) {
+
+interface QuickActionsProps {
+    compact?: boolean;
+    onEditDashboard?: () => void;
+}
+
+export function QuickActionsWidget({ compact = false, onEditDashboard }: QuickActionsProps) {
     const actions = [
         { icon: <Plus size={compact ? 14 : 16} />, label: 'Trade', href: '/dashboard', color: 'bg-emerald-500/10 text-emerald-500' },
         { icon: <Search size={compact ? 14 : 16} />, label: 'Search', href: '/dashboard/stocks', color: 'bg-blue-500/10 text-blue-500' },
@@ -303,17 +330,28 @@ export function QuickActionsWidget({ compact = false }: { compact?: boolean }) {
     ];
 
     return (
-        <div className={`grid ${compact ? 'grid-cols-4 gap-1' : 'grid-cols-2 gap-2'}`}>
-            {actions.map((action) => (
-                <Link
-                    key={action.label}
-                    href={action.href}
-                    className={`flex flex-col items-center justify-center ${compact ? 'p-2' : 'p-3'} rounded-xl ${action.color} hover:opacity-80 transition-opacity`}
+        <div className="space-y-2">
+            <div className={`grid ${compact ? 'grid-cols-4 gap-1' : 'grid-cols-2 gap-2'}`}>
+                {actions.map((action) => (
+                    <Link
+                        key={action.label}
+                        href={action.href}
+                        className={`flex flex-col items-center justify-center ${compact ? 'p-2' : 'p-3'} rounded-xl ${action.color} hover:opacity-80 transition-opacity`}
+                    >
+                        {action.icon}
+                        <span className={`${compact ? 'text-[9px]' : 'text-xs'} font-bold mt-1`}>{action.label}</span>
+                    </Link>
+                ))}
+            </div>
+            {onEditDashboard && !compact && (
+                <button
+                    onClick={onEditDashboard}
+                    className="w-full flex items-center justify-center gap-2 p-2 rounded-xl bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                 >
-                    {action.icon}
-                    <span className={`${compact ? 'text-[9px]' : 'text-xs'} font-bold mt-1`}>{action.label}</span>
-                </Link>
-            ))}
+                    <Settings size={14} />
+                    <span className="text-xs font-bold">Edit Dashboard</span>
+                </button>
+            )}
         </div>
     );
 }
