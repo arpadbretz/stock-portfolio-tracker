@@ -2,7 +2,11 @@
     "crons": [
         {
             "path": "/api/cron/check-alerts",
-            "schedule": "*/15 * * * *"
+            "schedule": "0 1 * * *"
+        },
+        {
+            "path": "/api/cron/sync-history",
+            "schedule": "0 2 * * *"
         }
     ]
 }
