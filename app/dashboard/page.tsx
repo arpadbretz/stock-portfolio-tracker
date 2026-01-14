@@ -104,6 +104,19 @@ export default function DashboardPage() {
     }
   }, []);
 
+  // Trigger welcome email check for new users
+  useEffect(() => {
+    if (user && !authLoading) {
+      // Small delay to ensure everything is loaded, fire and forget
+      const timer = setTimeout(() => {
+        fetch('/api/auth/welcome', { method: 'POST' }).catch(err =>
+          console.error('Failed to trigger welcome email:', err)
+        );
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [user, authLoading]);
+
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login');

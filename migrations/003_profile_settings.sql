@@ -9,6 +9,11 @@ ADD COLUMN IF NOT EXISTS display_name TEXT DEFAULT NULL;
 ALTER TABLE public.profiles 
 ADD COLUMN IF NOT EXISTS email_alerts BOOLEAN DEFAULT TRUE;
 
+-- Add welcome_email_sent flag
+ALTER TABLE public.profiles 
+ADD COLUMN IF NOT EXISTS welcome_email_sent BOOLEAN DEFAULT FALSE;
+
 -- Comment for documentation
 COMMENT ON COLUMN public.profiles.display_name IS 'User preferred display name';
 COMMENT ON COLUMN public.profiles.email_alerts IS 'Toggle for receiving email alerts';
+COMMENT ON COLUMN public.profiles.welcome_email_sent IS 'Tracks if welcome email has been sent';
