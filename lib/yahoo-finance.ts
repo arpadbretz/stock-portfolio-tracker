@@ -68,6 +68,49 @@ export async function getBatchPrices(tickers: string[]): Promise<Map<string, Pri
 }
 
 /**
+ * Get historical prices for a ticker
+ */
+export async function getHistoricalPrices(ticker: string, from: Date, to: Date = new Date()) {
+    if (!ticker) return [];
+
+    try {
+        const symbol = ticker.trim().toUpperCase();
+        const queryOptions = {
+            period1: from,
+            period2: to,
+            interval: '1d' as any,
+        };
+
+        const result = await yf.historical(symbol, queryOptions);
+        return result.map((item: any) => ({
+            date: item.date,
+            close: item.close || item.adjClose || 0,
+        }));
+    } catch (error) {
+        console.error(`Error fetching historical prices for ${ticker}:`, error);
+        return [];
+    }
+}
+
+/**
+ * Get historical benchmark data (S&P 500)
+ */
+export async function getHistoricalBenchmark(from: Date, to: Date = new Date()) {
+    // ^GSPC is the symbol for S&P 500
+    const data = await getHistoricalPrices('^GSPC', from, to);
+
+    if (data.length === 0) return [];
+
+    // Normalize data: First entry = 100%
+    const startValue = data[0].close;
+    return data.map(item => ({
+        date: item.date,
+        performance: (item.close / startValue) - 1,
+        value: item.close
+    }));
+}
+
+/**
  * Get quote summary with more details
  */
 export async function getQuoteSummary(ticker: string) {

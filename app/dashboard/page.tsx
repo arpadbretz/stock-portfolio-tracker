@@ -31,7 +31,7 @@ import {
 } from 'lucide-react';
 import AddTradeForm from '@/components/AddTradeForm';
 import HoldingsTable from '@/components/HoldingsTable';
-import PerformanceChart from '@/components/PerformanceChart';
+import AssetAllocationChart from '@/components/AssetAllocationChart';
 import SectorAllocationChart from '@/components/SectorAllocationChart';
 import TradeHistory from '@/components/TradeHistory';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -444,13 +444,20 @@ export default function DashboardPage() {
       case 'dividend-tracker':
         return <DividendTrackerWidget limit={isLarge ? 10 : isSmall ? 3 : 5} showChart={isLarge} />;
 
-      case 'performance-chart':
+      case 'asset-allocation':
         return (
-          <PerformanceChart
+          <AssetAllocationChart
             holdings={holdings}
             currency={currency}
             exchangeRates={rates}
             size={size}
+          />
+        );
+
+      case 'performance-line':
+        return (
+          <PerformanceChartWidget
+            portfolioId={portfolio?.id}
           />
         );
 

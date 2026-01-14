@@ -31,6 +31,8 @@
 | TICK-001 | Technical Indicators | ✅ | 6h | Implemented Jan 12, 2026 |
 | TICK-002 | Peer Comparison Table | ✅ | 4h | Implemented Jan 12, 2026 |
 | TICK-003 | Quick Add to Portfolio | ✅ | 2h | Implemented Jan 11, 2026 |
+| PORT-008 | Portfolio Value History tracking | ✅ | 8h | Implemented Jan 14: Migration + Sync Engine + Triggers |
+
 
 ## Account Settings
 
@@ -89,7 +91,7 @@
 | DASH-008 | Performance Timeframes | ⬜ | 3h | 1W, 1M, 3M, YTD, 1Y, All |
 | UX-005 | Onboarding Tour | ⬜ | 4h | Critical for new users |
 | UX-006 | Empty State Designs | ✅ | 3h | Implemented Jan 12, 2026 |
-| DASH-010 | Benchmark Comparison | ⬜ | 6h | vs S&P 500 chart |
+| DASH-010 | Benchmark Comparison | ✅ | 6h | Implemented Jan 14: Portfolio vs S&P 500 line chart |
 | DASH-014 | Portfolio Allocation Chart | ✅ | 2h | Implemented Jan 13, 2026 - Stocks by % weight |
 
 ---
@@ -129,14 +131,14 @@
 
 | ID | Task | Status | Effort | Notes |
 |----|------|--------|--------|-------|
-| EMAIL-001 | Email Service Setup | ⬜ | 2h | Resend/Sendgrid integration |
-| EMAIL-002 | Welcome Email | ⬜ | 1h | Send on registration |
+| EMAIL-001 | Email Service Setup | ✅ | 2h | Resend integration implemented Jan 14 |
+| EMAIL-002 | Welcome Email | ✅ | 1h | Automated flow implemented Jan 14 |
 | EMAIL-003 | Email Verification | ✅ | - | Supabase built-in |
 | EMAIL-004 | Password Reset Email | ✅ | - | Supabase built-in |
 | EMAIL-005 | Weekly Portfolio Summary | ⬜ | 4h | Edge Function + cron |
-| EMAIL-006 | Price Alert Notifications | ⬜ | 3h | Edge Function trigger |
+| EMAIL-006 | Price Alert Notifications | ✅ | 3h | Vercel Cron + Resend flow Jan 14 |
 | EMAIL-007 | Inactivity Re-engagement | ⬜ | 2h | Users inactive 30+ days |
-| EMAIL-008 | Email Templates | ⬜ | 3h | Branded HTML templates |
+| EMAIL-008 | Email Templates | ✅ | 3h | Professional HTML templates Jan 14 |
 
 ## DevOps & CI/CD
 
@@ -432,14 +434,14 @@
 
 | Priority | Total | Done | Remaining |
 |----------|-------|------|-----------|
-| 🔴 High Priority | 36 | 26 | 10 |
-| 🚀 Beta Launch | 62 | 11 | 51 |
+| 🔴 High Priority | 36 | 28 | 8 |
+| 🚀 Beta Launch | 62 | 22 | 40 |
 | 🟡 Medium Priority | 33 | 0 | 33 |
 | 🟢 Low Priority | 20 | 0 | 20 |
 | ✅ Pre-Completed | 43 | 43 | 0 |
-| **TOTAL** | **194** | **80** | **114** |
+| **TOTAL** | **194** | **86** | **108** |
 
-**Overall Completion:** 41.2%
+**Overall Completion:** 44.3%
 
 > 📋 **Reprioritization Note (Jan 12, 2026):** Moved 5 tasks from Medium to High priority:
 > DASH-004 (Market Overview), DASH-008 (Timeframes), DASH-010 (Benchmark), UX-005 (Onboarding), UX-006 (Empty States)

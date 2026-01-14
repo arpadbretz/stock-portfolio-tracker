@@ -86,22 +86,17 @@ export async function POST(request: NextRequest) {
 
         if (error) {
             console.error('Supabase insertion error:', error);
-            console.error('Error details:', {
-                message: error.message,
-                details: error.details,
-                hint: error.hint,
-                code: error.code
-            });
-            return NextResponse.json(
-                {
-                    success: false,
-                    error: error.message,
-                    details: error.details,
-                    hint: error.hint
-                },
-                { status: 500 }
-            );
+            return NextResponse.json({ success: false, error: error.message }, { status: 500 });
         }
+
+        // Trigger portfolio history sync in the background (fire and forget)
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `http://${request.headers.get('host')}`;
+        fetch(`${baseUrl}/api/cron/sync-history?portfolioId=${portfolioId}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${process.env.CRON_SECRET}`
+            }
+        }).catch(err => console.error('Failed to trigger background sync:', err));
 
         console.log('Trade inserted successfully:', trade);
 

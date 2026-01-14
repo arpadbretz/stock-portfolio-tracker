@@ -512,14 +512,159 @@ export function UpcomingEarningsWidget({ limit = 5 }: { limit?: number }) {
 }
 
 // ============ PERFORMANCE CHART WIDGET ============
-export function PerformanceChartWidget() {
-    // Placeholder for chart - would use Recharts
+import { LineChart as ReLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+
+export function PerformanceChartWidget({ portfolioId }: { portfolioId?: string }) {
+    const [data, setData] = useState<any[]>([]);
+    const [period, setPeriod] = useState('1Y');
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        if (!portfolioId) return;
+
+        const fetchPerformance = async () => {
+            setIsLoading(true);
+            try {
+                const res = await fetch(`/api/portfolio/performance?portfolioId=${portfolioId}&period=${period}`);
+                const result = await res.json();
+                if (result.success) {
+                    setData(result.data);
+                }
+            } catch (e) {
+                console.error('Failed to fetch performance:', e);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchPerformance();
+    }, [portfolioId, period]);
+
+    if (isLoading) {
+        return (
+            <div className="h-full flex flex-col justify-center items-center">
+                <div className="w-10 h-10 border-4 border-muted border-t-primary rounded-full animate-spin mb-4"></div>
+                <p className="text-muted-foreground text-xs animate-pulse font-black uppercase tracking-widest">Analyzing Market Alpha...</p>
+            </div>
+        );
+    }
+
+    if (data.length === 0) {
+        return (
+            <div className="h-full flex flex-col items-center justify-center p-6 text-center">
+                <div className="bg-primary/10 p-4 rounded-full mb-4">
+                    <Activity size={24} className="text-primary" />
+                </div>
+                <h3 className="text-sm font-black uppercase tracking-widest mb-2">No History Recorded</h3>
+                <p className="text-xs text-muted-foreground max-w-[200px]">
+                    Trade history is required to generate performance charts.
+                </p>
+            </div>
+        );
+    }
+
     return (
-        <div className="h-full flex items-center justify-center">
-            <div className="text-center">
-                <Activity size={48} className="mx-auto mb-3 text-muted-foreground/30" />
-                <p className="text-sm text-muted-foreground">Performance Chart</p>
-                <p className="text-xs text-muted-foreground/70">Coming soon</p>
+        <div className="h-full flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full bg-primary" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-foreground">Portfolio</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full bg-muted-foreground/30" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">S&P 500</span>
+                    </div>
+                </div>
+
+                <div className="flex items-center bg-muted/30 p-1 rounded-lg border border-border/50">
+                    {['1M', '3M', '6M', '1Y', 'YTD', 'ALL'].map((p) => (
+                        <button
+                            key={p}
+                            onClick={() => setPeriod(p)}
+                            className={`px-2 py-1 rounded-md text-[9px] font-black transition-all ${period === p ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                        >
+                            {p}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            <div className="flex-1 min-h-0 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={data}>
+                        <defs>
+                            <linearGradient id="colorPortfolio" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
+                                <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                            </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
+                        <XAxis
+                            dataKey="date"
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fontSize: 9, fill: '#64748b', fontWeight: 700 }}
+                            minTickGap={30}
+                            tickFormatter={(str) => {
+                                const date = new Date(str);
+                                return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                            }}
+                        />
+                        <YAxis
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fontSize: 9, fill: '#64748b', fontWeight: 700 }}
+                            tickFormatter={(val) => `${val > 0 ? '+' : ''}${val.toFixed(0)}%`}
+                        />
+                        <ReTooltip
+                            content={({ active, payload }) => {
+                                if (active && payload && payload.length) {
+                                    return (
+                                        <div className="bg-card/95 backdrop-blur-xl border border-border p-3 rounded-xl shadow-2xl">
+                                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">
+                                                {new Date(payload[0].payload.date).toLocaleDateString(undefined, { dateStyle: 'long' })}
+                                            </p>
+                                            <div className="space-y-1.5">
+                                                <div className="flex items-center justify-between gap-8">
+                                                    <span className="text-xs font-bold text-foreground">Portfolio</span>
+                                                    <span className={`text-xs font-black ${payload[0].value >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                        {payload[0].value >= 0 ? '+' : ''}{payload[0].value.toFixed(2)}%
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center justify-between gap-8">
+                                                    <span className="text-xs font-bold text-muted-foreground">S&P 500</span>
+                                                    <span className={`text-xs font-black ${payload[1]?.value >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                        {payload[1]?.value >= 0 ? '+' : ''}{payload[1]?.value.toFixed(2)}%
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                }
+                                return null;
+                            }}
+                        />
+                        <Area
+                            type="monotone"
+                            dataKey="portfolio"
+                            stroke="#10b981"
+                            strokeWidth={3}
+                            fillOpacity={1}
+                            fill="url(#colorPortfolio)"
+                            animationDuration={1500}
+                        />
+                        <Line
+                            type="monotone"
+                            dataKey="benchmark"
+                            stroke="#475569"
+                            strokeWidth={2}
+                            strokeDasharray="5 5"
+                            dot={false}
+                            animationDuration={1500}
+                        />
+                    </AreaChart>
+                </ResponsiveContainer>
             </div>
         </div>
     );

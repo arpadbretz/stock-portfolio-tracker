@@ -22,7 +22,7 @@ const COLORS = [
     '#d946ef', // fuchsia-500
 ];
 
-export default function PerformanceChart({ holdings, currency, exchangeRates, isLoading, size = 'medium' }: PerformanceChartProps) {
+export default function AssetAllocationChart({ holdings, currency, exchangeRates, isLoading, size = 'medium' }: PerformanceChartProps) {
     if (isLoading) {
         return (
             <div className="h-full flex flex-col justify-center items-center">
