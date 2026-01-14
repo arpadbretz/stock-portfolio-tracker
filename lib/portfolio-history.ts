@@ -33,7 +33,7 @@ export async function syncPortfolioHistory(portfolioId: string, userId: string) 
     for (const ticker of uniqueTickers) {
         const prices = await getHistoricalPrices(ticker, startDate, endDate);
         const tickerPriceMap = new Map<string, number>();
-        prices.forEach(p => {
+        prices.forEach((p: any) => {
             const dateStr = new Date(p.date).toISOString().split('T')[0];
             tickerPriceMap.set(dateStr, p.close);
         });

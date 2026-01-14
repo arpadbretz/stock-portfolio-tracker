@@ -113,7 +113,10 @@
 | SEC-007 | Session Management | ⬜ | 2h | Token refresh, session expiry |
 | SEC-008 | Audit Logging | ⬜ | 4h | Log sensitive actions |
 | SEC-009 | Error Sanitization | ⬜ | 2h | Don't expose stack traces |
-| SEC-010 | Dependency Audit | ⬜ | 1h | npm audit, Snyk |
+| SEC-011 | Supabase Storage (Profiles) | ⬜ | 1h | Setup 'avatars' bucket for user photos |
+| SEC-012 | Row-Level Security (RLS) Audit | ⬜ | 2h | Verify all tables are locked down |
+| SEC-013 | OAuth Provider Setup | 🔄 | 2h | Google & GitHub Live, Apple Pending |
+| SEC-014 | Multi-Factor Auth (MFA) | ⬜ | 4h | Enable Supabase MFA flow |
 
 ## Analytics & Monitoring
 
@@ -434,14 +437,26 @@
 
 | Priority | Total | Done | Remaining |
 |----------|-------|------|-----------|
-| 🔴 High Priority | 36 | 28 | 8 |
-| 🚀 Beta Launch | 62 | 22 | 40 |
+| 🔴 High Priority | 36 | 29 | 7 |
+| 🚀 Beta Launch | 66 | 23 | 43 |
 | 🟡 Medium Priority | 33 | 0 | 33 |
 | 🟢 Low Priority | 20 | 0 | 20 |
 | ✅ Pre-Completed | 43 | 43 | 0 |
-| **TOTAL** | **194** | **86** | **108** |
+| **TOTAL** | **198** | **89** | **109** |
 
-**Overall Completion:** 44.3%
+**Overall Completion:** 44.9%
+
+### 🔧 Beta Tooling Status
+
+| Tool | Purpose | Status |
+|------|---------|--------|
+| **Supabase** | DB, Auth, Cron | ✅ Active |
+| **Resend** | Email Infrastructure | ✅ Active |
+| **Vercel** | Hosting/Edge Runtime | ✅ Active |
+| **GitHub Actions**| Backup/Advanced Crons | ✅ Ready |
+| **Upstash** | Rate Limiting (Redis) | ⬜ Setup Needed |
+| **Sentry** | Error Tracking | ⬜ Setup Needed |
+| **PostHog** | Product Analytics | ⬜ Setup Needed |
 
 > 📋 **Reprioritization Note (Jan 12, 2026):** Moved 5 tasks from Medium to High priority:
 > DASH-004 (Market Overview), DASH-008 (Timeframes), DASH-010 (Benchmark), UX-005 (Onboarding), UX-006 (Empty States)

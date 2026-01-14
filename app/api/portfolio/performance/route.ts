@@ -64,7 +64,7 @@ export async function GET(request: Request) {
 
         const combinedData = history.map(entry => {
             const dateStr = new Date(entry.date).toISOString().split('T')[0];
-            const benchEntry = benchmarkData.find(b => {
+            const benchEntry = benchmarkData.find((b: any) => {
                 const bDate = new Date(b.date).toISOString().split('T')[0];
                 return bDate === dateStr;
             });
