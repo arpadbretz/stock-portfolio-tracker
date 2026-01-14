@@ -324,43 +324,45 @@ export default function DashboardPage() {
       case 'total-gain':
         const isGainPositive = (summary?.totalGain || 0) >= 0;
         return (
-          <div className="h-full flex flex-col">
-            <div className="flex items-center gap-3 mb-4">
-              <div className={`p-2 rounded-xl ${isGainPositive ? 'bg-emerald-500/10' : 'bg-rose-500/10'}`}>
-                {isGainPositive ? <TrendingUp className="text-emerald-500" size={20} /> : <TrendingDown className="text-rose-500" size={20} />}
+          <div className="h-full flex flex-col justify-between">
+            <div>
+              <div className="flex items-center gap-3 mb-4">
+                <div className={`p-2 rounded-xl ${isGainPositive ? 'bg-emerald-500/10' : 'bg-rose-500/10'}`}>
+                  {isGainPositive ? <TrendingUp className="text-emerald-500" size={20} /> : <TrendingDown className="text-rose-500" size={20} />}
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Alpha Protocol Performance</span>
               </div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">All-Time Performance</span>
-            </div>
 
-            <div className="flex items-baseline gap-4 mb-4 flex-wrap">
-              <h2 className={`${isLarge ? 'text-5xl' : 'text-4xl'} font-black tracking-tight ${isGainPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
-                {formatCurrency(convertCurrency(summary?.totalGain || 0, currency, rates), currency)}
-              </h2>
-              <div className={`px-4 py-1.5 rounded-xl text-base font-black ${isGainPositive ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
-                {formatPercentage(summary?.totalGainPercent || 0)}
+              <div className="flex items-baseline gap-4 mb-4 flex-wrap">
+                <h2 className={`${isLarge ? 'text-5xl' : 'text-3xl'} font-black tracking-tight ${isGainPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
+                  {formatCurrency(convertCurrency(summary?.totalGain || 0, currency, rates), currency)}
+                </h2>
+                <div className={`px-4 py-1.5 rounded-xl ${isLarge ? 'text-base' : 'text-xs'} font-black ${isGainPositive ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
+                  {formatPercentage(summary?.totalGainPercent || 0)}
+                </div>
+              </div>
+
+              <div className="h-2 w-full bg-muted rounded-full overflow-hidden mb-6">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.min(100, Math.abs(summary?.totalGainPercent || 0) * 2)}%` }}
+                  className={`h-full ${isGainPositive ? 'bg-emerald-500' : 'bg-rose-500'}`}
+                />
               </div>
             </div>
 
-            <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${Math.min(100, Math.abs(summary?.totalGainPercent || 0) * 2)}%` }}
-                className={`h-full ${isGainPositive ? 'bg-emerald-500' : 'bg-rose-500'}`}
-              />
-            </div>
-
-            {isLarge && (
-              <div className="mt-auto pt-6 grid grid-cols-3 gap-4">
-                <div className="text-center p-3 bg-muted/30 rounded-xl">
-                  <div className="text-[10px] text-muted-foreground font-bold mb-1">Invested</div>
+            {!isSmall && (
+              <div className={`grid ${isLarge ? 'grid-cols-3 gap-4' : 'grid-cols-1 gap-2'} mt-2`}>
+                <div className={`flex ${isLarge ? 'flex-col items-center p-3' : 'justify-between items-center p-2'} bg-muted/20 hover:bg-muted/30 transition-colors rounded-xl border border-border/10`}>
+                  <div className="text-[10px] text-muted-foreground font-black uppercase tracking-tighter">Invested</div>
                   <div className="font-black text-sm">{formatCurrency(convertCurrency(summary?.totalInvested || 0, currency, rates), currency)}</div>
                 </div>
-                <div className="text-center p-3 bg-muted/30 rounded-xl">
-                  <div className="text-[10px] text-muted-foreground font-bold mb-1">Current</div>
+                <div className={`flex ${isLarge ? 'flex-col items-center p-3' : 'justify-between items-center p-2'} bg-muted/20 hover:bg-muted/30 transition-colors rounded-xl border border-border/10`}>
+                  <div className="text-[10px] text-muted-foreground font-black uppercase tracking-tighter">Current</div>
                   <div className="font-black text-sm">{formatCurrency(convertCurrency(summary?.totalMarketValue || 0, currency, rates), currency)}</div>
                 </div>
-                <div className="text-center p-3 bg-muted/30 rounded-xl">
-                  <div className="text-[10px] text-muted-foreground font-bold mb-1">Today</div>
+                <div className={`flex ${isLarge ? 'flex-col items-center p-3' : 'justify-between items-center p-2'} bg-muted/20 hover:bg-muted/30 transition-colors rounded-xl border border-border/10`}>
+                  <div className="text-[10px] text-muted-foreground font-black uppercase tracking-tighter">Today</div>
                   <div className={`font-black text-sm ${dailyPnL >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
                     {dailyPnL >= 0 ? '+' : ''}{formatCurrency(convertCurrency(dailyPnL, currency, rates), currency)}
                   </div>

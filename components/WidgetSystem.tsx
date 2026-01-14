@@ -262,16 +262,12 @@ export const WIDGET_REGISTRY: WidgetConfig[] = [
 
 // Default visible widgets for new users
 const DEFAULT_VISIBLE = [
-    'portfolio-value',
-    'total-invested',
-    'daily-pnl',
-    'total-gain',
-    'top-performers',
-    'worst-performers',
-    'holdings',
     'performance-line',
-    'asset-allocation',
     'quick-actions',
+    'watchlist-mini',
+    'total-gain',
+    'holdings',
+    'asset-allocation',
 ];
 
 // ============ CLOUD SYNC HOOK ============

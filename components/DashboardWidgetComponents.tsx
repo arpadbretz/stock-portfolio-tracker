@@ -322,6 +322,25 @@ interface QuickActionsProps {
 }
 
 export function QuickActionsWidget({ compact = false, onEditDashboard }: QuickActionsProps) {
+    const [marketStatus, setMarketStatus] = useState<{ price: number; change: number; isOpen: boolean }>({ price: 0, change: 0, isOpen: false });
+
+    useEffect(() => {
+        const fetchStatus = async () => {
+            try {
+                const res = await fetch('/api/stock/%5EIXIC');
+                const data = await res.json();
+                if (data.success) {
+                    setMarketStatus({
+                        price: data.data.price,
+                        change: data.data.changePercent,
+                        isOpen: true // Simple assumption for now, can be refined
+                    });
+                }
+            } catch (e) { console.error(e); }
+        };
+        fetchStatus();
+    }, []);
+
     const actions = [
         { icon: <Plus size={compact ? 14 : 16} />, label: 'Trade', href: '/dashboard', color: 'bg-emerald-500/10 text-emerald-500' },
         { icon: <Search size={compact ? 14 : 16} />, label: 'Search', href: '/dashboard/stocks', color: 'bg-blue-500/10 text-blue-500' },
@@ -330,27 +349,51 @@ export function QuickActionsWidget({ compact = false, onEditDashboard }: QuickAc
     ];
 
     return (
-        <div className="space-y-2">
+        <div className="flex flex-col h-full justify-between gap-3">
             <div className={`grid ${compact ? 'grid-cols-4 gap-1' : 'grid-cols-2 gap-2'}`}>
                 {actions.map((action) => (
                     <Link
                         key={action.label}
                         href={action.href}
-                        className={`flex flex-col items-center justify-center ${compact ? 'p-2' : 'p-3'} rounded-xl ${action.color} hover:opacity-80 transition-opacity`}
+                        className={`flex flex-col items-center justify-center ${compact ? 'p-2' : 'p-3'} rounded-xl ${action.color} hover:shadow-lg hover:shadow-current/5 transition-all active:scale-95`}
                     >
                         {action.icon}
                         <span className={`${compact ? 'text-[9px]' : 'text-xs'} font-bold mt-1`}>{action.label}</span>
                     </Link>
                 ))}
             </div>
-            {onEditDashboard && !compact && (
-                <button
-                    onClick={onEditDashboard}
-                    className="w-full flex items-center justify-center gap-2 p-2 rounded-xl bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                >
-                    <Settings size={14} />
-                    <span className="text-xs font-bold">Edit Dashboard</span>
-                </button>
+
+            {!compact && (
+                <div className="space-y-3">
+                    <div className="p-3 bg-muted/20 rounded-xl border border-border/10">
+                        <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Market Status</span>
+                            <div className="flex items-center gap-1.5">
+                                <div className={`w-1.5 h-1.5 rounded-full ${marketStatus.isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-muted-foreground'}`} />
+                                <span className="text-[10px] font-black uppercase text-foreground">{marketStatus.isOpen ? 'Live' : 'Closed'}</span>
+                            </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold">NASDAQ</span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs font-black">{marketStatus.price.toLocaleString()}</span>
+                                <span className={`text-[10px] font-bold ${marketStatus.change >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                    {marketStatus.change >= 0 ? '+' : ''}{marketStatus.change.toFixed(2)}%
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {onEditDashboard && (
+                        <button
+                            onClick={onEditDashboard}
+                            className="w-full flex items-center justify-center gap-2 p-2 rounded-xl bg-card border border-border/50 hover:bg-muted text-muted-foreground hover:text-foreground transition-all text-xs font-bold"
+                        >
+                            <Settings size={14} />
+                            <span>Edit Dashboard</span>
+                        </button>
+                    )}
+                </div>
             )}
         </div>
     );
