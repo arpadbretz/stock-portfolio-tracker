@@ -105,7 +105,7 @@ export async function GET(request: Request) {
 
                 // Check user email preferences (if implemented)
                 const { data: profile } = await supabase
-                    .from('user_profiles')
+                    .from('profiles')
                     .select('email_alerts, display_name')
                     .eq('id', alert.user_id)
                     .single();
