@@ -101,21 +101,21 @@ export function MarketOverviewWidget({ expanded = false }: { expanded?: boolean 
     return (
         <div className={`grid ${expanded ? 'grid-cols-4' : 'grid-cols-2'} gap-3`}>
             {indices.map((index) => {
-                const isPositive = index.change >= 0;
+                const isPositive = (index.changePercent ?? 0) >= 0;
                 return (
                     <div
                         key={index.symbol}
                         className={`p-3 rounded-xl border ${isPositive ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-rose-500/5 border-rose-500/20'}`}
                     >
                         <div className="text-xs font-bold text-muted-foreground mb-1">{index.name}</div>
-                        <div className={`font-black ${expanded ? 'text-xl' : 'text-lg'}`}>{index.price.toLocaleString()}</div>
+                        <div className={`font-black ${expanded ? 'text-xl' : 'text-lg'}`}>{(index.price ?? 0).toLocaleString()}</div>
                         <div className={`text-xs font-bold flex items-center gap-1 ${isPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
                             {isPositive ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
-                            {isPositive ? '+' : ''}{index.changePercent.toFixed(2)}%
+                            {isPositive ? '+' : ''}{(index.changePercent ?? 0).toFixed(2)}%
                         </div>
                         {expanded && (
                             <div className="text-[10px] text-muted-foreground mt-1">
-                                {isPositive ? '+' : ''}{index.change.toFixed(2)} pts
+                                {isPositive ? '+' : ''}{(index.change ?? 0).toFixed(2)} pts
                             </div>
                         )}
                     </div>
@@ -178,7 +178,7 @@ export function TopPerformersWidget({ holdings = [], limit = 5, showChart = fals
                                 />
                             </div>
                         )}
-                        <div className="text-emerald-500 font-bold text-sm w-16 text-right">+{holding.gainPercent.toFixed(2)}%</div>
+                        <div className="text-emerald-500 font-bold text-sm w-16 text-right">+{(holding.gainPercent ?? 0).toFixed(2)}%</div>
                     </div>
                 </Link>
             ))}
@@ -231,8 +231,8 @@ export function WorstPerformersWidget({ holdings = [], limit = 5, showChart = fa
                                 />
                             </div>
                         )}
-                        <div className={`${holding.gainPercent < 0 ? 'text-rose-500' : 'text-emerald-500'} font-bold text-sm w-16 text-right`}>
-                            {holding.gainPercent > 0 ? '+' : ''}{holding.gainPercent.toFixed(2)}%
+                        <div className={`${(holding.gainPercent ?? 0) < 0 ? 'text-rose-500' : 'text-emerald-500'} font-bold text-sm w-16 text-right`}>
+                            {(holding.gainPercent ?? 0) > 0 ? '+' : ''}{(holding.gainPercent ?? 0).toFixed(2)}%
                         </div>
                     </div>
                 </Link>
@@ -307,7 +307,11 @@ export function WatchlistMiniWidget({ limit = 5 }: { limit?: number }) {
                             <span className="font-bold text-sm group-hover:text-primary transition-colors">{item.symbol}</span>
                         </div>
                         <div className={`font-bold text-sm ${isPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
-                            {isPositive ? '+' : ''}{item.changePercent.toFixed(2)}%
+                            {item.changePercent !== undefined && item.changePercent !== null ? (
+                                <>{isPositive ? '+' : ''}{item.changePercent.toFixed(2)}%</>
+                            ) : (
+                                <span className="text-muted-foreground">N/A</span>
+                            )}
                         </div>
                     </Link>
                 );
@@ -417,8 +421,8 @@ export function QuickActionsWidget({ compact = false, onEditDashboard, onTradeAc
                             <span className="text-xs font-bold">NASDAQ</span>
                             <div className="flex items-center gap-2">
                                 <span className="text-xs font-black">{marketStatus.price.toLocaleString()}</span>
-                                <span className={`text-[10px] font-bold ${marketStatus.change >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                    {marketStatus.change >= 0 ? '+' : ''}{marketStatus.change.toFixed(2)}%
+                                <span className={`text-[10px] font-bold ${(marketStatus.change ?? 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                    {(marketStatus.change ?? 0) >= 0 ? '+' : ''}{(marketStatus.change ?? 0).toFixed(2)}%
                                 </span>
                             </div>
                         </div>
@@ -726,14 +730,14 @@ export function PerformanceChartWidget({ portfolioId }: { portfolioId?: string }
                                             <div className="space-y-1.5">
                                                 <div className="flex items-center justify-between gap-8">
                                                     <span className="text-xs font-bold text-foreground">Portfolio</span>
-                                                    <span className={`text-xs font-black ${payload[0].value >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                                        {payload[0].value >= 0 ? '+' : ''}{payload[0].value.toFixed(2)}%
+                                                    <span className={`text-xs font-black ${(payload[0].value ?? 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                        {(payload[0].value ?? 0) >= 0 ? '+' : ''}{(payload[0].value ?? 0).toFixed(2)}%
                                                     </span>
                                                 </div>
                                                 <div className="flex items-center justify-between gap-8">
                                                     <span className="text-xs font-bold text-muted-foreground">S&P 500</span>
-                                                    <span className={`text-xs font-black ${payload[1]?.value >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                                        {payload[1]?.value >= 0 ? '+' : ''}{payload[1]?.value.toFixed(2)}%
+                                                    <span className={`text-xs font-black ${(payload[1]?.value ?? 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                        {(payload[1]?.value ?? 0) >= 0 ? '+' : ''}{(payload[1]?.value ?? 0).toFixed(2)}%
                                                     </span>
                                                 </div>
                                             </div>

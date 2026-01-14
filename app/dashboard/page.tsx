@@ -289,7 +289,7 @@ export default function DashboardPage() {
               {isPnLPositive ? '+' : ''}{formatCurrency(convertCurrency(dailyPnL, currency, rates), currency)}
             </h2>
             <div className={`inline-flex px-3 py-1 rounded-xl ${isSmall ? 'text-xs' : 'text-sm'} font-black w-fit ${isPnLPositive ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
-              {dailyPnLPercent >= 0 ? '+' : ''}{dailyPnLPercent.toFixed(2)}%
+              {(dailyPnLPercent ?? 0) >= 0 ? '+' : ''}{(dailyPnLPercent ?? 0).toFixed(2)}%
             </div>
             {!isSmall && (
               <div className="mt-auto pt-2 text-[10px] font-bold text-muted-foreground">
@@ -591,7 +591,7 @@ export default function DashboardPage() {
             href={`data:text/csv;charset=utf-8,${encodeURIComponent(
               'Symbol,Shares,Avg Price,Current Price,Market Value,Gain/Loss\n' +
               holdings.map(h =>
-                `${h.ticker},${h.shares},${h.avgCostBasis.toFixed(2)},${h.currentPrice.toFixed(2)},${h.marketValue.toFixed(2)},${h.unrealizedGain.toFixed(2)}`
+                `${h.ticker},${h.shares},${(h.avgCostBasis ?? 0).toFixed(2)},${(h.currentPrice ?? 0).toFixed(2)},${(h.marketValue ?? 0).toFixed(2)},${(h.unrealizedGain ?? 0).toFixed(2)}`
               ).join('\n')
             )}`}
             download={`portfolio-${new Date().toISOString().split('T')[0]}.csv`}

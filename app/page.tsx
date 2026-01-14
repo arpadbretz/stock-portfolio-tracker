@@ -39,7 +39,7 @@ const AnimatedTicker = ({ symbol, price, change, delay }: { symbol: string; pric
             <p className="text-muted-foreground text-xs font-bold">${price}</p>
         </div>
         <div className={`ml-auto px-2 py-1 rounded-lg text-xs font-black ${change >= 0 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
-            {change >= 0 ? '+' : ''}{change.toFixed(2)}%
+            {change >= 0 ? '+' : ''}{(change ?? 0).toFixed(2)}%
         </div>
     </motion.div>
 );

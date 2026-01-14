@@ -253,19 +253,17 @@ export default function WatchlistPage() {
                                         <p className="text-2xl font-black">
                                             {item.currentPrice ? `$${item.currentPrice.toFixed(2)}` : '—'}
                                         </p>
-                                        {item.changePercent !== undefined && (
-                                            <div className={`flex items-center gap-1 text-sm font-bold ${item.changePercent >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                                {item.changePercent >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                                                {item.changePercent >= 0 ? '+' : ''}{item.changePercent.toFixed(2)}%
-                                            </div>
-                                        )}
+                                        <div className={`flex items-center gap-1 text-sm font-bold ${(item.changePercent ?? 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                            {(item.changePercent ?? 0) >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                                            {(item.changePercent ?? 0) >= 0 ? '+' : ''}{(item.changePercent ?? 0).toFixed(2)}%
+                                        </div>
                                     </div>
 
                                     {item.added_price && (
                                         <div className="text-right">
                                             <p className="text-xs text-muted-foreground">Added at</p>
-                                            <p className="text-sm font-bold">${item.added_price.toFixed(2)}</p>
-                                            {item.currentPrice && (
+                                            <p className="text-sm font-bold">${(item.added_price ?? 0).toFixed(2)}</p>
+                                            {item.currentPrice && item.added_price && (
                                                 <p className={`text-xs font-bold ${item.currentPrice >= item.added_price ? 'text-emerald-500' : 'text-rose-500'}`}>
                                                     {item.currentPrice >= item.added_price ? '+' : ''}
                                                     {(((item.currentPrice - item.added_price) / item.added_price) * 100).toFixed(1)}%
