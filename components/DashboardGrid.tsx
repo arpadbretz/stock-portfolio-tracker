@@ -232,10 +232,10 @@ export const WIDGET_DEFINITIONS: WidgetDefinition[] = [
 ];
 
 // Size classes and heights
-const SIZE_CONFIG: Record<WidgetSize, { colSpan: string; height: string; gridSpan: number }> = {
-    small: { colSpan: 'col-span-1', height: 'h-[200px]', gridSpan: 1 },
-    medium: { colSpan: 'col-span-1', height: 'h-[300px]', gridSpan: 1 },
-    large: { colSpan: 'col-span-1 lg:col-span-2', height: 'h-[420px]', gridSpan: 2 },
+const SIZE_CONFIG: Record<WidgetSize, { colSpan: string; rowSpan: string; height: string; gridSpan: number }> = {
+    small: { colSpan: 'col-span-1', rowSpan: 'row-span-2', height: 'h-[200px]', gridSpan: 1 },
+    medium: { colSpan: 'col-span-1', rowSpan: 'row-span-3', height: 'h-[310px]', gridSpan: 1 },
+    large: { colSpan: 'col-span-1 lg:col-span-2', rowSpan: 'row-span-4', height: 'h-[432px]', gridSpan: 2 },
 };
 
 // ============ SORTABLE WIDGET CARD ============
@@ -291,7 +291,7 @@ function SortableWidgetCard({
                 scale: isDragging ? 1.02 : 1,
             }}
             exit={{ opacity: 0, scale: 0.9 }}
-            className={`${config.colSpan} ${config.height} transition-all duration-200`}
+            className={`${config.colSpan} ${config.rowSpan} ${config.height} transition-all duration-200`}
         >
             <div
                 className={`
@@ -546,7 +546,7 @@ export default function DashboardGrid({
                 <SortableContext items={orderedWidgets} strategy={rectSortingStrategy}>
                     <motion.div
                         layout
-                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6"
+                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 grid-flow-row-dense auto-rows-[100px] gap-6"
                     >
                         <AnimatePresence mode="popLayout">
                             {orderedWidgets.map((widgetId) => {

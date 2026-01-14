@@ -103,7 +103,7 @@ export async function getHistoricalBenchmark(from: Date, to: Date = new Date()) 
 
     // Normalize data: First entry = 100%
     const startValue = data[0].close;
-    return data.map(item => ({
+    return data.map((item: any) => ({
         date: item.date,
         performance: (item.close / startValue) - 1,
         value: item.close
