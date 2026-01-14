@@ -21,7 +21,7 @@ import {
     Zap
 } from 'lucide-react';
 import HoldingsTable from '@/components/HoldingsTable';
-import PerformanceChart from '@/components/PerformanceChart';
+import AssetAllocationChart from '@/components/AssetAllocationChart';
 import SectorAllocationChart from '@/components/SectorAllocationChart';
 import TradeHistory from '@/components/TradeHistory';
 import Link from 'next/link';
@@ -253,7 +253,7 @@ export default function SharedPortfolioPage() {
                                 </div>
                                 Performance Sync
                             </h3>
-                            <PerformanceChart
+                            <AssetAllocationChart
                                 holdings={summary?.holdings || []}
                                 currency={currency}
                                 exchangeRates={rates}
