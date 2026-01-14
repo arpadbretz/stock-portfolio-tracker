@@ -304,10 +304,14 @@ function useCloudSync() {
             setIsSyncing(true);
             setLastSyncError(null);
             try {
+                const payload: any = {};
+                if (layouts) payload.layouts = layouts;
+                if (visibility) payload.visibility = visibility;
+
                 const response = await fetch('/api/widget-preferences', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ layouts, visibility }),
+                    body: JSON.stringify(payload),
                 });
 
                 if (!response.ok) {
@@ -352,34 +356,32 @@ export function useWidgetSystem() {
             // Try cloud first
             const cloudData = await loadFromCloud();
 
-            if (cloudData) {
-                if (cloudData.layouts) {
-                    setLayouts(cloudData.layouts);
-                }
-                if (cloudData.visibility) {
-                    setWidgetStates(cloudData.visibility);
-                } else {
-                    // Initialize defaults if no visibility saved
-                    initializeDefaults();
-                }
-            } else {
-                // Fallback to localStorage
-                try {
-                    const savedLayouts = localStorage.getItem(STORAGE_KEY_LAYOUTS);
-                    const savedStates = localStorage.getItem(STORAGE_KEY_VISIBILITY);
+            // Try local storage for fallback/merging
+            let localLayouts = null;
+            let localStates = null;
+            try {
+                const savedLayouts = localStorage.getItem(STORAGE_KEY_LAYOUTS);
+                const savedStates = localStorage.getItem(STORAGE_KEY_VISIBILITY);
+                if (savedLayouts) localLayouts = JSON.parse(savedLayouts);
+                if (savedStates) localStates = JSON.parse(savedStates);
+            } catch (e) {
+                console.error('Failed to parse localStorage:', e);
+            }
 
-                    if (savedLayouts) {
-                        setLayouts(JSON.parse(savedLayouts));
-                    }
-                    if (savedStates) {
-                        setWidgetStates(JSON.parse(savedStates));
-                    } else {
-                        initializeDefaults();
-                    }
-                } catch (e) {
-                    console.error('Failed to parse localStorage:', e);
-                    initializeDefaults();
-                }
+            // Set layouts - Cloud preferred, then Local
+            if (cloudData?.layouts && Object.keys(cloudData.layouts).length > 0) {
+                setLayouts(cloudData.layouts);
+            } else if (localLayouts) {
+                setLayouts(localLayouts);
+            }
+
+            // Set visibility/states - Cloud preferred, then Local, then Default
+            if (cloudData?.visibility && Object.keys(cloudData.visibility).length > 0) {
+                setWidgetStates(cloudData.visibility);
+            } else if (localStates) {
+                setWidgetStates(localStates);
+            } else {
+                initializeDefaults();
             }
 
             setHasLoaded(true);

@@ -181,12 +181,12 @@
 
 | ID | Task | Status | Effort | Notes |
 |----|------|--------|--------|-------|
-| LEGAL-001 | Cookie Banner | ✅ | - | Implemented |
-| LEGAL-002 | Privacy Policy | ✅ | - | Implemented |
-| LEGAL-003 | Terms of Service | ✅ | - | Implemented |
-| LEGAL-004 | Impressum | ✅ | - | Implemented |
-| LEGAL-005 | GDPR Data Export | ✅ | - | Account page |
-| LEGAL-006 | Account Deletion | ✅ | - | Account page |
+| LEGAL-001 | Cookie Banner | ⬜ | - | To be improved |
+| LEGAL-002 | Privacy Policy | ⬜ | - | To be improved |
+| LEGAL-003 | Terms of Service | ⬜ | - | To be improved |
+| LEGAL-004 | Impressum | ⬜ | - | To be improved |
+| LEGAL-005 | GDPR Data Export | ⬜ | - | Needs full implementation |
+| LEGAL-006 | Account Deletion | ⬜ | - | Needs full implementation |
 | LEGAL-007 | Cookie Preferences | ⬜ | 2h | Granular consent |
 | LEGAL-008 | Data Processing Agreement | ⬜ | 2h | DPA template |
 
