@@ -2,26 +2,27 @@
 -- Optimized schema for stock price alerts and user notification preferences
 
 -- 1. Price Alerts Table
-CREATE TABLE IF NOT EXISTS public.price_alerts (
+DROP TABLE IF EXISTS public.price_alerts;
+CREATE TABLE public.price_alerts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     symbol TEXT NOT NULL,
     target_price DECIMAL(15,4) NOT NULL,
-    is_above BOOLEAN NOT NULL DEFAULT TRUE, -- TRUE for "price goes above", FALSE for "price goes below"
-    triggered BOOLEAN NOT NULL DEFAULT FALSE,
+    condition TEXT NOT NULL CHECK (condition IN ('above', 'below')),
+    is_triggered BOOLEAN NOT NULL DEFAULT FALSE,
     triggered_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- Comments for clarity
-COMMENT ON COLUMN public.price_alerts.is_above IS 'Alert type: true if price rises above target, false if it drops below';
-COMMENT ON COLUMN public.price_alerts.triggered IS 'Whether the alert has been fired and email sent';
+COMMENT ON COLUMN public.price_alerts.condition IS 'Alert type: above if price rises above target, below if it drops below';
+COMMENT ON COLUMN public.price_alerts.is_triggered IS 'Whether the alert has been fired and email sent';
 
 -- 2. Indexes (For fast cron job checks)
 CREATE INDEX IF NOT EXISTS idx_price_alerts_user_id ON public.price_alerts(user_id);
 CREATE INDEX IF NOT EXISTS idx_price_alerts_symbol ON public.price_alerts(symbol);
-CREATE INDEX IF NOT EXISTS idx_price_alerts_active ON public.price_alerts(triggered) WHERE triggered = FALSE;
+CREATE INDEX IF NOT EXISTS idx_price_alerts_active ON public.price_alerts(is_triggered) WHERE is_triggered = FALSE;
 
 -- 3. Row Level Security (RLS)
 ALTER TABLE public.price_alerts ENABLE ROW LEVEL SECURITY;

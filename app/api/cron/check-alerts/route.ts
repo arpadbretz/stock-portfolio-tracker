@@ -32,11 +32,11 @@ export async function GET(request: Request) {
                 user_id,
                 symbol,
                 target_price,
-                is_above,
-                triggered,
+                condition,
+                is_triggered,
                 created_at
             `)
-            .eq('triggered', false);
+            .eq('is_triggered', false);
 
         if (alertsError) {
             console.error('Error fetching alerts:', alertsError);
@@ -75,7 +75,7 @@ export async function GET(request: Request) {
             const currentPrice = priceMap.get(alert.symbol);
             if (!currentPrice) continue;
 
-            const shouldTrigger = alert.is_above
+            const shouldTrigger = alert.condition === 'above'
                 ? currentPrice >= alert.target_price
                 : currentPrice <= alert.target_price;
 
@@ -85,7 +85,7 @@ export async function GET(request: Request) {
                 // Mark alert as triggered
                 const { error: updateError } = await supabase
                     .from('price_alerts')
-                    .update({ triggered: true, triggered_at: new Date().toISOString() })
+                    .update({ is_triggered: true, triggered_at: new Date().toISOString() })
                     .eq('id', alert.id);
 
                 if (updateError) {
@@ -123,7 +123,7 @@ export async function GET(request: Request) {
                     ticker: alert.symbol,
                     currentPrice,
                     targetPrice: alert.target_price,
-                    alertType: alert.is_above ? 'above' : 'below',
+                    alertType: alert.condition as 'above' | 'below',
                 });
 
                 if (result.success) {
