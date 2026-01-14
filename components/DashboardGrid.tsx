@@ -172,22 +172,6 @@ export const WIDGET_DEFINITIONS: WidgetDefinition[] = [
         defaultSize: 'medium',
         allowedSizes: ['small', 'medium', 'large'],
     },
-    {
-        id: 'market-news',
-        title: 'Market News',
-        icon: <Newspaper size={18} className="text-slate-500" />,
-        category: 'market',
-        defaultSize: 'large',
-        allowedSizes: ['medium', 'large'],
-    },
-    {
-        id: 'upcoming-earnings',
-        title: 'Upcoming Earnings',
-        icon: <Calendar size={18} className="text-violet-500" />,
-        category: 'market',
-        defaultSize: 'medium',
-        allowedSizes: ['small', 'medium', 'large'],
-    },
     // Tool Widgets
     {
         id: 'quick-actions',
@@ -201,14 +185,6 @@ export const WIDGET_DEFINITIONS: WidgetDefinition[] = [
         id: 'price-alerts',
         title: 'Price Alerts',
         icon: <Bell size={18} className="text-rose-500" />,
-        category: 'tools',
-        defaultSize: 'medium',
-        allowedSizes: ['small', 'medium', 'large'],
-    },
-    {
-        id: 'dividend-tracker',
-        title: 'Dividend Tracker',
-        icon: <DollarSign size={18} className="text-green-500" />,
         category: 'tools',
         defaultSize: 'medium',
         allowedSizes: ['small', 'medium', 'large'],

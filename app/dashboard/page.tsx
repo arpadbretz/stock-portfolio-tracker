@@ -52,10 +52,7 @@ import {
   WatchlistMiniWidget,
   QuickActionsWidget,
   PriceAlertsWidget,
-  DividendTrackerWidget,
-  UpcomingEarningsWidget,
   MarketOverviewWidget,
-  MarketNewsWidget,
   PerformanceChartWidget,
 } from '@/components/DashboardWidgetComponents';
 
@@ -430,21 +427,18 @@ export default function DashboardPage() {
       case 'watchlist-mini':
         return <WatchlistMiniWidget limit={isLarge ? 10 : isSmall ? 3 : 5} />;
 
-      case 'market-news':
-        return <MarketNewsWidget limit={isLarge ? 8 : isSmall ? 2 : 4} />;
-
-      case 'upcoming-earnings':
-        return <UpcomingEarningsWidget limit={isLarge ? 10 : isSmall ? 3 : 5} />;
-
       // Tool Widgets
       case 'quick-actions':
-        return <QuickActionsWidget compact={isSmall} onEditDashboard={() => setIsEditing(true)} />;
+        return (
+          <QuickActionsWidget
+            compact={isSmall}
+            onEditDashboard={() => setIsEditing(true)}
+            onTradeAction={() => setIsFormOpen(true)}
+          />
+        );
 
       case 'price-alerts':
         return <PriceAlertsWidget limit={isLarge ? 10 : isSmall ? 2 : 4} />;
-
-      case 'dividend-tracker':
-        return <DividendTrackerWidget limit={isLarge ? 10 : isSmall ? 3 : 5} showChart={isLarge} />;
 
       case 'asset-allocation':
         return (
