@@ -387,10 +387,12 @@ export default function WatchlistPage() {
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.9 }}
                                 transition={{ delay: idx * 0.05 }}
-                                className="bg-card border border-border rounded-[32px] p-8 hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/5 transition-all group relative overflow-hidden"
+                                className="bg-card border border-border rounded-[32px] p-8 hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/5 transition-all group relative"
                             >
-                                {/* Decorative Gradient */}
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-primary/10 transition-colors" />
+                                {/* Decorative Gradient - contained to avoid overflow issues */}
+                                <div className="absolute inset-0 rounded-[32px] overflow-hidden pointer-events-none">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-primary/10 transition-colors" />
+                                </div>
 
                                 <div className="flex items-start justify-between mb-6 relative z-10">
                                     <Link href={`/dashboard/ticker/${item.symbol}`} className="flex-1">
