@@ -51,6 +51,7 @@ import {
 } from 'recharts';
 import TechnicalIndicators from '@/components/TechnicalIndicators';
 import PeerComparison from '@/components/PeerComparison';
+import FinancialHealthCharts from '@/components/FinancialHealthCharts';
 
 interface StockData {
     symbol: string;
@@ -619,6 +620,18 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
                     <StatCard label="52W High" value={`$${stock.fiftyTwoWeekHigh.toFixed(2)}`} icon={<TrendingUp size={18} />} color="emerald" />
                     <StatCard label="52W Low" value={`$${stock.fiftyTwoWeekLow.toFixed(2)}`} icon={<TrendingDown size={18} />} color="rose" />
                 </div>
+
+                {/* Financial Health Visualizations */}
+                {fundamentals && (fundamentals.revenue || fundamentals.eps) && (
+                    <div className="mb-8">
+                        <FinancialHealthCharts
+                            symbol={symbol}
+                            revenue={fundamentals.revenue || []}
+                            netIncome={fundamentals.netIncome || []}
+                            eps={fundamentals.eps || []}
+                        />
+                    </div>
+                )}
 
                 {/* Analyst Ratings */}
                 {analysts && analysts.totalAnalysts > 0 && (

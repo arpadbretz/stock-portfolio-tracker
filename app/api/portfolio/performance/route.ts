@@ -31,7 +31,8 @@ export async function GET(request: Request) {
         const now = new Date();
         let startDate = new Date();
 
-        if (period === '1M') startDate.setMonth(now.getMonth() - 1);
+        if (period === '1W') startDate.setDate(now.getDate() - 7);
+        else if (period === '1M') startDate.setMonth(now.getMonth() - 1);
         else if (period === '3M') startDate.setMonth(now.getMonth() - 3);
         else if (period === '6M') startDate.setMonth(now.getMonth() - 6);
         else if (period === '1Y') startDate.setFullYear(now.getFullYear() - 1);

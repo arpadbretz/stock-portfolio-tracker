@@ -645,7 +645,7 @@ export function PerformanceChartWidget({ portfolioId }: { portfolioId?: string }
                 </div>
 
                 <div className="flex items-center bg-muted/30 p-1 rounded-lg border border-border/50">
-                    {['1M', '3M', '6M', '1Y', 'YTD', 'ALL'].map((p) => (
+                    {['1W', '1M', '3M', '6M', '1Y', 'YTD', 'ALL'].map((p) => (
                         <button
                             key={p}
                             onClick={() => setPeriod(p)}

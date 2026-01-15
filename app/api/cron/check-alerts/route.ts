@@ -103,15 +103,15 @@ export async function GET(request: Request) {
                     continue;
                 }
 
-                // Check user email preferences (if implemented)
+                // Check user email preferences
                 const { data: profile } = await supabase
                     .from('profiles')
-                    .select('email_alerts, display_name')
+                    .select('email_alerts_enabled, display_name')
                     .eq('id', alert.user_id)
                     .single();
 
                 // Skip if user has disabled email alerts
-                if (profile?.email_alerts === false) {
+                if (profile?.email_alerts_enabled === false) {
                     console.log(`User ${alert.user_id} has disabled email alerts`);
                     continue;
                 }

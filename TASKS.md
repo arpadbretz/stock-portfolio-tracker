@@ -96,7 +96,7 @@
 | ID | Task | Status | Effort | Notes |
 |----|------|--------|--------|-------|
 | DASH-004 | Market Overview Widget | ✅ | 4h | Implemented Jan 13, 2026 - Shows S&P, NASDAQ, DOW, VIX with error states |
-| DASH-008 | Performance Timeframes | ⬜ | 3h | 1W, 1M, 3M, YTD, 1Y, All |
+| DASH-008 | Performance Timeframes | ✅ | 3h | 1W, 1M, 3M, YTD, 1Y, All implemented Jan 15 |
 | UX-005 | Onboarding Tour | ⬜ | 4h | Critical for new users |
 | UX-006 | Empty State Designs | ✅ | 3h | Implemented Jan 12, 2026 |
 | DASH-010 | Benchmark Comparison | ✅ | 6h | Implemented Jan 14: Portfolio vs S&P 500 line chart |
@@ -232,8 +232,8 @@
 
 | ID | Task | Status | Effort | Notes |
 |----|------|--------|--------|-------|
-| TICK-004 | Earnings History Chart | ⬜ | 4h | EPS actual vs estimate |
-| TICK-005 | Revenue/Income Charts | ⬜ | 4h | Historical financials |
+| TICK-004 | Earnings History Chart | ✅ | 4h | EPS actual vs estimate implemented Jan 15 |
+| TICK-005 | Revenue/Income Charts | ✅ | 4h | Historical financials implemented Jan 15 |
 | TICK-006 | Dividend History | ⬜ | 3h | Payment timeline chart |
 | TICK-007 | Options Chain Display | ⬜ | 6h | Basic puts/calls viewer |
 
