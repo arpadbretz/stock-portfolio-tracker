@@ -42,9 +42,9 @@
 | ACCT-001 | Profile Photo Upload | ✅ | 2h | Implemented Jan 12, 2026 |
 | ACCT-002 | Display Name Setting | ✅ | 1h | Implemented Jan 12, 2026 |
 | ACCT-003 | In-App Password Change | ✅ | 2h | Done via AUTH-003 |
-| ACCT-013 | Notification Control Center | 🔄 | 4h | Email toggles for alerts/summaries |
-| ACCT-015 | Default Portfolio Selector | 🔄 | 2h | Choose which portfolio loads first |
-| ACCT-019 | Portfolio "Stealth Mode" | 🔄 | 2h | Blur sensitive values by default |
+| ACCT-013 | Notification Control Center | ✅ | 4h | Email toggles for alerts/summaries Jan 15 |
+| ACCT-015 | Default Portfolio Selector | ✅ | 2h | Choose which portfolio loads first Jan 15 |
+| ACCT-019 | Portfolio "Stealth Mode" | ✅ | 2h | Blur sensitive values by default Jan 15 |
 | ACCT-004 | Linked Accounts Manager | ⬜ | 3h | View/disconnect OAuth (Low Priority) |
 | ACCT-014 | Timezone Synchronization | ⬜ | 2h | Correct market status/timestamps (Low Priority) |
 | ACCT-016 | Security & Identity Manager | ⬜ | 4h | Multi-factor auth / session mgmt (Low Priority) |
@@ -146,7 +146,7 @@
 | EMAIL-002 | Welcome Email | ✅ | 1h | Automated flow implemented Jan 14 |
 | EMAIL-003 | Email Verification | ✅ | - | Supabase built-in |
 | EMAIL-004 | Password Reset Email | ✅ | - | Supabase built-in |
-| EMAIL-005 | Weekly Portfolio Summary | ⬜ | 4h | Edge Function + cron |
+| EMAIL-005 | Weekly Portfolio Summary | ✅ | 4h | Edge Function + cron implemented Jan 15 |
 | EMAIL-006 | Price Alert Notifications | ✅ | 3h | Vercel Cron + Resend flow Jan 14 |
 | EMAIL-007 | Inactivity Re-engagement | ⬜ | 2h | Users inactive 30+ days |
 | EMAIL-008 | Email Templates | ✅ | 3h | Professional HTML templates Jan 14 |

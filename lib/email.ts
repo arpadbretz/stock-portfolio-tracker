@@ -236,3 +236,140 @@ export async function sendWelcomeEmail({
         return { success: false, error: 'Failed to send email' };
     }
 }
+
+interface WeeklyMovers {
+    ticker: string;
+    changePercent: number;
+}
+
+interface SendWeeklySummaryParams {
+    to: string;
+    userName: string;
+    totalValue: number;
+    weekGain: number;
+    weekGainPercent: number;
+    topMovers: WeeklyMovers[];
+    portfolioId: string;
+    currency?: string;
+}
+
+export async function sendWeeklySummaryEmail({
+    to,
+    userName,
+    totalValue,
+    weekGain,
+    weekGainPercent,
+    topMovers,
+    portfolioId,
+    currency = 'USD'
+}: SendWeeklySummaryParams): Promise<{ success: boolean; error?: string }> {
+    const isGainPositive = weekGain >= 0;
+    const emoji = isGainPositive ? '🚀' : '📉';
+    const color = isGainPositive ? '#10b981' : '#ef4444';
+
+    // Format currency based on simple rules or pass formatted strings from caller
+    const formatValue = (val: number) => {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: currency,
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+        }).format(val);
+    };
+
+    try {
+        const { data, error } = await getResendClient().emails.send({
+            from: `${APP_NAME} <${FROM_EMAIL}>`,
+            to: [to],
+            subject: `${emoji} Weekly Report: Your portfolio is ${isGainPositive ? 'up' : 'down'} ${Math.abs(weekGainPercent).toFixed(2)}%`,
+            html: `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0a0a0a; color: #ffffff;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+        <tr>
+            <td>
+                <!-- Header -->
+                <div style="text-align: center; margin-bottom: 32px;">
+                    <h1 style="color: #ffffff; font-size: 24px; font-weight: 900; margin: 0; letter-spacing: -0.05em;">${APP_NAME} <span style="color: #3b82f6;">INSIGHTS</span></h1>
+                    <p style="color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 0.2em; margin: 8px 0 0 0;">Weekly Performance Ledger</p>
+                </div>
+
+                <!-- Main Card -->
+                <table width="100%" cellpadding="0" cellspacing="0" style="background: #111111; border: 1px solid #222222; border-radius: 32px; overflow: hidden; margin-bottom: 24px;">
+                    <tr>
+                        <td style="padding: 40px; text-align: center;">
+                            <p style="color: #a0aec0; font-size: 14px; margin: 0 0 8px 0;">Portfolio Net Worth</p>
+                            <h2 style="color: #ffffff; font-size: 48px; font-weight: 900; margin: 0; letter-spacing: -0.03em;">${formatValue(totalValue)}</h2>
+                            
+                            <div style="display: inline-block; margin-top: 24px; padding: 8px 20px; background-color: ${isGainPositive ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)'}; border-radius: 100px; border: 1px solid ${isGainPositive ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'};">
+                                <span style="color: ${color}; font-weight: 900; font-size: 16px;">
+                                    ${isGainPositive ? '+' : ''}${formatValue(weekGain)} (${isGainPositive ? '+' : ''}${weekGainPercent.toFixed(2)}%)
+                                </span>
+                                <span style="color: #6b7280; font-size: 14px; margin-left: 8px;">this week</span>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- Top Movers Section -->
+                <h3 style="color: #ffffff; font-size: 16px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; margin: 0 0 16px 12px;">Top Performance Nodes</h3>
+                <table width="100%" cellpadding="0" cellspacing="0" style="background: #111111; border: 1px solid #222222; border-radius: 24px; margin-bottom: 32px;">
+                    <tr>
+                        <td style="padding: 12px;">
+                            ${topMovers.map(mover => `
+                                <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 8px; background: #0a0a0a; border-radius: 16px;">
+                                    <tr>
+                                        <td style="padding: 16px;">
+                                            <span style="color: #ffffff; font-weight: 900; font-size: 16px;">${mover.ticker}</span>
+                                        </td>
+                                        <td style="padding: 16px; text-align: right;">
+                                            <span style="color: ${mover.changePercent >= 0 ? '#10b981' : '#ef4444'}; font-weight: 900; font-size: 14px;">
+                                                ${mover.changePercent >= 0 ? '+' : ''}${mover.changePercent.toFixed(2)}%
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </table>
+                            `).join('')}
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- Footer Action -->
+                <div style="text-align: center;">
+                    <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://stocktrackr.eu'}/dashboard" 
+                       style="display: inline-block; padding: 18px 40px; background: #ffffff; color: #000000; text-decoration: none; border-radius: 20px; font-weight: 900; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;">
+                        Analyze Full Portfolio →
+                    </a>
+                </div>
+
+                <!-- Legal/Footer -->
+                <div style="margin-top: 48px; text-align: center; border-top: 1px solid #222222; padding-top: 24px;">
+                    <p style="color: #444444; font-size: 11px; margin: 0 0 12px 0; line-height: 1.6;">
+                        This report is for informational purposes only and does not constitute financial advice. 
+                        Past performance is not indicative of future results.
+                    </p>
+                    <p style="color: #6b7280; font-size: 12px; margin: 0;">
+                        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://stocktrackr.eu'}/dashboard/account" style="color: #3b82f6; text-decoration: none;">Unsubscribe</a> 
+                        • 
+                        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://stocktrackr.eu'}/legal/privacy" style="color: #6b7280; text-decoration: none;">Privacy Policy</a>
+                    </p>
+                </div>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+            `,
+        });
+
+        if (error) return { success: false, error: error.message };
+        return { success: true };
+    } catch (err) {
+        return { success: false, error: 'Failed to send weekly summary' };
+    }
+}
