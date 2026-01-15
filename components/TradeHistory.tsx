@@ -71,14 +71,14 @@ export default function TradeHistory({
                     return (
                         <div
                             key={trade.id}
-                            className="flex items-center justify-between p-2.5 rounded-xl hover:bg-muted/50 transition-colors"
+                            className="flex items-center justify-between p-2.5 rounded-xl hover:bg-muted/50 transition-colors group"
                         >
                             <div className="flex items-center gap-2.5">
                                 <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${isBuy ? 'bg-emerald-500/10 text-emerald-500' : 'bg-blue-500/10 text-blue-500'}`}>
                                     {isBuy ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
                                 </div>
-                                <div>
-                                    <div className="font-bold text-sm flex items-center gap-1.5">
+                                <div className="min-w-0">
+                                    <div className="font-bold text-sm flex items-center gap-1.5 truncate">
                                         {trade.ticker}
                                         <span className={`text-[8px] font-black px-1 py-0.5 rounded ${isBuy ? 'bg-emerald-500/10 text-emerald-500' : 'bg-blue-500/10 text-blue-500'}`}>
                                             {trade.action}
@@ -90,11 +90,36 @@ export default function TradeHistory({
                                     </div>
                                 </div>
                             </div>
-                            <div className="text-right">
-                                <div className="font-bold text-sm">{formatCurrency(convertedTotal, currency)}</div>
-                                <div className="text-[10px] text-muted-foreground">
-                                    {formatNumber(trade.quantity)} × {formatCurrency(convertCurrency(trade.pricePerShare, currency, exchangeRates), currency)}
+                            <div className="flex items-center gap-3">
+                                <div className="text-right">
+                                    <div className="font-bold text-sm">{formatCurrency(convertedTotal, currency)}</div>
+                                    <div className="text-[10px] text-muted-foreground truncate">
+                                        {formatNumber(trade.quantity)} × {trade.ticker}
+                                    </div>
                                 </div>
+                                {!readOnly && (
+                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                                        <button
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                onTradeEdit?.(trade);
+                                            }}
+                                            className="p-1.5 rounded-lg bg-muted border border-border text-muted-foreground hover:text-primary hover:border-primary/50 transition-all"
+                                        >
+                                            <Edit2 size={10} />
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                handleDelete(trade.id);
+                                            }}
+                                            disabled={isDeleting === trade.id}
+                                            className="p-1.5 rounded-lg bg-muted border border-border text-muted-foreground hover:text-rose-500 hover:border-rose-500/50 transition-all disabled:opacity-50"
+                                        >
+                                            <Trash2 size={10} />
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     );

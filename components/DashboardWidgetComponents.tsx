@@ -351,47 +351,6 @@ interface QuickActionsProps {
 }
 
 export function QuickActionsWidget({ compact = false, onEditDashboard, onTradeAction }: QuickActionsProps) {
-    const [marketStatus, setMarketStatus] = useState<{ price: number; change: number; isOpen: boolean }>({ price: 0, change: 0, isOpen: false });
-
-    useEffect(() => {
-        const checkMarketOpen = () => {
-            const now = new Date();
-            const formatter = new Intl.DateTimeFormat('en-US', {
-                timeZone: 'America/New_York',
-                hour: 'numeric',
-                minute: 'numeric',
-                hour12: false,
-                weekday: 'long'
-            });
-            const parts = formatter.formatToParts(now);
-            const hour = parseInt(parts.find(p => p.type === 'hour')?.value || '0');
-            const minute = parseInt(parts.find(p => p.type === 'minute')?.value || '0');
-            const day = parts.find(p => p.type === 'weekday')?.value;
-
-            const isWeekend = day === 'Saturday' || day === 'Sunday';
-            const curTime = hour + minute / 60;
-            const isOpen = !isWeekend && curTime >= 9.5 && curTime < 16;
-            return isOpen;
-        };
-
-        const fetchStatus = async () => {
-            try {
-                const res = await fetch('/api/stock/%5EIXIC');
-                const data = await res.json();
-                if (data.success) {
-                    setMarketStatus({
-                        price: data.data.price,
-                        change: data.data.changePercent,
-                        isOpen: checkMarketOpen()
-                    });
-                }
-            } catch (e) { console.error(e); }
-        };
-        fetchStatus();
-        const interval = setInterval(fetchStatus, 60000);
-        return () => clearInterval(interval);
-    }, []);
-
     const actions = [
         { icon: <Plus size={compact ? 14 : 16} />, label: 'Trade', onClick: onTradeAction, color: 'bg-emerald-500/10 text-emerald-500' },
         { icon: <Search size={compact ? 14 : 16} />, label: 'Search', href: '/dashboard/stocks', color: 'bg-blue-500/10 text-blue-500' },
@@ -400,7 +359,7 @@ export function QuickActionsWidget({ compact = false, onEditDashboard, onTradeAc
     ];
 
     return (
-        <div className="flex flex-col h-full justify-between gap-3">
+        <div className="flex flex-col h-full justify-center gap-3">
             <div className={`grid ${compact ? 'grid-cols-4 gap-1' : 'grid-cols-2 gap-2'}`}>
                 {actions.map((action) => {
                     const content = (
@@ -425,38 +384,14 @@ export function QuickActionsWidget({ compact = false, onEditDashboard, onTradeAc
                     );
                 })}
             </div>
-
-            {!compact && (
-                <div className="space-y-3">
-                    <div className="p-3 bg-muted/20 rounded-xl border border-border/10">
-                        <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Market Status</span>
-                            <div className="flex items-center gap-1.5">
-                                <div className={`w-1.5 h-1.5 rounded-full ${marketStatus.isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-muted-foreground'}`} />
-                                <span className="text-[10px] font-black uppercase text-foreground">{marketStatus.isOpen ? 'Live' : 'Closed'}</span>
-                            </div>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold">NASDAQ</span>
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs font-black">{marketStatus.price.toLocaleString()}</span>
-                                <span className={`text-[10px] font-bold ${(marketStatus.change ?? 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                    {(marketStatus.change ?? 0) >= 0 ? '+' : ''}{(marketStatus.change ?? 0).toFixed(2)}%
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {onEditDashboard && (
-                        <button
-                            onClick={onEditDashboard}
-                            className="w-full flex items-center justify-center gap-2 p-2 rounded-xl bg-card border border-border/50 hover:bg-muted text-muted-foreground hover:text-foreground transition-all text-xs font-bold"
-                        >
-                            <Settings size={14} />
-                            <span>Edit Dashboard</span>
-                        </button>
-                    )}
-                </div>
+            {!compact && onEditDashboard && (
+                <button
+                    onClick={onEditDashboard}
+                    className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-muted/20 border border-border/10 hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-all text-xs font-bold mt-auto"
+                >
+                    <Settings size={14} />
+                    <span>Customize Dashboard</span>
+                </button>
             )}
         </div>
     );
