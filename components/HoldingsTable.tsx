@@ -80,7 +80,7 @@ export default function HoldingsTable({ holdings, currency, exchangeRates, isLoa
                                 </div>
                             </div>
                             <div className="text-right">
-                                <div className="font-bold text-sm">
+                                <div className="font-bold text-sm blur-stealth">
                                     {formatCurrency(convertCurrency(holding.marketValue, currency, exchangeRates), currency)}
                                 </div>
                                 <div className={`text-[10px] font-bold ${isPositive ? 'text-emerald-500' : isNegative ? 'text-rose-500' : 'text-muted-foreground'}`}>
@@ -145,19 +145,19 @@ export default function HoldingsTable({ holdings, currency, exchangeRates, isLoa
                                     <td className="py-5 px-8 text-right font-bold text-sm">
                                         {formatNumber(holding.shares, holding.shares % 1 !== 0 ? 3 : 0)}
                                     </td>
-                                    <td className="py-5 px-8 text-right text-muted-foreground text-sm">
+                                    <td className="py-5 px-8 text-right text-muted-foreground text-sm blur-stealth">
                                         {formatCurrency(convertCurrency(holding.avgCostBasis, currency, exchangeRates), currency)}
                                     </td>
-                                    <td className="py-5 px-8 text-right font-black text-sm">
+                                    <td className="py-5 px-8 text-right font-black text-sm blur-stealth">
                                         {formatCurrency(convertCurrency(holding.currentPrice, currency, exchangeRates), currency)}
                                     </td>
-                                    <td className="py-5 px-8 text-right font-black text-foreground">
+                                    <td className="py-5 px-8 text-right font-black text-foreground blur-stealth">
                                         {formatCurrency(convertCurrency(holding.marketValue, currency, exchangeRates), currency)}
                                     </td>
                                     <td className="py-5 px-8 text-right">
                                         <div className="flex items-center justify-end gap-3">
                                             <div className="text-right">
-                                                <div className={`font-black text-sm ${isPositive ? 'text-emerald-500' : isNegative ? 'text-rose-500' : 'text-muted-foreground'}`}>
+                                                <div className={`font-black text-sm blur-stealth ${isPositive ? 'text-emerald-500' : isNegative ? 'text-rose-500' : 'text-muted-foreground'}`}>
                                                     {formatCurrency(convertCurrency(holding.unrealizedGain, currency, exchangeRates), currency)}
                                                 </div>
                                                 <div className={`text-[10px] font-black ${isPositive ? 'text-emerald-500/70' : isNegative ? 'text-rose-500/70' : 'text-muted-foreground/50'}`}>
@@ -199,7 +199,7 @@ export default function HoldingsTable({ holdings, currency, exchangeRates, isLoa
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <div className="font-black text-lg">
+                                    <div className="font-black text-lg blur-stealth">
                                         {formatCurrency(convertCurrency(holding.marketValue, currency, exchangeRates), currency)}
                                     </div>
                                     <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
@@ -211,7 +211,7 @@ export default function HoldingsTable({ holdings, currency, exchangeRates, isLoa
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="bg-muted/50 p-4 rounded-2xl border border-border/50">
                                     <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mb-1 text-center">Price</div>
-                                    <div className="font-black text-center text-sm">
+                                    <div className="font-black text-center text-sm blur-stealth">
                                         {formatCurrency(convertCurrency(holding.currentPrice, currency, exchangeRates), currency)}
                                     </div>
                                 </div>

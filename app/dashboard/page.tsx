@@ -207,7 +207,7 @@ export default function DashboardPage() {
               </div>
               {!isSmall && <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Net Asset Value</span>}
             </div>
-            <h2 className={`${isSmall ? 'text-2xl' : isLarge ? 'text-5xl' : 'text-3xl'} font-black tracking-tight ${isSmall ? 'mb-1' : 'mb-3'}`}>
+            <h2 className={`${isSmall ? 'text-2xl' : isLarge ? 'text-5xl' : 'text-3xl'} font-black tracking-tight ${isSmall ? 'mb-1' : 'mb-3'} blur-stealth`}>
               {formatCurrency(convertCurrency(summary?.totalMarketValue || 0, currency, rates), currency)}
             </h2>
             {!isSmall && (
@@ -225,11 +225,11 @@ export default function DashboardPage() {
               <div className="mt-4 pt-4 border-t border-border/50 grid grid-cols-2 gap-4">
                 <div className="p-3 bg-muted/30 rounded-xl">
                   <div className="text-[10px] text-muted-foreground font-bold mb-1">Cost Basis</div>
-                  <div className="font-black">{formatCurrency(convertCurrency(summary?.totalInvested || 0, currency, rates), currency)}</div>
+                  <div className="font-black blur-stealth">{formatCurrency(convertCurrency(summary?.totalInvested || 0, currency, rates), currency)}</div>
                 </div>
                 <div className="p-3 bg-muted/30 rounded-xl">
                   <div className="text-[10px] text-muted-foreground font-bold mb-1">Unrealized</div>
-                  <div className={`font-black ${(summary?.totalGain || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                  <div className={`font-black blur-stealth ${(summary?.totalGain || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
                     {formatCurrency(convertCurrency(summary?.totalGain || 0, currency, rates), currency)}
                   </div>
                 </div>
@@ -247,7 +247,7 @@ export default function DashboardPage() {
               </div>
               {!isSmall && <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Capital Deployed</span>}
             </div>
-            <h2 className={`${isSmall ? 'text-2xl' : isLarge ? 'text-5xl' : 'text-3xl'} font-black tracking-tight ${isSmall ? 'mb-1' : 'mb-3'}`}>
+            <h2 className={`${isSmall ? 'text-2xl' : isLarge ? 'text-5xl' : 'text-3xl'} font-black tracking-tight ${isSmall ? 'mb-1' : 'mb-3'} blur-stealth`}>
               {formatCurrency(convertCurrency(summary?.totalInvested || 0, currency, rates), currency)}
             </h2>
             <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground">
@@ -261,7 +261,7 @@ export default function DashboardPage() {
                   {holdings.slice(0, 5).map(h => (
                     <div key={h.ticker} className="flex items-center justify-between">
                       <span className="font-bold text-sm">{h.ticker}</span>
-                      <span className="text-sm text-muted-foreground">{formatCurrency(convertCurrency(h.totalInvested, currency, rates), currency)}</span>
+                      <span className="text-sm text-muted-foreground blur-stealth">{formatCurrency(convertCurrency(h.totalInvested, currency, rates), currency)}</span>
                     </div>
                   ))}
                 </div>
@@ -285,7 +285,7 @@ export default function DashboardPage() {
                 </div>
               )}
             </div>
-            <h2 className={`${isSmall ? 'text-2xl' : isLarge ? 'text-5xl' : 'text-3xl'} font-black tracking-tight mb-2 ${isPnLPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
+            <h2 className={`${isSmall ? 'text-2xl' : isLarge ? 'text-5xl' : 'text-3xl'} font-black tracking-tight mb-2 ${isPnLPositive ? 'text-emerald-500' : 'text-rose-500'} blur-stealth`}>
               {isPnLPositive ? '+' : ''}{formatCurrency(convertCurrency(dailyPnL, currency, rates), currency)}
             </h2>
             <div className={`inline-flex px-3 py-1 rounded-xl ${isSmall ? 'text-xs' : 'text-sm'} font-black w-fit ${isPnLPositive ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
@@ -331,7 +331,7 @@ export default function DashboardPage() {
               </div>
 
               <div className="flex items-baseline gap-4 mb-4 flex-wrap">
-                <h2 className={`${isLarge ? 'text-5xl' : 'text-3xl'} font-black tracking-tight ${isGainPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
+                <h2 className={`${isLarge ? 'text-5xl' : 'text-3xl'} font-black tracking-tight ${isGainPositive ? 'text-emerald-500' : 'text-rose-500'} blur-stealth`}>
                   {formatCurrency(convertCurrency(summary?.totalGain || 0, currency, rates), currency)}
                 </h2>
                 <div className={`px-4 py-1.5 rounded-xl ${isLarge ? 'text-base' : 'text-xs'} font-black ${isGainPositive ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
@@ -352,15 +352,15 @@ export default function DashboardPage() {
               <div className={`grid ${isLarge ? 'grid-cols-3 gap-4' : 'grid-cols-1 gap-2'} mt-2`}>
                 <div className={`flex ${isLarge ? 'flex-col items-center p-3' : 'justify-between items-center p-2'} bg-muted/20 hover:bg-muted/30 transition-colors rounded-xl border border-border/10`}>
                   <div className="text-[10px] text-muted-foreground font-black uppercase tracking-tighter">Invested</div>
-                  <div className="font-black text-sm">{formatCurrency(convertCurrency(summary?.totalInvested || 0, currency, rates), currency)}</div>
+                  <div className="font-black text-sm blur-stealth">{formatCurrency(convertCurrency(summary?.totalInvested || 0, currency, rates), currency)}</div>
                 </div>
                 <div className={`flex ${isLarge ? 'flex-col items-center p-3' : 'justify-between items-center p-2'} bg-muted/20 hover:bg-muted/30 transition-colors rounded-xl border border-border/10`}>
                   <div className="text-[10px] text-muted-foreground font-black uppercase tracking-tighter">Current</div>
-                  <div className="font-black text-sm">{formatCurrency(convertCurrency(summary?.totalMarketValue || 0, currency, rates), currency)}</div>
+                  <div className="font-black text-sm blur-stealth">{formatCurrency(convertCurrency(summary?.totalMarketValue || 0, currency, rates), currency)}</div>
                 </div>
                 <div className={`flex ${isLarge ? 'flex-col items-center p-3' : 'justify-between items-center p-2'} bg-muted/20 hover:bg-muted/30 transition-colors rounded-xl border border-border/10`}>
                   <div className="text-[10px] text-muted-foreground font-black uppercase tracking-tighter">Today</div>
-                  <div className={`font-black text-sm ${dailyPnL >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                  <div className={`font-black text-sm blur-stealth ${dailyPnL >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
                     {dailyPnL >= 0 ? '+' : ''}{formatCurrency(convertCurrency(dailyPnL, currency, rates), currency)}
                   </div>
                 </div>

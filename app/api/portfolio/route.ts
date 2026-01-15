@@ -20,17 +20,19 @@ export async function GET(request: Request) {
         let portfolioName = 'My Portfolio';
 
         if (!portfolioId) {
-            // If no ID provided, try to get default from preferences
-            const { data: preference } = await supabase
-                .from('user_preferences')
-                .select('default_portfolio_id')
+            // First, try to find a portfolio marked as default
+            const { data: defaultPortfolio } = await supabase
+                .from('portfolios')
+                .select('id')
                 .eq('user_id', user.id)
+                .eq('is_default', true)
+                .limit(1)
                 .single();
 
-            if (preference?.default_portfolio_id) {
-                portfolioId = preference.default_portfolio_id;
+            if (defaultPortfolio) {
+                portfolioId = defaultPortfolio.id;
             } else {
-                // If no preference, get the first created portfolio
+                // If no explicit default, get the first created one
                 const { data: firstPortfolio } = await supabase
                     .from('portfolios')
                     .select('id')

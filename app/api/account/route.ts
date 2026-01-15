@@ -59,6 +59,54 @@ export async function GET(request: Request) {
     }
 }
 
+export async function PATCH(request: Request) {
+    try {
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const body = await request.json();
+        const {
+            preferred_currency,
+            email_alerts_enabled,
+            weekly_summary_enabled,
+            stealth_mode_enabled,
+            theme
+        } = body;
+
+        // Build update object with only defined fields
+        const updateData: any = { updated_at: new Date().toISOString() };
+        if (preferred_currency !== undefined) updateData.preferred_currency = preferred_currency;
+        if (email_alerts_enabled !== undefined) updateData.email_alerts_enabled = email_alerts_enabled;
+        if (weekly_summary_enabled !== undefined) updateData.weekly_summary_enabled = weekly_summary_enabled;
+        if (stealth_mode_enabled !== undefined) updateData.stealth_mode_enabled = stealth_mode_enabled;
+        if (theme !== undefined) updateData.theme = theme;
+
+        const { data, error } = await supabase
+            .from('profiles')
+            .update(updateData)
+            .eq('id', user.id)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error updating profile:', error);
+            return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+        }
+
+        return NextResponse.json({ success: true, data });
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        return NextResponse.json(
+            { success: false, error: 'Failed to update settings' },
+            { status: 500 }
+        );
+    }
+}
+
 export async function DELETE(request: Request) {
     try {
         const supabase = await createClient();

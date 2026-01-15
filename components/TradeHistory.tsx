@@ -92,7 +92,7 @@ export default function TradeHistory({
                             </div>
                             <div className="flex items-center gap-3">
                                 <div className="text-right">
-                                    <div className="font-bold text-sm">{formatCurrency(convertedTotal, currency)}</div>
+                                    <div className="font-bold text-sm blur-stealth">{formatCurrency(convertedTotal, currency)}</div>
                                     <div className="text-[10px] text-muted-foreground truncate">
                                         {formatNumber(trade.quantity)} × {trade.ticker}
                                     </div>
@@ -194,10 +194,10 @@ export default function TradeHistory({
                                     <td className="py-5 px-8 text-right font-bold text-sm">
                                         {formatNumber(trade.quantity, trade.quantity % 1 !== 0 ? 3 : 0)}
                                     </td>
-                                    <td className="py-5 px-8 text-right text-muted-foreground text-sm">
+                                    <td className="py-5 px-8 text-right text-muted-foreground text-sm blur-stealth">
                                         {formatCurrency(convertedPrice, currency)}
                                     </td>
-                                    <td className="py-5 px-8 text-right font-black text-foreground">
+                                    <td className="py-5 px-8 text-right font-black text-foreground blur-stealth">
                                         {formatCurrency(convertedTotal, currency)}
                                     </td>
                                     {!readOnly && (
@@ -257,7 +257,7 @@ export default function TradeHistory({
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <div className="font-black text-white">{formatCurrency(convertedTotal, currency)}</div>
+                                    <div className="font-black text-white blur-stealth">{formatCurrency(convertedTotal, currency)}</div>
                                     <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1">
                                         {formatNumber(trade.quantity)} Total
                                     </div>

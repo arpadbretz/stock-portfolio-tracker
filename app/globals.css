@@ -222,3 +222,21 @@ h6 {
   animation: none;
   opacity: 1;
 }
+
+/* Stealth Mode */
+.stealth-active .blur-stealth {
+  filter: blur(8px);
+  user-select: none;
+  pointer-events: none;
+  transition: filter 0.3s ease;
+}
+
+.stealth-active .blur-stealth:hover {
+  filter: blur(0px);
+  /* Optional: allow unblur on hover if desired, but user asked for "stealth mode" */
+}
+
+/* If user wants total stealth, remove the hover unblur or keep it subtle */
+.stealth-active .blur-stealth {
+  filter: blur(10px);
+}

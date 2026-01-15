@@ -26,6 +26,8 @@ import CookieBanner from "@/components/CookieBanner";
 import CommandPalette from "@/components/CommandPalette";
 import { Toaster } from "sonner";
 
+import { UserPreferencesProvider } from "@/components/providers/UserPreferencesProvider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -42,21 +44,23 @@ export default function RootLayout({
         className={`${outfit.variable} ${inter.variable} font-inter antialiased bg-background text-foreground`}
       >
         <AuthProvider>
-          <ThemeProvider>
-            {children}
-            <CookieBanner />
-            <CommandPalette />
-            <Toaster
-              position="bottom-right"
-              toastOptions={{
-                style: {
-                  background: 'hsl(var(--card))',
-                  border: '1px solid hsl(var(--border))',
-                  color: 'hsl(var(--foreground))',
-                },
-              }}
-            />
-          </ThemeProvider>
+          <UserPreferencesProvider>
+            <ThemeProvider>
+              {children}
+              <CookieBanner />
+              <CommandPalette />
+              <Toaster
+                position="bottom-right"
+                toastOptions={{
+                  style: {
+                    background: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    color: 'hsl(var(--foreground))',
+                  },
+                }}
+              />
+            </ThemeProvider>
+          </UserPreferencesProvider>
         </AuthProvider>
         <Analytics />
         <SpeedInsights />

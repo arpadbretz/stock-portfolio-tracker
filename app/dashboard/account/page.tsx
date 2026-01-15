@@ -4,10 +4,11 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Download, Trash2, AlertCircle, Shield, User, ChevronRight, Lock, Globe, Check, DollarSign, Loader2, Eye, EyeOff, Key, Edit3, Camera, X } from 'lucide-react';
+import { ArrowLeft, Download, Trash2, AlertCircle, Shield, User, ChevronRight, Lock, Globe, Check, DollarSign, Loader2, Eye, EyeOff, Key, Edit3, Camera, X, Bell, Eye as EyeIcon, Briefcase } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
+import { useUserPreferences } from '@/components/providers/UserPreferencesProvider';
 
 const CURRENCIES = [
     { code: 'USD', symbol: '$', name: 'US Dollar' },
@@ -24,7 +25,7 @@ export default function AccountPage() {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [deleteConfirmText, setDeleteConfirmText] = useState('');
     const [error, setError] = useState<string | null>(null);
-    const [currency, setCurrency] = useState('USD');
+    const { preferredCurrency: currency, setPreferredCurrency: setCurrency, stealthMode, setStealthMode } = useUserPreferences();
     const [savingCurrency, setSavingCurrency] = useState(false);
 
     // Password change states
@@ -43,6 +44,12 @@ export default function AccountPage() {
     // Avatar states
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const [avatarLoading, setAvatarLoading] = useState(false);
+
+    // New Settings states
+    const [emailAlerts, setEmailAlerts] = useState(true);
+    const [weeklySummary, setWeeklySummary] = useState(true);
+    const [portfolios, setPortfolios] = useState<any[]>([]);
+    const [settingsLoading, setSettingsLoading] = useState(false);
     const supabase = createClient();
 
     useEffect(() => {
@@ -50,18 +57,45 @@ export default function AccountPage() {
         const saved = localStorage.getItem('preferredCurrency');
         if (saved) setCurrency(saved);
 
-        // Load display name and avatar from user metadata
+        // Load display name, avatar and profile settings
         const fetchUserData = async () => {
             const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
             if (user?.user_metadata?.display_name) {
                 setDisplayName(user.user_metadata.display_name);
             }
             if (user?.user_metadata?.avatar_url) {
                 setAvatarUrl(user.user_metadata.avatar_url);
             }
+
+            // Fetch profile settings
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', user.id)
+                .single();
+
+            if (profile) {
+                setEmailAlerts(profile.email_alerts_enabled ?? true);
+                setWeeklySummary(profile.weekly_summary_enabled ?? true);
+                setStealthMode(profile.stealth_mode_enabled ?? false);
+                if (profile.preferred_currency) setCurrency(profile.preferred_currency);
+            }
+
+            // Fetch portfolios for selection
+            const { data: portfoliosData } = await supabase
+                .from('portfolios')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('name', { ascending: true });
+
+            if (portfoliosData) {
+                setPortfolios(portfoliosData);
+            }
         };
         fetchUserData();
-    }, [supabase.auth]);
+    }, [supabase]);
 
     const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -118,13 +152,68 @@ export default function AccountPage() {
         }
     };
 
+    const updateSettings = async (updates: any) => {
+        setSettingsLoading(true);
+        try {
+            const res = await fetch('/api/account', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updates),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Update failed');
+            return data.data;
+        } catch (err: any) {
+            toast.error('Failed to update settings', { description: err.message });
+            throw err;
+        } finally {
+            setSettingsLoading(false);
+        }
+    };
+
+    const handleSetDefaultPortfolio = async (portfolioId: string) => {
+        if (!user) return;
+        setSettingsLoading(true);
+        try {
+            // First clear all defaults for this user
+            await supabase
+                .from('portfolios')
+                .update({ is_default: false })
+                .eq('user_id', user.id);
+
+            // Set new default
+            const { error } = await supabase
+                .from('portfolios')
+                .update({ is_default: true })
+                .eq('id', portfolioId);
+
+            if (error) throw error;
+
+            setPortfolios(portfolios.map(p => ({
+                ...p,
+                is_default: p.id === portfolioId
+            })));
+
+            toast.success('Default portfolio updated!');
+        } catch (err: any) {
+            toast.error('Failed to update portfolio');
+        } finally {
+            setSettingsLoading(false);
+        }
+    };
+
     const handleCurrencyChange = async (newCurrency: string) => {
         setSavingCurrency(true);
-        setCurrency(newCurrency);
-        localStorage.setItem('preferredCurrency', newCurrency);
-        // Small delay for visual feedback
-        await new Promise(r => setTimeout(r, 300));
-        setSavingCurrency(false);
+        try {
+            await updateSettings({ preferred_currency: newCurrency });
+            setCurrency(newCurrency);
+            localStorage.setItem('preferredCurrency', newCurrency);
+            toast.success(`Currency set to ${newCurrency}`);
+        } catch (e) {
+            // Error handled in updateSettings
+        } finally {
+            setSavingCurrency(false);
+        }
     };
 
     const handleDisplayNameUpdate = async (e: React.FormEvent) => {
@@ -409,6 +498,121 @@ export default function AccountPage() {
                                         )}
                                         <div className="text-2xl font-black mb-1">{curr.symbol}</div>
                                         <div className="text-xs font-bold text-muted-foreground">{curr.code}</div>
+                                    </button>
+                                ))}
+                            </div>
+                        </section>
+
+                        {/* Communication Settings */}
+                        <section className="bg-card border border-border p-8 rounded-[40px] shadow-sm">
+                            <div className="flex items-start gap-6 mb-8">
+                                <div className="p-4 bg-blue-500/10 rounded-2xl">
+                                    <Bell className="text-blue-500" size={24} />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-black mb-2">Communication Settings</h2>
+                                    <p className="text-sm text-muted-foreground leading-relaxed">
+                                        Manage how and when you receive updates about your investments.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between p-4 bg-muted rounded-2xl">
+                                    <div>
+                                        <div className="font-bold text-sm">Price Alerts</div>
+                                        <div className="text-xs text-muted-foreground">Receive emails when your targets are hit</div>
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            const newVal = !emailAlerts;
+                                            setEmailAlerts(newVal);
+                                            updateSettings({ email_alerts_enabled: newVal });
+                                        }}
+                                        className={`w-12 h-6 rounded-full p-1 transition-colors ${emailAlerts ? 'bg-primary' : 'bg-slate-700'}`}
+                                    >
+                                        <div className={`w-4 h-4 bg-white rounded-full transition-transform ${emailAlerts ? 'translate-x-6' : 'translate-x-0'}`} />
+                                    </button>
+                                </div>
+                                <div className="flex items-center justify-between p-4 bg-muted rounded-2xl">
+                                    <div>
+                                        <div className="font-bold text-sm">Weekly Summary</div>
+                                        <div className="text-xs text-muted-foreground">Portfolio performance snapshot every Monday</div>
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            const newVal = !weeklySummary;
+                                            setWeeklySummary(newVal);
+                                            updateSettings({ weekly_summary_enabled: newVal });
+                                        }}
+                                        className={`w-12 h-6 rounded-full p-1 transition-colors ${weeklySummary ? 'bg-primary' : 'bg-slate-700'}`}
+                                    >
+                                        <div className={`w-4 h-4 bg-white rounded-full transition-transform ${weeklySummary ? 'translate-x-6' : 'translate-x-0'}`} />
+                                    </button>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Display Preferences */}
+                        <section className="bg-card border border-border p-8 rounded-[40px] shadow-sm">
+                            <div className="flex items-start gap-6 mb-8">
+                                <div className="p-4 bg-amber-500/10 rounded-2xl">
+                                    <EyeIcon className="text-amber-500" size={24} />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-black mb-2">Privacy & Display</h2>
+                                    <p className="text-sm text-muted-foreground leading-relaxed">
+                                        Customize how your data is presented across the dashboard.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-between p-4 bg-muted rounded-2xl">
+                                <div>
+                                    <div className="font-bold text-sm">Stealth Mode</div>
+                                    <div className="text-xs text-muted-foreground">Blur monetary values by default</div>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        const newVal = !stealthMode;
+                                        setStealthMode(newVal);
+                                        updateSettings({ stealth_mode_enabled: newVal });
+                                    }}
+                                    className={`w-12 h-6 rounded-full p-1 transition-colors ${stealthMode ? 'bg-primary' : 'bg-slate-700'}`}
+                                >
+                                    <div className={`w-4 h-4 bg-white rounded-full transition-transform ${stealthMode ? 'translate-x-6' : 'translate-x-0'}`} />
+                                </button>
+                            </div>
+                        </section>
+
+                        {/* Portfolio Defaults */}
+                        <section className="bg-card border border-border p-8 rounded-[40px] shadow-sm">
+                            <div className="flex items-start gap-6 mb-8">
+                                <div className="p-4 bg-indigo-500/10 rounded-2xl">
+                                    <Briefcase className="text-indigo-500" size={24} />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-black mb-2">Portfolio Management</h2>
+                                    <p className="text-sm text-muted-foreground leading-relaxed">
+                                        Select which portfolio should be treated as your primary baseline.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {portfolios.map((p) => (
+                                    <button
+                                        key={p.id}
+                                        onClick={() => handleSetDefaultPortfolio(p.id)}
+                                        className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${p.is_default
+                                            ? 'bg-primary/10 border-primary'
+                                            : 'bg-muted border-transparent hover:border-border'
+                                            }`}
+                                    >
+                                        <div className="text-left">
+                                            <div className="font-bold text-sm">{p.name}</div>
+                                            <div className="text-[10px] text-muted-foreground uppercase font-black">
+                                                {p.is_default ? 'Current Default' : 'Set as Default'}
+                                            </div>
+                                        </div>
+                                        {p.is_default && <Check size={16} className="text-primary" />}
                                     </button>
                                 ))}
                             </div>

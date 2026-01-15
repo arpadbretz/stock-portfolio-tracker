@@ -42,7 +42,14 @@
 | ACCT-001 | Profile Photo Upload | ✅ | 2h | Implemented Jan 12, 2026 |
 | ACCT-002 | Display Name Setting | ✅ | 1h | Implemented Jan 12, 2026 |
 | ACCT-003 | In-App Password Change | ✅ | 2h | Done via AUTH-003 |
-| ACCT-004 | Linked Accounts Manager | ⬜ | 3h | View/disconnect OAuth |
+| ACCT-013 | Notification Control Center | 🔄 | 4h | Email toggles for alerts/summaries |
+| ACCT-015 | Default Portfolio Selector | 🔄 | 2h | Choose which portfolio loads first |
+| ACCT-019 | Portfolio "Stealth Mode" | 🔄 | 2h | Blur sensitive values by default |
+| ACCT-004 | Linked Accounts Manager | ⬜ | 3h | View/disconnect OAuth (Low Priority) |
+| ACCT-014 | Timezone Synchronization | ⬜ | 2h | Correct market status/timestamps (Low Priority) |
+| ACCT-016 | Security & Identity Manager | ⬜ | 4h | Multi-factor auth / session mgmt (Low Priority) |
+| ACCT-017 | System Theme Persistence | ⬜ | 1h | Save theme pref to DB (Low Priority) |
+| ACCT-018 | Language & Localization | ⬜ | 8h | i18n support EN/HU (Low Priority) |
 
 ## Price Alerts
 
