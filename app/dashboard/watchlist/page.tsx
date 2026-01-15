@@ -64,6 +64,7 @@ export default function WatchlistPage() {
     const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
     const [newGroupName, setNewGroupName] = useState('');
     const [isCreatingGroup, setIsCreatingGroup] = useState(false);
+    const [movingSymbol, setMovingSymbol] = useState<string | null>(null);
 
     useEffect(() => {
         if (!authLoading && !user) {
@@ -284,7 +285,7 @@ export default function WatchlistPage() {
             </div>
 
             {/* Group Selector */}
-            <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-2 scrollbar-none">
+            <div className="flex items-center gap-4 mb-8 overflow-x-auto pb-4 pt-4 px-4 -mx-4 scrollbar-none">
                 <button
                     onClick={() => setSelectedGroupId(null)}
                     className={`px-6 py-3 rounded-2xl text-sm font-bold whitespace-nowrap transition-all ${selectedGroupId === null
@@ -400,30 +401,54 @@ export default function WatchlistPage() {
                                         <p className="text-xs font-bold text-muted-foreground truncate uppercase tracking-widest">{item.name || 'Loading...'}</p>
                                     </Link>
                                     <div className="flex items-center gap-1">
-                                        <div className="relative group/move">
-                                            <button className="p-2 rounded-xl bg-muted/50 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all">
+                                        <div className="relative">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setMovingSymbol(movingSymbol === item.symbol ? null : item.symbol);
+                                                }}
+                                                className={`p-2 rounded-xl transition-all ${movingSymbol === item.symbol
+                                                    ? 'bg-primary text-primary-foreground'
+                                                    : 'bg-muted/50 text-muted-foreground hover:bg-primary/10 hover:text-primary'}`}
+                                            >
                                                 <Folder size={16} />
                                             </button>
-                                            {/* Move to group dropdown (CSS only for simplicity or could be expanded) */}
-                                            <div className="absolute right-0 top-full mt-2 w-48 bg-card border border-border rounded-2xl shadow-2xl opacity-0 invisible group-hover/move:opacity-100 group-hover/move:visible transition-all z-50 p-2">
-                                                <p className="text-[10px] font-black uppercase text-muted-foreground p-2 mb-1">Move to Group</p>
-                                                <button
-                                                    onClick={() => handleMoveToGroup(item.symbol, null)}
-                                                    className="w-full text-left p-2 rounded-lg text-xs font-bold hover:bg-muted transition-all"
-                                                >
-                                                    Ungrouped
-                                                </button>
-                                                {groups.map(g => (
-                                                    <button
-                                                        key={g.id}
-                                                        onClick={() => handleMoveToGroup(item.symbol, g.id)}
-                                                        className="w-full text-left p-2 rounded-lg text-xs font-bold hover:bg-muted transition-all flex items-center gap-2"
+
+                                            <AnimatePresence>
+                                                {movingSymbol === item.symbol && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                        className="absolute right-0 top-full mt-2 w-48 bg-card border border-border rounded-2xl shadow-2xl z-50 p-2 pointer-events-auto"
                                                     >
-                                                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: g.color }} />
-                                                        {g.name}
-                                                    </button>
-                                                ))}
-                                            </div>
+                                                        <div className="flex items-center justify-between p-2 mb-1 border-b border-border/50">
+                                                            <p className="text-[10px] font-black uppercase text-muted-foreground">Move to Group</p>
+                                                            <button onClick={() => setMovingSymbol(null)} className="text-muted-foreground hover:text-foreground">
+                                                                <X size={10} />
+                                                            </button>
+                                                        </div>
+                                                        <div className="max-h-48 overflow-y-auto scrollbar-thin">
+                                                            <button
+                                                                onClick={() => { handleMoveToGroup(item.symbol, null); setMovingSymbol(null); }}
+                                                                className="w-full text-left p-2 rounded-lg text-xs font-bold hover:bg-muted transition-all"
+                                                            >
+                                                                Ungrouped
+                                                            </button>
+                                                            {groups.map(g => (
+                                                                <button
+                                                                    key={g.id}
+                                                                    onClick={() => { handleMoveToGroup(item.symbol, g.id); setMovingSymbol(null); }}
+                                                                    className="w-full text-left p-2 rounded-lg text-xs font-bold hover:bg-muted transition-all flex items-center gap-2"
+                                                                >
+                                                                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: g.color }} />
+                                                                    {g.name}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
                                         </div>
                                         <button
                                             onClick={() => handleRemove(item.symbol)}
