@@ -10,11 +10,23 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { data: watchlist, error } = await supabase
+        const { searchParams } = new URL(request.url);
+        const groupId = searchParams.get('groupId');
+
+        let query = supabase
             .from('watchlists')
             .select('*')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false });
+            .eq('user_id', user.id);
+
+        if (groupId) {
+            if (groupId === 'none') {
+                query = query.is('group_id', null);
+            } else {
+                query = query.eq('group_id', groupId);
+            }
+        }
+
+        const { data: watchlist, error } = await query.order('created_at', { ascending: false });
 
         if (error) {
             console.error('Error fetching watchlist:', error);
@@ -38,7 +50,7 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { symbol, name, added_price, target_price, notes } = body;
+        const { symbol, name, added_price, target_price, notes, group_id } = body;
 
         if (!symbol) {
             return NextResponse.json({ error: 'Symbol is required' }, { status: 400 });
@@ -53,6 +65,7 @@ export async function POST(request: NextRequest) {
                 added_price: added_price || null,
                 target_price: target_price || null,
                 notes: notes || null,
+                group_id: group_id || null,
                 updated_at: new Date().toISOString(),
             }, {
                 onConflict: 'user_id,symbol',
@@ -69,6 +82,47 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: true, data });
     } catch (error) {
         console.error('Watchlist error:', error);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
+}
+
+export async function PATCH(request: NextRequest) {
+    try {
+        const supabase = await createClient();
+
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError || !user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const body = await request.json();
+        const { symbol, group_id, target_price, notes } = body;
+
+        if (!symbol) {
+            return NextResponse.json({ error: 'Symbol is required' }, { status: 400 });
+        }
+
+        const updateData: any = { updated_at: new Date().toISOString() };
+        if (group_id !== undefined) updateData.group_id = group_id;
+        if (target_price !== undefined) updateData.target_price = target_price;
+        if (notes !== undefined) updateData.notes = notes;
+
+        const { data, error } = await supabase
+            .from('watchlists')
+            .update(updateData)
+            .eq('user_id', user.id)
+            .eq('symbol', symbol.toUpperCase())
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error updating watchlist item:', error);
+            return NextResponse.json({ error: 'Failed to update watchlist item' }, { status: 500 });
+        }
+
+        return NextResponse.json({ success: true, data });
+    } catch (error) {
+        console.error('Watchlist PATCH error:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }

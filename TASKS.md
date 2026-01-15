@@ -268,7 +268,7 @@
 
 | ID | Task | Status | Effort | Notes |
 |----|------|--------|--------|-------|
-| WATCH-001 | Watchlist Groups | ⬜ | 4h | Category folders |
+| WATCH-001 | Watchlist Groups | ✅ | 4h | Category folders implemented Jan 15 |
 | WATCH-002 | Custom Columns | ⬜ | 3h | User-selected metrics |
 | WATCH-003 | Bulk Actions | ⬜ | 2h | Multi-select delete |
 | WATCH-004 | Drag-and-Drop Order | ⬜ | 3h | Manual reordering |

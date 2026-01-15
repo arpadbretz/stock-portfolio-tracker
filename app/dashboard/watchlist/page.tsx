@@ -17,6 +17,13 @@ import {
     RefreshCw,
     Star,
     Loader2,
+    FolderPlus,
+    Settings,
+    ChevronRight,
+    Folder,
+    MoreVertical,
+    Clock,
+    X,
 } from 'lucide-react';
 import { SkeletonWatchlist } from '@/components/Skeleton';
 import { toast } from 'sonner';
@@ -29,10 +36,17 @@ interface WatchlistItem {
     target_price: number | null;
     notes: string | null;
     created_at: string;
-    // These will be fetched
     currentPrice?: number;
     change?: number;
     changePercent?: number;
+    group_id: string | null;
+}
+
+interface WatchlistGroup {
+    id: string;
+    name: string;
+    color: string;
+    icon: string | null;
 }
 
 export default function WatchlistPage() {
@@ -40,11 +54,16 @@ export default function WatchlistPage() {
     const router = useRouter();
 
     const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
+    const [groups, setGroups] = useState<WatchlistGroup[]>([]);
+    const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [addSymbol, setAddSymbol] = useState('');
     const [isAdding, setIsAdding] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
+    const [newGroupName, setNewGroupName] = useState('');
+    const [isCreatingGroup, setIsCreatingGroup] = useState(false);
 
     useEffect(() => {
         if (!authLoading && !user) {
@@ -52,12 +71,26 @@ export default function WatchlistPage() {
         }
     }, [user, authLoading, router]);
 
+    const fetchGroups = useCallback(async () => {
+        try {
+            const res = await fetch('/api/watchlist/groups');
+            const data = await res.json();
+            if (data.success) setGroups(data.data);
+        } catch (err) {
+            console.error('Failed to fetch groups:', err);
+        }
+    }, []);
+
     const fetchWatchlist = useCallback(async (background = false) => {
         if (!background) setIsLoading(true);
         else setIsRefreshing(true);
 
         try {
-            const res = await fetch('/api/watchlist');
+            const url = selectedGroupId
+                ? `/api/watchlist?groupId=${selectedGroupId}`
+                : '/api/watchlist';
+
+            const res = await fetch(url);
             const data = await res.json();
 
             if (data.success) {
@@ -87,13 +120,14 @@ export default function WatchlistPage() {
             setIsLoading(false);
             setIsRefreshing(false);
         }
-    }, []);
+    }, [selectedGroupId]);
 
     useEffect(() => {
         if (user) {
+            fetchGroups();
             fetchWatchlist();
         }
-    }, [user, fetchWatchlist]);
+    }, [user, fetchGroups, fetchWatchlist]);
 
     const handleAddToWatchlist = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -120,6 +154,7 @@ export default function WatchlistPage() {
                     symbol: addSymbol.toUpperCase(),
                     name: stockData.name,
                     added_price: stockData.price,
+                    group_id: selectedGroupId === 'none' ? null : selectedGroupId,
                 }),
             });
 
@@ -152,6 +187,64 @@ export default function WatchlistPage() {
         }
     };
 
+    const handleCreateGroup = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newGroupName.trim()) return;
+
+        setIsCreatingGroup(true);
+        try {
+            const res = await fetch('/api/watchlist/groups', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: newGroupName }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setGroups(prev => [...prev, data.data]);
+                setNewGroupName('');
+                setIsGroupModalOpen(false);
+                toast.success('Group created!');
+            }
+        } catch (err) {
+            toast.error('Failed to create group');
+        } finally {
+            setIsCreatingGroup(false);
+        }
+    };
+
+    const handleDeleteGroup = async (id: string, name: string) => {
+        if (!confirm(`Delete group "${name}"? Stocks will be ungrouped but not deleted.`)) return;
+
+        try {
+            const res = await fetch(`/api/watchlist/groups?id=${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                setGroups(prev => prev.filter(g => g.id !== id));
+                if (selectedGroupId === id) setSelectedGroupId(null);
+                toast.success('Group deleted');
+                fetchWatchlist();
+            }
+        } catch (err) {
+            toast.error('Failed to delete group');
+        }
+    };
+
+    const handleMoveToGroup = async (symbol: string, groupId: string | null) => {
+        try {
+            const res = await fetch('/api/watchlist', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ symbol, group_id: groupId }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                toast.success(`Moved ${symbol}`);
+                fetchWatchlist();
+            }
+        } catch (err) {
+            toast.error('Failed to move item');
+        }
+    };
+
     if (authLoading || isLoading) {
         return <SkeletonWatchlist />;
     }
@@ -168,11 +261,18 @@ export default function WatchlistPage() {
                         <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Watchlist</span>
                     </div>
                     <h1 className="text-4xl font-black tracking-tight">
-                        Tracking <span className="text-primary">{watchlist.length}</span> Stocks
+                        Research <span className="text-primary">Pipeline</span>
                     </h1>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => setIsGroupModalOpen(true)}
+                        className="flex items-center gap-2 px-6 py-3 bg-muted border border-border rounded-xl font-bold text-sm hover:bg-muted/80 transition-all"
+                    >
+                        <FolderPlus size={16} />
+                        New Group
+                    </button>
                     <button
                         onClick={() => fetchWatchlist(true)}
                         disabled={isRefreshing}
@@ -183,9 +283,54 @@ export default function WatchlistPage() {
                 </div>
             </div>
 
+            {/* Group Selector */}
+            <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-2 scrollbar-none">
+                <button
+                    onClick={() => setSelectedGroupId(null)}
+                    className={`px-6 py-3 rounded-2xl text-sm font-bold whitespace-nowrap transition-all ${selectedGroupId === null
+                        ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105'
+                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                        }`}
+                >
+                    All Stocks
+                </button>
+                {groups.map((group) => (
+                    <div key={group.id} className="relative group/folder">
+                        <button
+                            onClick={() => setSelectedGroupId(group.id)}
+                            className={`px-6 py-3 rounded-2xl text-sm font-bold whitespace-nowrap transition-all border ${selectedGroupId === group.id
+                                ? 'bg-primary/10 border-primary text-primary scale-105'
+                                : 'bg-card border-border text-muted-foreground hover:border-primary/30'
+                                }`}
+                        >
+                            <span
+                                className="inline-block w-2 h-2 rounded-full mr-2"
+                                style={{ backgroundColor: group.color || '#3b82f6' }}
+                            />
+                            {group.name}
+                        </button>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); handleDeleteGroup(group.id, group.name); }}
+                            className="absolute -top-1 -right-1 p-1 bg-rose-500 text-white rounded-full opacity-0 group-hover/folder:opacity-100 transition-opacity"
+                        >
+                            <X size={10} />
+                        </button>
+                    </div>
+                ))}
+                <button
+                    onClick={() => setSelectedGroupId('none')}
+                    className={`px-6 py-3 rounded-2xl text-sm font-bold whitespace-nowrap transition-all border ${selectedGroupId === 'none'
+                        ? 'bg-amber-500/10 border-amber-500 text-amber-500 scale-105'
+                        : 'bg-card border-border text-muted-foreground hover:border-amber-500/30'
+                        }`}
+                >
+                    Ungrouped
+                </button>
+            </div>
+
             {/* Add to Watchlist Form */}
-            <div className="bg-card border border-border rounded-3xl p-6 mb-8">
-                <form onSubmit={handleAddToWatchlist} className="flex flex-col sm:flex-row gap-4">
+            <div className="bg-card border border-border rounded-[40px] p-8 mb-12 shadow-sm">
+                <form onSubmit={handleAddToWatchlist} className="flex flex-col md:flex-row gap-4">
                     <div className="flex-1 relative">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
                         <input
@@ -193,78 +338,122 @@ export default function WatchlistPage() {
                             value={addSymbol}
                             onChange={(e) => setAddSymbol(e.target.value.toUpperCase())}
                             placeholder="Enter ticker symbol (e.g., AAPL)"
-                            className="w-full pl-12 pr-4 py-4 bg-muted border border-border rounded-2xl font-bold focus:outline-none focus:ring-2 focus:ring-primary/30"
+                            className="w-full pl-12 pr-4 py-4 bg-muted/50 border border-border rounded-2xl font-bold focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
                         />
                     </div>
                     <button
                         type="submit"
                         disabled={isAdding || !addSymbol.trim()}
-                        className="px-8 py-4 bg-primary text-primary-foreground rounded-2xl font-bold flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+                        className="px-8 py-4 bg-primary text-primary-foreground rounded-2xl font-black flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-primary/20 transition-all disabled:opacity-50"
                     >
                         {isAdding ? (
                             <Loader2 className="animate-spin" size={18} />
                         ) : (
                             <>
                                 <Plus size={18} />
-                                Add to Watchlist
+                                Track Stock
                             </>
                         )}
                     </button>
                 </form>
                 {error && (
-                    <p className="text-rose-500 text-sm font-bold mt-3">{error}</p>
+                    <p className="text-rose-500 text-xs font-bold mt-4 flex items-center gap-2 px-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                        {error}
+                    </p>
                 )}
             </div>
 
             {/* Watchlist Grid */}
             {watchlist.length === 0 ? (
-                <div className="text-center py-20">
-                    <Star className="mx-auto text-muted-foreground mb-4" size={48} />
-                    <h3 className="text-xl font-bold mb-2">Your watchlist is empty</h3>
-                    <p className="text-muted-foreground">Add stocks above to start tracking them</p>
+                <div className="text-center py-32 bg-card/30 border border-dashed border-border rounded-[40px]">
+                    <Star className="mx-auto text-muted-foreground/30 mb-6" size={64} />
+                    <h3 className="text-2xl font-black mb-3">No stocks found</h3>
+                    <p className="text-muted-foreground max-w-sm mx-auto">
+                        {selectedGroupId
+                            ? "This group is currently empty. Add some tickers to get started."
+                            : "Your research pipeline is empty. Start by adding a stock above."}
+                    </p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <AnimatePresence>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <AnimatePresence mode='popLayout'>
                         {watchlist.map((item, idx) => (
                             <motion.div
                                 key={item.id}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
+                                layout
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.9 }}
                                 transition={{ delay: idx * 0.05 }}
-                                className="bg-card border border-border rounded-3xl p-6 hover:border-primary/30 transition-all group"
+                                className="bg-card border border-border rounded-[32px] p-8 hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/5 transition-all group relative overflow-hidden"
                             >
-                                <div className="flex items-start justify-between mb-4">
+                                {/* Decorative Gradient */}
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-primary/10 transition-colors" />
+
+                                <div className="flex items-start justify-between mb-6 relative z-10">
                                     <Link href={`/dashboard/ticker/${item.symbol}`} className="flex-1">
-                                        <h3 className="text-xl font-black group-hover:text-primary transition-colors">{item.symbol}</h3>
-                                        <p className="text-sm text-muted-foreground truncate">{item.name || 'Loading...'}</p>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <h3 className="text-2xl font-black group-hover:text-primary transition-colors">{item.symbol}</h3>
+                                            <ChevronRight size={16} className="text-muted-foreground group-hover:translate-x-1 transition-transform" />
+                                        </div>
+                                        <p className="text-xs font-bold text-muted-foreground truncate uppercase tracking-widest">{item.name || 'Loading...'}</p>
                                     </Link>
-                                    <button
-                                        onClick={() => handleRemove(item.symbol)}
-                                        className="p-2 rounded-lg hover:bg-rose-500/10 text-muted-foreground hover:text-rose-500 transition-all"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
+                                    <div className="flex items-center gap-1">
+                                        <div className="relative group/move">
+                                            <button className="p-2 rounded-xl bg-muted/50 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all">
+                                                <Folder size={16} />
+                                            </button>
+                                            {/* Move to group dropdown (CSS only for simplicity or could be expanded) */}
+                                            <div className="absolute right-0 top-full mt-2 w-48 bg-card border border-border rounded-2xl shadow-2xl opacity-0 invisible group-hover/move:opacity-100 group-hover/move:visible transition-all z-50 p-2">
+                                                <p className="text-[10px] font-black uppercase text-muted-foreground p-2 mb-1">Move to Group</p>
+                                                <button
+                                                    onClick={() => handleMoveToGroup(item.symbol, null)}
+                                                    className="w-full text-left p-2 rounded-lg text-xs font-bold hover:bg-muted transition-all"
+                                                >
+                                                    Ungrouped
+                                                </button>
+                                                {groups.map(g => (
+                                                    <button
+                                                        key={g.id}
+                                                        onClick={() => handleMoveToGroup(item.symbol, g.id)}
+                                                        className="w-full text-left p-2 rounded-lg text-xs font-bold hover:bg-muted transition-all flex items-center gap-2"
+                                                    >
+                                                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: g.color }} />
+                                                        {g.name}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => handleRemove(item.symbol)}
+                                            className="p-2 rounded-xl bg-muted/50 text-muted-foreground hover:bg-rose-500/10 hover:text-rose-500 transition-all"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
                                 </div>
 
-                                <div className="flex items-end justify-between">
+                                <div className="flex items-end justify-between relative z-10">
                                     <div>
-                                        <p className="text-2xl font-black">
-                                            {item.currentPrice ? `$${item.currentPrice.toFixed(2)}` : '—'}
+                                        <p className="text-3xl font-black tracking-tighter mb-1">
+                                            {item.currentPrice ? `$${item.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '—'}
                                         </p>
-                                        <div className={`flex items-center gap-1 text-sm font-bold ${(item.changePercent ?? 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                            {(item.changePercent ?? 0) >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                                        <div className={`flex items-center gap-1.5 text-sm font-black ${(item.changePercent ?? 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                            {(item.changePercent ?? 0) >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
                                             {(item.changePercent ?? 0) >= 0 ? '+' : ''}{(item.changePercent ?? 0).toFixed(2)}%
                                         </div>
                                     </div>
 
                                     {item.added_price && (
                                         <div className="text-right">
-                                            <p className="text-xs text-muted-foreground">Added at</p>
-                                            <p className="text-sm font-bold">${(item.added_price ?? 0).toFixed(2)}</p>
-                                            {item.currentPrice && item.added_price && (
-                                                <p className={`text-xs font-bold ${item.currentPrice >= item.added_price ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                            <div className="flex items-center gap-1.5 justify-end text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">
+                                                <Clock size={10} />
+                                                Entry
+                                            </div>
+                                            <p className="text-md font-black">${item.added_price.toFixed(2)}</p>
+                                            {item.currentPrice && (
+                                                <p className={`text-[10px] font-black px-2 py-0.5 rounded-full inline-block mt-1 ${item.currentPrice >= item.added_price ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
                                                     {item.currentPrice >= item.added_price ? '+' : ''}
                                                     {(((item.currentPrice - item.added_price) / item.added_price) * 100).toFixed(1)}%
                                                 </p>
@@ -272,19 +461,66 @@ export default function WatchlistPage() {
                                         </div>
                                     )}
                                 </div>
-
-                                <Link
-                                    href={`/dashboard/ticker/${item.symbol}`}
-                                    className="mt-4 flex items-center justify-center gap-2 py-3 bg-muted rounded-xl text-sm font-bold hover:bg-primary/10 hover:text-primary transition-all"
-                                >
-                                    View Details
-                                    <ExternalLink size={14} />
-                                </Link>
                             </motion.div>
                         ))}
                     </AnimatePresence>
                 </div>
             )}
+
+            {/* Create Group Modal */}
+            <AnimatePresence>
+                {isGroupModalOpen && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setIsGroupModalOpen(false)}
+                            className="fixed inset-0 bg-background/80 backdrop-blur-md z-[100]"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="fixed inset-0 z-[101] flex items-center justify-center p-6 pointer-events-none"
+                        >
+                            <div className="bg-card border border-border rounded-[40px] p-10 w-full max-w-md shadow-2xl pointer-events-auto">
+                                <div className="flex items-center justify-between mb-8">
+                                    <h3 className="text-2xl font-black italic">Create <span className="text-primary tracking-tighter not-italic">Folder</span></h3>
+                                    <button
+                                        onClick={() => setIsGroupModalOpen(false)}
+                                        className="p-2 rounded-xl hover:bg-muted text-muted-foreground transition-all"
+                                    >
+                                        <X size={20} />
+                                    </button>
+                                </div>
+
+                                <form onSubmit={handleCreateGroup} className="space-y-6">
+                                    <div>
+                                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-3 block">Folder Name</label>
+                                        <input
+                                            autoFocus
+                                            type="text"
+                                            value={newGroupName}
+                                            onChange={(e) => setNewGroupName(e.target.value)}
+                                            placeholder="e.g. AI Growth Picks"
+                                            className="w-full px-5 py-4 bg-muted/50 border border-border rounded-2xl font-bold focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all text-lg"
+                                        />
+                                    </div>
+
+                                    <button
+                                        type="submit"
+                                        disabled={isCreatingGroup || !newGroupName.trim()}
+                                        className="w-full py-5 bg-primary text-primary-foreground rounded-2xl font-black text-lg flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-[0.98] shadow-xl shadow-primary/20 transition-all disabled:opacity-50"
+                                    >
+                                        {isCreatingGroup ? <Loader2 className="animate-spin" size={20} /> : "Create Group"}
+                                    </button>
+                                </form>
+                            </div>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
