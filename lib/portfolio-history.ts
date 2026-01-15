@@ -21,24 +21,40 @@ export async function syncPortfolioHistory(portfolioId: string, userId: string) 
     if (!trades || trades.length === 0) return { success: true, message: 'No trades found' };
 
     // 2. Identify timeframe
-    const startDate = new Date(trades[0].date_traded);
+    let startTradeDate = trades[0].date_traded ? new Date(trades[0].date_traded) : new Date();
+
+    // Safety check for invalid dates
+    if (isNaN(startTradeDate.getTime())) {
+        console.warn('Invalid trade date found, defaulting to trade createdAt or now');
+        startTradeDate = trades[0].created_at ? new Date(trades[0].created_at) : new Date();
+    }
+
+    const startDate = startTradeDate;
     const endDate = new Date();
+
+    console.log(`Syncing from ${startDate.toISOString()} to ${endDate.toISOString()}`);
 
     // 3. Get all unique tickers
     const uniqueTickers = [...new Set(trades.map(t => t.ticker))];
 
-    // 4. Fetch historical prices for all involved tickers
+    // 4. Fetch historical prices for all involved tickers in parallel
+    console.log(`Syncing ${uniqueTickers.length} tickers for portfolio ${portfolioId}...`);
     const priceCache = new Map<string, Map<string, number>>();
 
-    for (const ticker of uniqueTickers) {
-        const prices = await getHistoricalPrices(ticker, startDate, endDate);
-        const tickerPriceMap = new Map<string, number>();
-        prices.forEach((p: any) => {
-            const dateStr = new Date(p.date).toISOString().split('T')[0];
-            tickerPriceMap.set(dateStr, p.close);
-        });
-        priceCache.set(ticker, tickerPriceMap);
-    }
+    await Promise.all(uniqueTickers.map(async (ticker) => {
+        try {
+            const prices = await getHistoricalPrices(ticker, startDate, endDate);
+            const tickerPriceMap = new Map<string, number>();
+            prices.forEach((p: any) => {
+                const dateStr = new Date(p.date).toISOString().split('T')[0];
+                tickerPriceMap.set(dateStr, p.close);
+            });
+            priceCache.set(ticker, tickerPriceMap);
+            console.log(`Fetched ${prices.length} days of data for ${ticker}`);
+        } catch (err) {
+            console.error(`Failed to fetch history for ${ticker}:`, err);
+        }
+    }));
 
     // 5. Iterate day by day and calculate portfolio value
     const historyEntries = [];
@@ -114,12 +130,22 @@ export async function syncPortfolioHistory(portfolioId: string, userId: string) 
     }
 
     // 6. Upsert into database
+    console.log(`Upserting ${historyEntries.length} entries for ${portfolioId}...`);
+    if (historyEntries.length === 0) {
+        console.warn('No history entries generated. Check trade dates.');
+        return { success: true, message: 'No history entries to sync', daysSynced: 0 };
+    }
+
     const { error: upsertError } = await supabase
         .from('portfolio_history')
         .upsert(historyEntries, { onConflict: 'portfolio_id,date' });
 
-    if (upsertError) throw upsertError;
+    if (upsertError) {
+        console.error('Upsert failed:', upsertError);
+        throw upsertError;
+    }
 
+    console.log(`Successfully synced ${historyEntries.length} entries for ${portfolioId}`);
     return {
         success: true,
         message: `Synced ${historyEntries.length} days of history`,

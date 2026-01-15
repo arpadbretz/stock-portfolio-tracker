@@ -7,20 +7,32 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url);
         const portfolioId = searchParams.get('portfolioId');
 
-        // Verify cron secret
+        // Verify auth: Either via CRON_SECRET or an authenticated user session
         const authHeader = request.headers.get('authorization');
         const cronSecret = process.env.CRON_SECRET;
-        if (cronSecret && authHeader !== `Bearer ${cronSecret}` && !portfolioId) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        const supabase = await createClient();
+
+        let isAuthorized = false;
+
+        // 1. Check for cron secret
+        if (cronSecret && authHeader === `Bearer ${cronSecret}`) {
+            isAuthorized = true;
         }
 
-        const supabase = await createClient();
+        // 2. Check for authenticated user if portfolioId is provided
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user && portfolioId) {
+            isAuthorized = true;
+        }
+
+        if (!isAuthorized && !portfolioId) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
 
         let targetPortfolios = [];
 
         if (portfolioId) {
             // Manual sync for specific portfolio (requires auth)
-            const { data: { user } } = await supabase.auth.getUser();
             if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
             const { data: portfolio } = await supabase

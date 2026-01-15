@@ -23,6 +23,7 @@
 | DASH-001 | Daily P&L Summary | ✅ | 3h | Implemented Jan 12, 2026 |
 | DASH-002 | Quick Actions Bar | ✅ | 2h | Implemented Jan 12, 2026 |
 | DASH-003 | Widget Customization | ✅ | 8h | Implemented Jan 12, 2026 |
+| DASH-015 | Advanced Trade Tracker & P&L Logger | ⬜ | 12h | Track realized/unrealized P&L based on trade history integration |
 
 ## Stock Research (Ticker Page)
 

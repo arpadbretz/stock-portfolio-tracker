@@ -259,7 +259,23 @@ export function WatchlistMiniWidget({ limit = 5 }: { limit?: number }) {
                 const res = await fetch('/api/watchlist');
                 const data = await res.json();
                 if (data.success && data.data) {
-                    setWatchlist(data.data.slice(0, limit));
+                    // Fetch real-time prices for items that don't have them
+                    const itemsWithPrices = await Promise.all(
+                        data.data.slice(0, limit).map(async (item: any) => {
+                            try {
+                                const priceRes = await fetch(`/api/stock/${item.symbol}`);
+                                const priceData = await priceRes.json();
+                                return {
+                                    ...item,
+                                    price: priceData.data?.price || item.added_price,
+                                    changePercent: priceData.data?.changePercent || 0,
+                                };
+                            } catch {
+                                return item;
+                            }
+                        })
+                    );
+                    setWatchlist(itemsWithPrices);
                 }
             } catch (e) {
                 console.error('Failed to fetch watchlist:', e);
@@ -295,7 +311,7 @@ export function WatchlistMiniWidget({ limit = 5 }: { limit?: number }) {
     return (
         <div className="space-y-2">
             {watchlist.map((item) => {
-                const isPositive = item.changePercent >= 0;
+                const isPositive = (item.changePercent ?? 0) >= 0;
                 return (
                     <Link
                         key={item.symbol}
@@ -304,11 +320,14 @@ export function WatchlistMiniWidget({ limit = 5 }: { limit?: number }) {
                     >
                         <div className="flex items-center gap-2">
                             <Star size={14} className="text-yellow-500" />
-                            <span className="font-bold text-sm group-hover:text-primary transition-colors">{item.symbol}</span>
+                            <div>
+                                <span className="font-bold text-sm group-hover:text-primary transition-colors">{item.symbol}</span>
+                                {item.price && <div className="text-[10px] text-muted-foreground">${item.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>}
+                            </div>
                         </div>
                         <div className={`font-bold text-sm ${isPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
                             {item.changePercent !== undefined && item.changePercent !== null ? (
-                                <>{isPositive ? '+' : ''}{item.changePercent.toFixed(2)}%</>
+                                <>{isPositive ? '+' : ''}{(item.changePercent ?? 0).toFixed(2)}%</>
                             ) : (
                                 <span className="text-muted-foreground">N/A</span>
                             )}
@@ -447,7 +466,7 @@ export function QuickActionsWidget({ compact = false, onEditDashboard, onTradeAc
 interface Alert {
     id: string;
     symbol: string;
-    targetPrice: number;
+    target_price: number; // Snake case from API
     condition: 'above' | 'below';
     currentPrice?: number;
 }
@@ -507,7 +526,7 @@ export function PriceAlertsWidget({ limit = 5 }: { limit?: number }) {
                         <span className="font-bold text-sm">{alert.symbol}</span>
                     </div>
                     <div className="text-xs text-muted-foreground">
-                        {alert.condition === 'above' ? '↑' : '↓'} ${alert.targetPrice}
+                        {alert.condition === 'above' ? '↑' : '↓'} ${alert.target_price}
                     </div>
                 </div>
             ))}
@@ -648,18 +667,29 @@ export function PerformanceChartWidget({ portfolioId }: { portfolioId?: string }
                 </p>
                 <button
                     onClick={async () => {
+                        if (!portfolioId) return;
                         setIsLoading(true);
                         try {
-                            await fetch('/api/cron/sync-history', {
-                                headers: { 'Authorization': 'Bearer placeholder' } // This will fail but triggered in background
-                            });
-                            // Actually just trigger a reload after a delay
-                            setTimeout(() => window.location.reload(), 2000);
-                        } catch (e) { }
+                            const res = await fetch(`/api/cron/sync-history?portfolioId=${portfolioId}`);
+                            const result = await res.json();
+                            if (result.success) {
+                                // Successfully synced, now reload the chart data
+                                console.log('Sync result:', result);
+                                window.location.reload();
+                            } else {
+                                alert(`Sync failed: ${result.error || 'Unknown error'}`);
+                                setIsLoading(false);
+                            }
+                        } catch (e: any) {
+                            console.error('Sync failed:', e);
+                            alert(`Sync error: ${e.message || 'Check terminal logs'}`);
+                            setIsLoading(false);
+                        }
                     }}
-                    className="px-4 py-2 bg-primary/20 text-primary rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary/30 transition-colors"
+                    className="px-4 py-2 bg-primary/20 text-primary rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary/30 transition-colors disabled:opacity-50"
+                    disabled={isLoading}
                 >
-                    Initialize Sync
+                    {isLoading ? 'Syncing...' : 'Initialize Sync'}
                 </button>
             </div>
         );

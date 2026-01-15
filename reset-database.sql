@@ -5,6 +5,9 @@
 -- ============================================
 -- STEP 1: DROP EXISTING TABLES (in correct order due to foreign keys)
 -- ============================================
+DROP TABLE IF EXISTS public.price_alerts CASCADE;
+DROP TABLE IF EXISTS public.portfolio_history CASCADE;
+DROP TABLE IF EXISTS public.watchlists CASCADE;
 DROP TABLE IF EXISTS public.trades CASCADE;
 DROP TABLE IF EXISTS public.portfolios CASCADE;
 DROP TABLE IF EXISTS public.profiles CASCADE;
@@ -51,6 +54,45 @@ CREATE TABLE public.trades (
   date_traded TIMESTAMPTZ DEFAULT now() NOT NULL,
   created_at TIMESTAMPTZ DEFAULT now() NOT NULL
 );
+-- 4. WATCHLISTS TABLE
+CREATE TABLE public.watchlists (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
+  symbol TEXT NOT NULL,
+  name TEXT,
+  added_price DECIMAL,
+  target_price DECIMAL,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(user_id, symbol)
+);
+
+-- 5. PORTFOLIO HISTORY TABLE
+CREATE TABLE public.portfolio_history (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  portfolio_id UUID REFERENCES public.portfolios ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
+  date DATE NOT NULL,
+  total_value DECIMAL(15,2) NOT NULL,
+  cost_basis DECIMAL(15,2) NOT NULL,
+  cash_balance DECIMAL(15,2) DEFAULT 0,
+  realized_pnl DECIMAL(15,2) DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(portfolio_id, date)
+);
+
+-- 6. PRICE ALERTS TABLE
+CREATE TABLE public.price_alerts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
+  symbol TEXT NOT NULL,
+  target_price DECIMAL NOT NULL,
+  condition TEXT NOT NULL CHECK (condition IN ('above', 'below')),
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  triggered_at TIMESTAMPTZ
+);
 
 -- ============================================
 -- STEP 3: ENABLE ROW LEVEL SECURITY
@@ -58,6 +100,9 @@ CREATE TABLE public.trades (
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.portfolios ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.trades ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.watchlists ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.portfolio_history ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.price_alerts ENABLE ROW LEVEL SECURITY;
 
 -- ============================================
 -- STEP 4: CREATE RLS POLICIES
@@ -108,6 +153,25 @@ CREATE POLICY "Users can update their own trades"
 
 CREATE POLICY "Users can delete their own trades" 
   ON public.trades FOR DELETE 
+  USING (auth.uid() = user_id);
+
+-- Watchlists Policies
+CREATE POLICY "Users can manage their own watchlists" 
+  ON public.watchlists FOR ALL 
+  USING (auth.uid() = user_id);
+
+-- Portfolio History Policies
+CREATE POLICY "Users can view their own history" 
+  ON public.portfolio_history FOR SELECT 
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "System can manage history" 
+  ON public.portfolio_history FOR ALL 
+  USING (auth.uid() = user_id);
+
+-- Price Alerts Policies
+CREATE POLICY "Users can manage their own alerts" 
+  ON public.price_alerts FOR ALL 
   USING (auth.uid() = user_id);
 
 -- ============================================
