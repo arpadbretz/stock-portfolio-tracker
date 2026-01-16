@@ -294,8 +294,8 @@ export default function PortfolioCommandCenter() {
                             key={portfolio.id}
                             onClick={() => setSelectedPortfolioId(portfolio.id)}
                             className={`w-full group text-left p-4 rounded-[24px] border transition-all relative overflow-hidden ${selectedPortfolioId === portfolio.id
-                                    ? 'bg-background border-primary/30 shadow-xl shadow-primary/5'
-                                    : 'bg-transparent border-transparent hover:bg-muted/50 hover:border-border/50'
+                                ? 'bg-background border-primary/30 shadow-xl shadow-primary/5'
+                                : 'bg-transparent border-transparent hover:bg-muted/50 hover:border-border/50'
                                 }`}
                         >
                             <div className="flex items-center justify-between mb-2">
@@ -380,7 +380,7 @@ export default function PortfolioCommandCenter() {
                                                 <span className="text-xs font-black uppercase tracking-widest">Net Liquidation Value</span>
                                             </div>
                                             <div className="text-4xl font-black tracking-tighter mb-2">
-                                                {formatCurrency(portfolioData.summary.totalValue, 'USD')}
+                                                {formatCurrency(portfolioData.summary.totalMarketValue, 'USD')}
                                             </div>
                                             <div className={`flex items-center gap-2 text-sm font-bold ${portfolioData.summary.totalGain >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
                                                 {portfolioData.summary.totalGain >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
