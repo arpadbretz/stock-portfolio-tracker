@@ -94,9 +94,11 @@ export default function StockSearchPage() {
     return (
         <div className="min-h-screen bg-background">
             {/* Hero Section */}
-            <div className="relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.1),transparent_50%)]" />
+            <div className="relative">
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                    <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.1),transparent_50%)]" />
+                </div>
 
                 <div className="relative max-w-5xl mx-auto px-6 pt-20 pb-16">
                     <motion.div
@@ -153,13 +155,13 @@ export default function StockSearchPage() {
                                     initial={{ opacity: 0, y: 10, scale: 0.98 }}
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                     exit={{ opacity: 0, y: 10, scale: 0.98 }}
-                                    className="absolute top-full left-0 right-0 mt-4 bg-card border border-border rounded-[32px] shadow-2xl overflow-hidden z-50"
+                                    className="absolute top-full left-0 right-0 mt-4 bg-card border border-border rounded-[24px] shadow-2xl overflow-hidden z-[100]"
                                 >
                                     {results.map((result, i) => (
                                         <Link
                                             key={result.symbol}
                                             href={`/dashboard/ticker/${result.symbol}`}
-                                            className="flex items-center justify-between p-5 hover:bg-muted/50 transition-colors border-b border-border/50 last:border-0 group"
+                                            className="flex items-center justify-between p-6 hover:bg-muted/50 transition-colors border-b border-border/50 last:border-0 group"
                                         >
                                             <div className="flex items-center gap-4">
                                                 <div className="w-12 h-12 bg-primary/10 border border-primary/20 rounded-2xl flex items-center justify-center font-black text-primary text-sm">
