@@ -96,7 +96,7 @@ export default function DashboardPage() {
   // Load saved currency preference
   useEffect(() => {
     const savedCurrency = localStorage.getItem('preferredCurrency');
-    if (savedCurrency && ['USD', 'EUR', 'HUF'].includes(savedCurrency)) {
+    if (savedCurrency && ['USD', 'EUR', 'HUF', 'GBP'].includes(savedCurrency)) {
       setCurrency(savedCurrency as CurrencyCode);
     }
   }, []);
@@ -167,7 +167,7 @@ export default function DashboardPage() {
   const summary = portfolio?.summary;
   const trades = portfolio?.trades || [];
   const lastUpdated = portfolio?.lastUpdated;
-  const rates = summary?.exchangeRates || { USD: 1, EUR: 0.92, HUF: 350 };
+  const rates = summary?.exchangeRates || { USD: 1, EUR: 0.92, HUF: 350, GBP: 0.79 };
   const holdings = summary?.holdings || [];
 
   // Calculate Daily P&L from holdings

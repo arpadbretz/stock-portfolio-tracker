@@ -42,7 +42,7 @@ export default function SharedPortfolioPage() {
 
     const [data, setData] = useState<SharedPortfolioData | null>(null);
     const [currency, setCurrency] = useState<CurrencyCode>('USD');
-    const [exchangeRates, setExchangeRates] = useState<Record<CurrencyCode, number>>({ USD: 1, EUR: 0.92, HUF: 350 });
+    const [exchangeRates, setExchangeRates] = useState<Record<CurrencyCode, number>>({ USD: 1, EUR: 0.92, HUF: 350, GBP: 0.79 });
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -155,7 +155,7 @@ export default function SharedPortfolioPage() {
                         </Link>
 
                         <div className="flex bg-card p-1.5 rounded-[24px] border border-border">
-                            {(['USD', 'EUR', 'HUF'] as CurrencyCode[]).map((c) => (
+                            {(['USD', 'EUR', 'HUF', 'GBP'] as CurrencyCode[]).map((c) => (
                                 <button
                                     key={c}
                                     onClick={() => setCurrency(c)}
