@@ -152,7 +152,7 @@ export async function GET(request: Request) {
                 description: portfolio.description,
                 color: portfolio.color,
                 trades,
-                holdings,
+                holdings: summary.holdings,
                 summary,
                 lastUpdated: new Date().toISOString(),
             },

@@ -146,7 +146,7 @@ function PortfolioCommandCenterContent() {
                 const result = await response.json();
                 if (result.success) {
                     setPortfolioData({
-                        holdings: result.data.holdings,
+                        holdings: result.data.summary.holdings,
                         summary: result.data.summary
                     });
                 }

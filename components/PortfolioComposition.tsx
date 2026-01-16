@@ -34,7 +34,7 @@ export default function PortfolioComposition({ holdings, currency, exchangeRates
 
     return (
         <div className="space-y-6">
-            <div className="grid grid-cols-12 px-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground pb-2 border-b border-border/50">
+            <div className="grid grid-cols-12 px-4 gap-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground pb-2 border-b border-border/50">
                 <div className="col-span-6">Asset</div>
                 <div className="col-span-3 text-right">Weight</div>
                 <div className="col-span-3 text-right">Gain/Loss</div>
@@ -62,7 +62,7 @@ export default function PortfolioComposition({ holdings, currency, exchangeRates
                             {/* Weight Bar */}
                             <div className="col-span-3">
                                 <div className="flex flex-col items-end gap-1.5">
-                                    <span className="text-xs font-black">{formatPercentage(holding.allocation || 0)}</span>
+                                    <span className="text-xs font-black">{(holding.allocation || 0).toFixed(2)}%</span>
                                     <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
                                         <motion.div
                                             initial={{ width: 0 }}
