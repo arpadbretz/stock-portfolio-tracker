@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -55,7 +55,7 @@ const COLORS = [
     '#eab308', // yellow-500
 ];
 
-export default function PortfolioCommandCenter() {
+function PortfolioCommandCenterContent() {
     const { user, isLoading: authLoading } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -603,5 +603,17 @@ export default function PortfolioCommandCenter() {
             </AnimatePresence>
 
         </div>
+    );
+}
+
+export default function PortfolioCommandCenter() {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            </div>
+        }>
+            <PortfolioCommandCenterContent />
+        </Suspense>
     );
 }
