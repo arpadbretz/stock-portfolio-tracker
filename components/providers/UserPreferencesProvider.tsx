@@ -19,7 +19,7 @@ const UserPreferencesContext = createContext<UserPreferencesContextType>({
     setStealthMode: () => { },
     preferredCurrency: 'USD',
     setPreferredCurrency: () => { },
-    exchangeRates: { USD: 1, EUR: 0.92, HUF: 350 },
+    exchangeRates: { USD: 1, EUR: 0.92, HUF: 350, GBP: 0.79 },
     isLoading: true,
 });
 
@@ -27,7 +27,7 @@ export function UserPreferencesProvider({ children }: { children: React.ReactNod
     const { user } = useAuth();
     const [stealthMode, setStealthMode] = useState(false);
     const [preferredCurrency, setPreferredCurrency] = useState<CurrencyCode>('USD');
-    const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({ USD: 1, EUR: 0.92, HUF: 350 });
+    const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({ USD: 1, EUR: 0.92, HUF: 350, GBP: 0.79 });
     const [isLoading, setIsLoading] = useState(true);
     const supabase = createClient();
 

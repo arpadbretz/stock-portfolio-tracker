@@ -4,11 +4,12 @@ import { getCachedBatchPrices } from '@/lib/yahoo-finance/cached';
 export async function GET() {
     try {
         // Fetch exchange rates
-        const ratesData = await getCachedBatchPrices(['USDEUR=X', 'USDHUF=X']);
+        const ratesData = await getCachedBatchPrices(['USDEUR=X', 'USDHUF=X', 'USDGBP=X']);
         const rates = {
             USD: 1,
             EUR: ratesData.get('USDEUR=X')?.currentPrice || 0.92,
             HUF: ratesData.get('USDHUF=X')?.currentPrice || 350,
+            GBP: ratesData.get('USDGBP=X')?.currentPrice || 0.79,
         };
 
         return NextResponse.json({ success: true, rates });

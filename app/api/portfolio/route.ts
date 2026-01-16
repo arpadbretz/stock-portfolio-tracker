@@ -131,12 +131,13 @@ export async function GET(request: Request) {
 
         const prices = await getCachedBatchPrices(tickers);
 
-        // Fetch exchange rates
-        const ratesData = await getCachedBatchPrices(['USDEUR=X', 'USDHUF=X']);
+        const sets = ['USDEUR=X', 'USDHUF=X', 'USDGBP=X'];
+        const ratesData = await getCachedBatchPrices(sets);
         const exchangeRates = {
             USD: 1,
             EUR: ratesData.get('USDEUR=X')?.currentPrice || 0.92,
             HUF: ratesData.get('USDHUF=X')?.currentPrice || 350,
+            GBP: ratesData.get('USDGBP=X')?.currentPrice || 0.79,
         };
 
         // Aggregate and calculate

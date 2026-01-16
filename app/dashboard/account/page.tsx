@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { useUserPreferences } from '@/components/providers/UserPreferencesProvider';
+import { CurrencyCode } from '@/types/portfolio';
 
 const CURRENCIES = [
     { code: 'USD', symbol: '$', name: 'US Dollar' },
@@ -55,7 +56,9 @@ export default function AccountPage() {
     useEffect(() => {
         // Load saved currency preference
         const saved = localStorage.getItem('preferredCurrency');
-        if (saved) setCurrency(saved);
+        if (saved && (saved === 'USD' || saved === 'EUR' || saved === 'HUF' || saved === 'GBP')) {
+            setCurrency(saved as CurrencyCode);
+        }
 
         // Load display name, avatar and profile settings
         const fetchUserData = async () => {
@@ -80,7 +83,9 @@ export default function AccountPage() {
                 setEmailAlerts(profile.email_alerts_enabled ?? true);
                 setWeeklySummary(profile.weekly_summary_enabled ?? true);
                 setStealthMode(profile.stealth_mode_enabled ?? false);
-                if (profile.preferred_currency) setCurrency(profile.preferred_currency);
+                if (profile.preferred_currency) {
+                    setCurrency(profile.preferred_currency as CurrencyCode);
+                }
             }
 
             // Fetch portfolios for selection
@@ -206,7 +211,9 @@ export default function AccountPage() {
         setSavingCurrency(true);
         try {
             await updateSettings({ preferred_currency: newCurrency });
-            setCurrency(newCurrency);
+            if (newCurrency === 'USD' || newCurrency === 'EUR' || newCurrency === 'HUF' || newCurrency === 'GBP') {
+                setCurrency(newCurrency as CurrencyCode);
+            }
             localStorage.setItem('preferredCurrency', newCurrency);
             toast.success(`Currency set to ${newCurrency}`);
         } catch (e) {

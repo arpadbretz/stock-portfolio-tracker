@@ -72,7 +72,7 @@ export function aggregateHoldings(trades: Trade[], prices: Map<string, PriceData
 // Calculate portfolio summary
 export function calculatePortfolioSummary(
     holdings: Holding[],
-    exchangeRates: Record<string, number> = { USD: 1, EUR: 0.92, HUF: 350 }
+    exchangeRates: Record<string, number> = { USD: 1, EUR: 0.92, HUF: 350, GBP: 0.79 }
 ): PortfolioSummary {
     const totalInvested = holdings.reduce((sum, h) => sum + h.totalInvested, 0);
     const totalMarketValue = holdings.reduce((sum, h) => sum + h.marketValue, 0);

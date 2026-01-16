@@ -1,6 +1,6 @@
 // Trade data types for the Stock Portfolio Tracker
 
-export type CurrencyCode = 'USD' | 'EUR' | 'HUF';
+export type CurrencyCode = 'USD' | 'EUR' | 'HUF' | 'GBP';
 
 export interface Trade {
   id: string;
