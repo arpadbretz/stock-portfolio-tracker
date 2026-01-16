@@ -1,13 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
     Plus,
     Trash2,
     Edit2,
-    Star,
     Share2,
     Globe,
     Lock,
@@ -21,10 +20,19 @@ import {
     Activity,
     Zap,
     ChevronRight,
-    Dna
+    TrendingUp,
+    TrendingDown,
+    DollarSign,
+    PieChart,
+    Settings,
+    MoreVertical
 } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { motion, AnimatePresence } from 'framer-motion';
+import AssetAllocationChart from '@/components/AssetAllocationChart';
+import HoldingsTable from '@/components/HoldingsTable';
+import { formatCurrency, formatPercentage } from '@/lib/portfolio';
+import { Holding, PortfolioSummary } from '@/types/portfolio';
 
 interface Portfolio {
     id: string;
@@ -47,27 +55,37 @@ const COLORS = [
     '#eab308', // yellow-500
 ];
 
-export default function ManagePortfolios() {
+export default function PortfolioCommandCenter() {
     const { user, isLoading: authLoading } = useAuth();
     const router = useRouter();
+    const searchParams = useSearchParams();
 
+    // -- State: Portfolios --
     const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
-    const [defaultPortfolioId, setDefaultPortfolioId] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [editingId, setEditingId] = useState<string | null>(null);
-    const [showCreate, setShowCreate] = useState(false);
+    const [selectedPortfolioId, setSelectedPortfolioId] = useState<string | null>(null);
+    const [isLoadingList, setIsLoadingList] = useState(true);
 
-    // Sharing Modal State
+    // -- State: Selected Portfolio Data --
+    const [portfolioData, setPortfolioData] = useState<{
+        holdings: Holding[];
+        summary: PortfolioSummary;
+    } | null>(null);
+    const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+
+    // -- State: Modals & Forms --
+    const [showCreate, setShowCreate] = useState(false);
+    const [editingId, setEditingId] = useState<string | null>(null);
     const [shareModalOpen, setShareModalOpen] = useState(false);
-    const [selectedPortfolio, setSelectedPortfolio] = useState<Portfolio | null>(null);
+    const [selectedPortfolioForAction, setSelectedPortfolioForAction] = useState<Portfolio | null>(null);
     const [copied, setCopied] = useState(false);
 
-    // Form States
     const [formData, setFormData] = useState({
         name: '',
         description: '',
         color: '#10b981'
     });
+
+    // -- Effects --
 
     useEffect(() => {
         if (!authLoading && !user) {
@@ -77,21 +95,64 @@ export default function ManagePortfolios() {
         }
     }, [user, authLoading, router]);
 
+    // When selected ID changes, fetch details
+    useEffect(() => {
+        if (selectedPortfolioId) {
+            fetchPortfolioDetails(selectedPortfolioId);
+        }
+    }, [selectedPortfolioId]);
+
+    // -- Data Fetching --
+
     const fetchPortfolios = async () => {
         try {
-            setIsLoading(true);
+            setIsLoadingList(true);
             const response = await fetch('/api/portfolios');
             if (response.ok) {
                 const data = await response.json();
-                setPortfolios(data.portfolios || []);
-                setDefaultPortfolioId(data.defaultPortfolioId);
+                const list = data.portfolios || [];
+                setPortfolios(list);
+
+                // Determine selection: URL param -> Default -> First
+                const paramId = searchParams.get('id');
+                const defaultId = data.defaultPortfolioId;
+
+                if (paramId && list.find((p: Portfolio) => p.id === paramId)) {
+                    setSelectedPortfolioId(paramId);
+                } else if (defaultId && list.find((p: Portfolio) => p.id === defaultId)) {
+                    setSelectedPortfolioId(defaultId);
+                } else if (list.length > 0) {
+                    setSelectedPortfolioId(list[0].id);
+                }
             }
         } catch (error) {
             console.error('Error fetching portfolios:', error);
         } finally {
-            setIsLoading(false);
+            setIsLoadingList(false);
         }
     };
+
+    const fetchPortfolioDetails = async (id: string) => {
+        try {
+            setIsLoadingDetails(true);
+            const response = await fetch(`/api/portfolio?id=${id}`);
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                    setPortfolioData({
+                        holdings: result.data.holdings,
+                        summary: result.data.summary
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching portfolio details:', error);
+        } finally {
+            setIsLoadingDetails(false);
+        }
+    };
+
+    // -- Handlers: CRUD --
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -103,7 +164,7 @@ export default function ManagePortfolios() {
             });
 
             if (response.ok) {
-                await fetchPortfolios();
+                await fetchPortfolios(); // Refresh list
                 setShowCreate(false);
                 resetForm();
             }
@@ -137,105 +198,30 @@ export default function ManagePortfolios() {
     };
 
     const handleDelete = async (id: string, name: string) => {
-        if (!confirm(`Are you sure you want to delete "${name}"? This will delete ALL trades associated with this portfolio. This action cannot be undone.`)) {
-            return;
-        }
+        if (!confirm(`Delete "${name}"? This action cannot be undone.`)) return;
 
         try {
-            const response = await fetch(`/api/portfolios?id=${id}`, {
-                method: 'DELETE'
-            });
-
+            const response = await fetch(`/api/portfolios?id=${id}`, { method: 'DELETE' });
             if (response.ok) {
+                // If we deleted the selected one, clear selection or select another
+                if (selectedPortfolioId === id) {
+                    setSelectedPortfolioId(null);
+                }
                 await fetchPortfolios();
-            } else {
-                const data = await response.json();
-                alert(data.error || 'Failed to delete portfolio');
             }
         } catch (error) {
             console.error('Error deleting portfolio:', error);
         }
     };
 
-    const handleSetDefault = async (id: string) => {
-        try {
-            const response = await fetch('/api/portfolios', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    portfolioId: id,
-                    setAsDefault: true
-                })
-            });
+    // -- Handlers: Actions --
 
-            if (response.ok) {
-                setDefaultPortfolioId(id);
-            }
-        } catch (error) {
-            console.error('Error setting default portfolio:', error);
-        }
+    const handleShare = (portfolio: Portfolio) => {
+        setSelectedPortfolioForAction(portfolio);
+        setShareModalOpen(true);
     };
 
-    const handleToggleShare = async (portfolio: Portfolio) => {
-        try {
-            const newIsPublic = !portfolio.is_public;
-            const response = await fetch('/api/portfolios', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    portfolioId: portfolio.id,
-                    isPublic: newIsPublic
-                })
-            });
-
-            if (response.ok) {
-                const updated = { ...portfolio, is_public: newIsPublic };
-                setPortfolios(portfolios.map(p => p.id === portfolio.id ? updated : p));
-                setSelectedPortfolio(updated);
-            }
-        } catch (error) {
-            console.error('Error toggling share:', error);
-        }
-    };
-
-    const handleRegenerateToken = async (portfolio: Portfolio) => {
-        if (!confirm('This will invalidate the previous share link. Anyone with the old link will lose access. Continue?')) {
-            return;
-        }
-
-        try {
-            const response = await fetch('/api/portfolios', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    portfolioId: portfolio.id,
-                    regenerateToken: true
-                })
-            });
-
-            if (response.ok) {
-                await fetchPortfolios();
-                setShareModalOpen(false);
-            }
-        } catch (error) {
-            console.error('Error regenerating token:', error);
-        }
-    };
-
-    const getShareLink = (token: string) => {
-        if (typeof window !== 'undefined') {
-            return `${window.location.origin}/shared/${token}`;
-        }
-        return '';
-    };
-
-    const copyToClipboard = (text: string) => {
-        navigator.clipboard.writeText(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
-
-    const startEditing = (portfolio: Portfolio) => {
+    const handleEdit = (portfolio: Portfolio) => {
         setEditingId(portfolio.id);
         setFormData({
             name: portfolio.name,
@@ -245,267 +231,318 @@ export default function ManagePortfolios() {
         setShowCreate(false);
     };
 
-    const openShareModal = (portfolio: Portfolio) => {
-        setSelectedPortfolio(portfolio);
-        setShareModalOpen(true);
+    const handleToggleShare = async (portfolio: Portfolio) => {
+        try {
+            const newIsPublic = !portfolio.is_public;
+            const response = await fetch('/api/portfolios', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ portfolioId: portfolio.id, isPublic: newIsPublic })
+            });
+
+            if (response.ok) {
+                const updated = { ...portfolio, is_public: newIsPublic };
+                // Update local list state optimistically
+                setPortfolios(portfolios.map(p => p.id === portfolio.id ? updated : p));
+                setSelectedPortfolioForAction(updated);
+            }
+        } catch (error) {
+            console.error('Error toggling share:', error);
+        }
+    };
+
+    const copyToClipboard = (text: string) => {
+        navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
     };
 
     const resetForm = () => {
-        setFormData({
-            name: '',
-            description: '',
-            color: '#10b981'
-        });
+        setFormData({ name: '', description: '', color: '#10b981' });
     };
 
-    if (authLoading || isLoading) {
+    // -- Render Helpers --
+
+    const selectedPortfolio = portfolios.find(p => p.id === selectedPortfolioId);
+
+    if (authLoading || (isLoadingList && portfolios.length === 0)) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-background text-foreground">
+            <div className="flex items-center justify-center min-h-screen">
                 <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
             </div>
         );
     }
 
     return (
-        <div className="p-6 md:p-10">
-            <div className="max-w-5xl mx-auto">
-                <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div>
-                        <div className="flex items-center gap-2 text-primary mb-1">
-                            <Briefcase size={18} />
-                            <span className="text-sm font-bold tracking-wider uppercase">Vault Management</span>
-                        </div>
-                        <h1 className="text-3xl font-extrabold tracking-tight">Your Portfolios</h1>
+        <div className="min-h-screen bg-background text-foreground flex flex-col md:flex-row">
+
+            {/* --- SIDEBAR: Portfolio List --- */}
+            <aside className="w-full md:w-80 border-b md:border-b-0 md:border-r border-border bg-card/30 md:min-h-screen p-6 flex flex-col">
+                <div className="flex items-center gap-3 mb-8 px-2">
+                    <div className="p-2.5 bg-primary/10 rounded-xl text-primary">
+                        <LayoutGrid size={20} />
                     </div>
-                    {!showCreate && !editingId && (
-                        <div className="flex items-center gap-4">
-                            <Link
-                                href="/dashboard/report"
-                                className="hidden md:flex items-center gap-2 px-6 py-3 bg-accent/10 border border-accent/20 text-accent rounded-2xl font-black text-sm hover:bg-accent/20 transition-all"
-                            >
-                                <Zap size={18} />
-                                Intelligence Hub
-                            </Link>
-                            <button
-                                onClick={() => {
-                                    setShowCreate(true);
-                                    resetForm();
-                                }}
-                                className="flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-2xl font-black text-sm shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
-                            >
-                                <Plus size={20} />
-                                <span>Create New Portfolio</span>
-                            </button>
-                        </div>
-                    )}
-                </header>
+                    <div>
+                        <h1 className="font-black text-lg tracking-tight">Portfolios</h1>
+                        <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">{portfolios.length} Vaults Active</p>
+                    </div>
+                </div>
 
-                {!showCreate && !editingId && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="mb-10 p-8 bg-gradient-to-r from-primary/10 via-accent/5 to-transparent border border-primary/20 rounded-[40px] flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden group"
-                    >
-                        <div className="relative z-10">
-                            <div className="flex items-center gap-2 text-primary mb-2">
-                                <Activity size={16} className="animate-pulse" />
-                                <span className="text-[10px] font-black uppercase tracking-[0.3em]">Institutional Pulse</span>
+                <div className="flex-1 space-y-3 overflow-y-auto mb-6">
+                    {portfolios.map(portfolio => (
+                        <button
+                            key={portfolio.id}
+                            onClick={() => setSelectedPortfolioId(portfolio.id)}
+                            className={`w-full group text-left p-4 rounded-[24px] border transition-all relative overflow-hidden ${selectedPortfolioId === portfolio.id
+                                    ? 'bg-background border-primary/30 shadow-xl shadow-primary/5'
+                                    : 'bg-transparent border-transparent hover:bg-muted/50 hover:border-border/50'
+                                }`}
+                        >
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-2.5 h-2.5 rounded-full shadow-lg shadow-${portfolio.color}/50`} style={{ backgroundColor: portfolio.color }} />
+                                    <span className={`font-black text-sm ${selectedPortfolioId === portfolio.id ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground'}`}>
+                                        {portfolio.name}
+                                    </span>
+                                </div>
+                                {portfolio.is_public && <Globe size={12} className="text-muted-foreground" />}
                             </div>
-                            <h2 className="text-2xl font-black tracking-tight leading-tight mb-2">Portfolio Intelligence Hub</h2>
-                            <p className="text-muted-foreground text-sm font-medium max-w-xl">
-                                Access advanced risk analytics, weighted beta monitoring, and clinical audits of your current capital allocation.
-                            </p>
-                        </div>
-                        <Link
-                            href="/dashboard/report"
-                            className="relative z-10 flex items-center gap-3 px-8 py-4 bg-primary text-primary-foreground rounded-[24px] font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/30 hover:scale-[1.05] transition-all whitespace-nowrap"
-                        >
-                            Launch Diagnostics
-                            <ChevronRight size={16} />
-                        </Link>
-                        <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
-                            <Dna size={160} />
-                        </div>
-                    </motion.div>
-                )}
+                            {selectedPortfolioId === portfolio.id && (
+                                <motion.div layoutId="active-indicator" className="absolute left-0 top-0 bottom-0 w-1 bg-primary" />
+                            )}
+                        </button>
+                    ))}
+                </div>
 
-                <AnimatePresence>
-                    {(showCreate || editingId) && (
-                        <motion.div
-                            initial={{ opacity: 0, height: 0, y: -20 }}
-                            animate={{ opacity: 1, height: 'auto', y: 0 }}
-                            exit={{ opacity: 0, height: 0, y: -20 }}
-                            className="mb-12 overflow-hidden"
-                        >
-                            <div className="bg-card border-2 border-primary/30 rounded-[40px] p-8 shadow-2xl relative">
-                                <h2 className="text-2xl font-black mb-8 flex items-center gap-3">
-                                    <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
-                                    {showCreate ? 'Identity & Configuration' : 'Update Portfolio'}
-                                </h2>
-                                <form onSubmit={showCreate ? handleCreate : handleUpdate} className="space-y-6">
-                                    <div className="grid md:grid-cols-2 gap-6">
-                                        <div>
-                                            <label className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mb-3 block px-1">Display Name</label>
-                                            <input
-                                                type="text"
-                                                required
-                                                value={formData.name}
-                                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                                className="w-full px-5 py-4 bg-muted border border-border rounded-2xl text-foreground font-bold focus:outline-none focus:ring-2 focus:ring-primary/20"
-                                                placeholder="Equity Growth Alpha"
-                                            />
+                <button
+                    onClick={() => { setShowCreate(true); resetForm(); }}
+                    className="w-full py-4 bg-primary/10 border border-primary/20 text-primary rounded-[20px] font-black text-xs uppercase tracking-widest hover:bg-primary hover:text-primary-foreground transition-all flex items-center justify-center gap-2"
+                >
+                    <Plus size={16} />
+                    Create New
+                </button>
+            </aside>
+
+            {/* --- MAIN AREA: Details & Analytics --- */}
+            <main className="flex-1 p-6 md:p-10 overflow-y-auto h-screen scrollbar-hide">
+                {selectedPortfolio ? (
+                    <motion.div
+                        key={selectedPortfolio.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="max-w-6xl mx-auto space-y-8"
+                    >
+                        {/* Header Row */}
+                        <header className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+                            <div>
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className="px-3 py-1 rounded-full border border-border bg-muted/30 text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: selectedPortfolio.color }} />
+                                        {selectedPortfolio.is_public ? 'Public' : 'Private'}
+                                    </div>
+                                    {selectedPortfolio.is_default && (
+                                        <div className="px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-[10px] font-black uppercase tracking-widest text-primary">
+                                            Default
                                         </div>
-                                        <div>
-                                            <label className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mb-3 block px-1">Visual Label</label>
-                                            <div className="flex flex-wrap gap-4 p-4 bg-muted border border-border rounded-2xl">
-                                                {COLORS.map((c) => (
-                                                    <button
-                                                        key={c}
-                                                        type="button"
-                                                        onClick={() => setFormData({ ...formData, color: c })}
-                                                        className={`w-8 h-8 rounded-full transition-all hover:scale-125 ${formData.color === c ? 'ring-4 ring-primary/20 scale-125' : 'opacity-60'}`}
-                                                        style={{ backgroundColor: c }}
-                                                    />
-                                                ))}
+                                    )}
+                                </div>
+                                <h2 className="text-4xl font-black tracking-tighter mb-2">{selectedPortfolio.name}</h2>
+                                <p className="text-muted-foreground font-medium max-w-2xl">
+                                    {selectedPortfolio.description || "No strategic summary provided."}
+                                </p>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <button onClick={() => handleShare(selectedPortfolio)} className="p-3 rounded-2xl border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-all">
+                                    <Share2 size={18} />
+                                </button>
+                                <button onClick={() => handleEdit(selectedPortfolio)} className="p-3 rounded-2xl border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-all">
+                                    <Settings size={18} />
+                                </button>
+                                {portfolios.length > 1 && (
+                                    <button onClick={() => handleDelete(selectedPortfolio.id, selectedPortfolio.name)} className="p-3 rounded-2xl border border-border hover:bg-rose-500/10 text-muted-foreground hover:text-rose-500 transition-all">
+                                        <Trash2 size={18} />
+                                    </button>
+                                )}
+                            </div>
+                        </header>
+
+                        {/* KPIS & Charts Grid */}
+                        {portfolioData ? (
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                {/* Total Value Cards */}
+                                <div className="lg:col-span-2 space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="p-8 rounded-[32px] bg-card border border-border shadow-sm">
+                                            <div className="flex items-center gap-2 text-muted-foreground mb-4">
+                                                <DollarSign size={16} />
+                                                <span className="text-xs font-black uppercase tracking-widest">Net Liquidation Value</span>
+                                            </div>
+                                            <div className="text-4xl font-black tracking-tighter mb-2">
+                                                {formatCurrency(portfolioData.summary.totalValue, 'USD')}
+                                            </div>
+                                            <div className={`flex items-center gap-2 text-sm font-bold ${portfolioData.summary.totalGain >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                {portfolioData.summary.totalGain >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+                                                <span>{formatCurrency(portfolioData.summary.totalGain, 'USD')}</span>
+                                                <span className="opacity-60">({formatPercentage(portfolioData.summary.totalGainPercent)})</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="p-8 rounded-[32px] bg-card border border-border shadow-sm relative overflow-hidden">
+                                            <div className="relative z-10">
+                                                <div className="flex items-center gap-2 text-muted-foreground mb-4">
+                                                    <Activity size={16} />
+                                                    <span className="text-xs font-black uppercase tracking-widest">Active Positions</span>
+                                                </div>
+                                                <div className="text-4xl font-black tracking-tighter mb-2">
+                                                    {portfolioData.holdings.length}
+                                                </div>
+                                                <div className="text-sm font-bold text-muted-foreground">
+                                                    Across {new Set(portfolioData.holdings.map(h => h.sector)).size} Sectors
+                                                </div>
+                                            </div>
+                                            <div className="absolute right-0 bottom-0 p-6 opacity-5">
+                                                <Briefcase size={80} />
                                             </div>
                                         </div>
                                     </div>
-                                    <div>
-                                        <label className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mb-3 block px-1">Strategic Objective (Optional)</label>
-                                        <textarea
-                                            value={formData.description}
-                                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                            className="w-full px-5 py-4 bg-muted border border-border rounded-2xl text-foreground font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[100px]"
-                                            placeholder="Focused on high-growth tech stocks and emerging markets..."
-                                        />
-                                    </div>
-                                    <div className="flex gap-4 pt-4">
-                                        <button
-                                            type="submit"
-                                            className="flex-1 py-4 bg-primary text-primary-foreground rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
-                                        >
-                                            {showCreate ? 'Initialize Portfolio' : 'Commit Changes'}
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setShowCreate(false);
-                                                setEditingId(null);
-                                                resetForm();
-                                            }}
-                                            className="px-8 py-4 bg-muted text-muted-foreground border border-border rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-card hover:text-foreground transition-all"
-                                        >
-                                            Discard
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {portfolios.map((portfolio) => (
-                        <motion.div
-                            key={portfolio.id}
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            whileHover={{ y: -5 }}
-                            onClick={() => {
-                                handleSetDefault(portfolio.id);
-                                router.push('/dashboard');
-                            }}
-                            className={`group relative p-8 rounded-[40px] border transition-all cursor-pointer ${portfolio.id === defaultPortfolioId
-                                ? 'bg-card border-primary/30 shadow-2xl shadow-primary/5'
-                                : 'bg-card border-border shadow-sm hover:border-primary/20'
-                                }`}
-                        >
-                            <div className="flex justify-between items-start mb-6">
-                                <div className="flex items-center gap-4">
-                                    <div
-                                        className="w-16 h-16 rounded-3xl flex items-center justify-center shrink-0 shadow-inner"
-                                        style={{ backgroundColor: `${portfolio.color}15` }}
-                                    >
-                                        <div
-                                            className="w-6 h-6 rounded-xl animate-pulse"
-                                            style={{ backgroundColor: portfolio.color, boxShadow: `0 0 20px ${portfolio.color}40` }}
-                                        />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-xl font-black tracking-tight">{portfolio.name}</h3>
-                                        <div className="flex items-center gap-2 mt-1">
-                                            {portfolio.id === defaultPortfolioId && (
-                                                <span className="text-[9px] font-black uppercase tracking-widest text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">Default</span>
-                                            )}
-                                            {portfolio.is_public ? (
-                                                <span className="text-[9px] font-black uppercase tracking-widest text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20 flex items-center gap-1">
-                                                    <Globe size={10} /> Public
-                                                </span>
-                                            ) : (
-                                                <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground bg-muted px-2 py-0.5 rounded-full border border-border flex items-center gap-1">
-                                                    <Lock size={10} /> Private
-                                                </span>
-                                            )}
+                                    {/* Holdings Table */}
+                                    <HoldingsTable
+                                        holdings={portfolioData.holdings}
+                                        currency="USD"
+                                        exchangeRates={{ USD: 1, EUR: 0.92, HUF: 350 }}
+                                        isLoading={isLoadingDetails}
+                                    />
+                                </div>
+
+                                {/* Asset Allocation - Stickyish on desktop */}
+                                <div className="space-y-6">
+                                    <div className="p-8 rounded-[32px] bg-card border border-border shadow-sm min-h-[400px]">
+                                        <div className="flex items-center justify-between mb-6">
+                                            <h3 className="font-black text-lg">Allocation</h3>
+                                            <PieChart size={18} className="text-muted-foreground" />
+                                        </div>
+                                        <div className="h-[300px]">
+                                            <AssetAllocationChart
+                                                holdings={portfolioData.holdings}
+                                                currency="USD"
+                                                exchangeRates={{ USD: 1, EUR: 0.92, HUF: 350 }}
+                                                isLoading={isLoadingDetails}
+                                                size="small"
+                                            />
                                         </div>
                                     </div>
-                                </div>
-                                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); openShareModal(portfolio); }}
-                                        className="p-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-all shadow-sm"
-                                    >
-                                        <Share2 size={16} />
-                                    </button>
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); startEditing(portfolio); }}
-                                        className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 hover:bg-emerald-500/20 transition-all shadow-sm"
-                                    >
-                                        <Edit2 size={16} />
-                                    </button>
-                                </div>
-                            </div>
 
-                            <p className="text-sm text-muted-foreground leading-relaxed mb-8 h-10 overflow-hidden line-clamp-2">
-                                {portfolio.description || 'Strategically manage your equity positions and tracking objectives.'}
-                            </p>
-
-                            <div className="flex items-center justify-between pt-6 border-t border-border/50">
-                                <div className="flex flex-col">
-                                    <span className="text-[9px] text-muted-foreground font-black uppercase tracking-[0.2em] mb-1 text-primary">Status</span>
-                                    <span className="text-xs font-bold text-foreground capitalize">Operational</span>
-                                </div>
-                                {portfolio.id !== defaultPortfolioId ? (
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); handleSetDefault(portfolio.id); }}
-                                        className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary flex items-center gap-2 transition-colors"
-                                    >
-                                        <Star size={14} />
-                                        Make Default
-                                    </button>
-                                ) : (
-                                    <div className="text-primary p-2 bg-primary/10 rounded-xl">
-                                        <LayoutGrid size={20} />
+                                    <div className="p-8 rounded-[32px] bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-2xl shadow-primary/20">
+                                        <Zap size={24} className="mb-4" />
+                                        <h3 className="text-xl font-black mb-2">Research Pipeline</h3>
+                                        <p className="text-sm font-medium opacity-90 mb-6">
+                                            Identify new opportunities to diversify this portfolio.
+                                        </p>
+                                        <button
+                                            onClick={() => router.push('/dashboard/stocks')}
+                                            className="w-full py-3 bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-white/30 transition-all"
+                                        >
+                                            Scout Assets
+                                        </button>
                                     </div>
-                                )}
+                                </div>
                             </div>
+                        ) : (
+                            <div className="flex items-center justify-center py-20">
+                                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                            </div>
+                        )}
+                    </motion.div>
+                ) : (
+                    <div className="h-full flex flex-col items-center justify-center text-center p-10 opacity-50">
+                        <Briefcase size={48} className="mb-4" />
+                        <h2 className="text-2xl font-black tracking-tight">Select a Portfolio</h2>
+                        <p className="text-sm font-bold uppercase tracking-widest mt-2">Access your vault analytics</p>
+                    </div>
+                )}
+            </main>
 
-                            {/* Delete overlay for safety */}
-                            {portfolios.length > 1 && (
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); handleDelete(portfolio.id, portfolio.name); }}
-                                    className="absolute -top-3 -right-3 p-3 bg-rose-500 text-white rounded-2xl opacity-0 group-hover:opacity-100 transition-all hover:scale-110 shadow-xl shadow-rose-500/30"
-                                >
-                                    <Trash2 size={16} />
-                                </button>
-                            )}
-                        </motion.div>
-                    ))}
-                </div>
-            </div>
+            {/* --- MODALS --- */}
 
-            {/* Premium Share Modal */}
+            {/* Create / Edit Modal */}
             <AnimatePresence>
-                {shareModalOpen && selectedPortfolio && (
+                {(showCreate || editingId) && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => { setShowCreate(false); setEditingId(null); resetForm(); }}
+                            className="absolute inset-0 bg-background/80 backdrop-blur-xl"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            className="relative w-full max-w-lg bg-card border border-border rounded-[48px] shadow-2xl p-10"
+                        >
+                            <h2 className="text-2xl font-black mb-8">
+                                {showCreate ? 'Initialize Portfolio' : 'Configure Portfolio'}
+                            </h2>
+                            <form onSubmit={showCreate ? handleCreate : handleUpdate} className="space-y-6">
+                                <div>
+                                    <label className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mb-3 block px-1">Name</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={formData.name}
+                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                        className="w-full px-5 py-4 bg-muted border border-border rounded-2xl font-bold focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                        placeholder="e.g. High Growth Tech"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mb-3 block px-1">Color Label</label>
+                                    <div className="flex flex-wrap gap-3">
+                                        {COLORS.map((c) => (
+                                            <button
+                                                key={c}
+                                                type="button"
+                                                onClick={() => setFormData({ ...formData, color: c })}
+                                                className={`w-8 h-8 rounded-full transition-all hover:scale-110 ${formData.color === c ? 'ring-4 ring-primary/20 scale-110' : 'opacity-40 hover:opacity-100'}`}
+                                                style={{ backgroundColor: c }}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mb-3 block px-1">Summary</label>
+                                    <textarea
+                                        value={formData.description}
+                                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                        className="w-full px-5 py-4 bg-muted border border-border rounded-2xl font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[100px]"
+                                        placeholder="Strategic goals..."
+                                    />
+                                </div>
+                                <div className="flex gap-4 pt-4">
+                                    <button type="submit" className="flex-1 py-4 bg-primary text-primary-foreground rounded-2xl font-black text-sm uppercase tracking-widest hover:scale-[1.02] transition-all">
+                                        Save Changes
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => { setShowCreate(false); setEditingId(null); resetForm(); }}
+                                        className="px-8 py-4 bg-muted text-muted-foreground rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-muted/80 transition-all"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Share Modal */}
+            <AnimatePresence>
+                {shareModalOpen && selectedPortfolioForAction && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
                         <motion.div
                             initial={{ opacity: 0 }}
@@ -518,86 +555,53 @@ export default function ManagePortfolios() {
                             initial={{ opacity: 0, scale: 0.9, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            className="relative w-full max-w-lg bg-card border border-border rounded-[48px] shadow-2xl p-10 overflow-hidden"
+                            className="relative w-full max-w-lg bg-card border border-border rounded-[48px] shadow-2xl p-10"
                         >
-                            <div className="flex items-center justify-between mb-10">
-                                <div>
-                                    <div className="flex items-center gap-2 text-primary mb-1">
-                                        <Share2 size={18} />
-                                        <span className="text-xs font-bold tracking-widest uppercase">Visibility Hub</span>
-                                    </div>
-                                    <h3 className="text-2xl font-black">Publish Portfolio</h3>
-                                </div>
-                                <button onClick={() => setShareModalOpen(false)} className="p-3 bg-muted rounded-2xl text-muted-foreground">
-                                    <X size={20} />
+                            <div className="flex items-center justify-between mb-8">
+                                <h3 className="text-2xl font-black">Visibility Settings</h3>
+                                <button onClick={() => setShareModalOpen(false)} className="p-2 bg-muted rounded-full">
+                                    <X size={18} />
                                 </button>
                             </div>
 
-                            <div className="space-y-8">
-                                <div
-                                    className={`p-6 rounded-[32px] border transition-all flex items-center justify-between gap-6 cursor-pointer ${selectedPortfolio.is_public ? 'bg-primary/5 border-primary/30 shadow-inner' : 'bg-muted/50 border-border'}`}
-                                    onClick={() => handleToggleShare(selectedPortfolio)}
-                                >
-                                    <div className="flex items-center gap-5">
-                                        <div className={`p-4 rounded-2xl shadow-sm ${selectedPortfolio.is_public ? 'bg-primary text-white' : 'bg-card text-muted-foreground'}`}>
-                                            {selectedPortfolio.is_public ? <Globe size={24} /> : <Lock size={24} />}
-                                        </div>
-                                        <div>
-                                            <p className="font-black text-sm">{selectedPortfolio.is_public ? 'Public Access Enabled' : 'Private Mode Active'}</p>
-                                            <p className="text-xs text-muted-foreground font-bold mt-0.5">{selectedPortfolio.is_public ? 'ReadOnly visibility for externals' : 'Locked to your secure account'}</p>
-                                        </div>
+                            <div
+                                onClick={() => handleToggleShare(selectedPortfolioForAction)}
+                                className={`p-6 rounded-[32px] border transition-all cursor-pointer flex items-center justify-between gap-4 mb-6 ${selectedPortfolioForAction.is_public ? 'bg-primary/5 border-primary/20' : 'bg-muted border-transparent'}`}
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className={`p-3 rounded-xl ${selectedPortfolioForAction.is_public ? 'bg-primary text-white' : 'bg-card text-muted-foreground'}`}>
+                                        {selectedPortfolioForAction.is_public ? <Globe size={20} /> : <Lock size={20} />}
                                     </div>
-                                    <div className={`w-12 h-6 rounded-full relative transition-all ${selectedPortfolio.is_public ? 'bg-primary' : 'bg-muted-foreground/30'}`}>
-                                        <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all shadow-sm ${selectedPortfolio.is_public ? 'left-7' : 'left-1'}`} />
+                                    <div>
+                                        <p className="font-black text-sm">{selectedPortfolioForAction.is_public ? 'Publicly Visible' : 'Private Vault'}</p>
+                                        <p className="text-[10px] text-muted-foreground font-bold">{selectedPortfolioForAction.is_public ? 'Anyone with the link can view' : 'Only you can access'}</p>
                                     </div>
                                 </div>
-
-                                <AnimatePresence>
-                                    {selectedPortfolio.is_public && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            className="space-y-4"
-                                        >
-                                            <label className="text-[10px] text-muted-foreground font-black uppercase tracking-widest px-1">Distributed Sync Link</label>
-                                            <div className="flex gap-2 p-2 bg-muted rounded-[24px] border border-border">
-                                                <input
-                                                    type="text"
-                                                    readOnly
-                                                    value={getShareLink(selectedPortfolio.share_token)}
-                                                    className="flex-1 bg-transparent border-none outline-none px-4 text-xs font-bold text-foreground"
-                                                />
-                                                <button
-                                                    onClick={() => copyToClipboard(getShareLink(selectedPortfolio.share_token))}
-                                                    className="p-3 bg-card border border-border rounded-2xl transition-all active:scale-90"
-                                                >
-                                                    {copied ? <Check size={18} className="text-emerald-500" /> : <Copy size={18} />}
-                                                </button>
-                                                <a
-                                                    href={getShareLink(selectedPortfolio.share_token)}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="p-3 bg-card border border-border rounded-2xl"
-                                                >
-                                                    <ExternalLink size={18} />
-                                                </a>
-                                            </div>
-
-                                            <button
-                                                onClick={() => handleRegenerateToken(selectedPortfolio)}
-                                                className="w-fit flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-rose-500 transition-colors mx-auto pt-4"
-                                            >
-                                                <RefreshCw size={12} />
-                                                Invalidate & Regenerate Link
-                                            </button>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
+                                <div className={`w-10 h-6 rounded-full relative transition-all ${selectedPortfolioForAction.is_public ? 'bg-primary' : 'bg-muted-foreground/30'}`}>
+                                    <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all shadow-sm ${selectedPortfolioForAction.is_public ? 'left-5' : 'left-1'}`} />
+                                </div>
                             </div>
+
+                            {selectedPortfolioForAction.is_public && (
+                                <div className="space-y-4 animate-in fade-in slide-in-from-top-4">
+                                    <label className="text-[10px] text-muted-foreground font-black uppercase tracking-widest px-1">Secure Link</label>
+                                    <div className="flex gap-2 p-2 bg-muted rounded-[24px] border border-border">
+                                        <input
+                                            readOnly
+                                            value={`${typeof window !== 'undefined' ? window.location.origin : ''}/shared/${selectedPortfolioForAction.share_token}`}
+                                            className="flex-1 bg-transparent border-none outline-none px-4 text-xs font-bold"
+                                        />
+                                        <button onClick={() => copyToClipboard(`${typeof window !== 'undefined' ? window.location.origin : ''}/shared/${selectedPortfolioForAction.share_token}`)} className="p-3 bg-card rounded-2xl hover:scale-105 transition-all">
+                                            {copied ? <Check size={16} className="text-emerald-500" /> : <Copy size={16} />}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </motion.div>
                     </div>
                 )}
             </AnimatePresence>
+
         </div>
     );
 }
