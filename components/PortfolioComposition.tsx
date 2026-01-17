@@ -37,7 +37,7 @@ export default function PortfolioComposition({ holdings, currency, exchangeRates
             <div className="flex items-center justify-between px-2 md:px-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground pb-2 border-b border-border/50">
                 <div className="flex-1">Asset</div>
                 <div className="w-16 text-right">Weight</div>
-                <div className="w-24 text-right">Gain/Loss</div>
+                <div className="w-24 text-right hidden sm:block">Gain/Loss</div>
             </div>
 
             <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
@@ -73,7 +73,7 @@ export default function PortfolioComposition({ holdings, currency, exchangeRates
                             </div>
 
                             {/* Gain/Loss */}
-                            <div className="w-24 text-right shrink-0">
+                            <div className="w-24 text-right shrink-0 hidden sm:block">
                                 <div className={`flex items-center justify-end gap-1 font-black text-sm ${isPositive ? 'text-emerald-500' : isNegative ? 'text-rose-500' : 'text-muted-foreground'}`}>
                                     {isPositive ? <TrendingUp size={12} /> : isNegative ? <TrendingDown size={12} /> : <Minus size={12} />}
                                     <span>{formatCurrency(convertedGain, currency)}</span>
