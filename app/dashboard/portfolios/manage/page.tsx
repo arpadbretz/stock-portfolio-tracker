@@ -407,13 +407,13 @@ function PortfolioCommandCenterContent() {
                                 <div className="lg:col-span-8 space-y-8">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {/* Performance Metric Cards */}
-                                        <div className="p-8 rounded-[40px] bg-card border border-border shadow-sm flex flex-col justify-between group overflow-hidden relative">
+                                        <div className="p-6 md:p-8 rounded-[40px] bg-card border border-border shadow-sm flex flex-col justify-between group overflow-hidden relative">
                                             <div>
                                                 <div className="flex items-center gap-2 text-muted-foreground mb-4">
                                                     <DollarSign size={16} />
                                                     <span className="text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap">Net Liquidation</span>
                                                 </div>
-                                                <div className="text-3xl lg:text-5xl font-black tracking-tighter mb-4 blur-stealth">
+                                                <div className="text-3xl lg:text-5xl font-black tracking-tighter mb-4 blur-stealth break-all md:break-normal">
                                                     {formatCurrency(convertedMarketValue, currency)}
                                                 </div>
                                             </div>
@@ -429,7 +429,7 @@ function PortfolioCommandCenterContent() {
                                             <Activity size={100} className="absolute -right-4 -bottom-4 text-primary opacity-[0.03] group-hover:opacity-[0.08] transition-opacity rotate-12" />
                                         </div>
 
-                                        <div className="p-8 rounded-[40px] bg-card border border-border shadow-sm flex flex-col justify-between group">
+                                        <div className="p-6 md:p-8 rounded-[40px] bg-card border border-border shadow-sm flex flex-col justify-between group">
                                             <div>
                                                 <div className="flex items-center gap-2 text-muted-foreground mb-4">
                                                     <Zap size={16} />
@@ -451,7 +451,7 @@ function PortfolioCommandCenterContent() {
                                     </div>
 
                                     {/* Dip Finder Chart Integration */}
-                                    <div className="p-8 rounded-[40px] bg-card border border-border shadow-sm">
+                                    <div className="p-6 md:p-8 rounded-[40px] bg-card border border-border shadow-sm">
                                         <div className="flex items-center justify-between mb-8">
                                             <div>
                                                 <h3 className="font-black text-xl tracking-tight">Dip Finder</h3>
@@ -477,7 +477,7 @@ function PortfolioCommandCenterContent() {
 
                                 {/* RIGHT COLUMN: Deep Composition & Insights */}
                                 <div className="lg:col-span-4 space-y-8">
-                                    <div className="p-8 rounded-[40px] bg-card border border-border shadow-sm min-h-[500px]">
+                                    <div className="p-6 md:p-8 rounded-[40px] bg-card border border-border shadow-sm min-h-[500px]">
                                         <div className="flex items-center justify-between mb-8">
                                             <div>
                                                 <h3 className="font-black text-xl tracking-tight">Composition</h3>

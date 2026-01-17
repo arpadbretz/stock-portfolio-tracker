@@ -50,7 +50,6 @@ export default function DipFinderChart({ holdings, isLoading }: DipFinderChartPr
                         axisLine={false}
                         tickLine={false}
                         tick={{ fontSize: 10, fontWeight: 900, fill: 'var(--muted-foreground)' }}
-                        interval={0}
                     />
                     <YAxis
                         axisLine={false}

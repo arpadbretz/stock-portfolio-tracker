@@ -34,10 +34,10 @@ export default function PortfolioComposition({ holdings, currency, exchangeRates
 
     return (
         <div className="space-y-6">
-            <div className="grid grid-cols-12 px-2 md:px-4 gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground pb-2 border-b border-border/50">
-                <div className="col-span-6">Asset</div>
-                <div className="col-span-3 text-right">Weight</div>
-                <div className="col-span-3 text-right">Gain/Loss</div>
+            <div className="flex items-center justify-between px-2 md:px-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground pb-2 border-b border-border/50">
+                <div className="flex-1">Asset</div>
+                <div className="w-16 text-right">Weight</div>
+                <div className="w-24 text-right">Gain/Loss</div>
             </div>
 
             <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
@@ -47,35 +47,33 @@ export default function PortfolioComposition({ holdings, currency, exchangeRates
                     const convertedGain = convertCurrency(holding.unrealizedGain, currency, exchangeRates);
 
                     return (
-                        <div key={holding.ticker} className="grid grid-cols-12 items-center gap-2 group px-2 md:px-4">
+                        <div key={holding.ticker} className="flex items-center justify-between gap-3 group px-2 md:px-4">
                             {/* Asset Info */}
-                            <div className="col-span-6 flex items-center gap-3">
+                            <div className="flex-1 flex items-center gap-3 min-w-0">
                                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center text-primary font-black text-xs shrink-0 group-hover:scale-110 transition-transform shadow-sm">
                                     {holding.ticker}
                                 </div>
-                                <div className="min-w-0">
+                                <div className="min-w-0 flex-1">
                                     <p className="font-black text-sm truncate">{holding.ticker}</p>
                                     <p className="text-[10px] text-muted-foreground font-bold uppercase truncate">{holding.sector || 'Equities'}</p>
                                 </div>
                             </div>
 
                             {/* Weight Bar */}
-                            <div className="col-span-3">
-                                <div className="flex flex-col items-end gap-1.5">
-                                    <span className="text-xs font-black">{(holding.allocation || 0).toFixed(2)}%</span>
-                                    <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
-                                        <motion.div
-                                            initial={{ width: 0 }}
-                                            animate={{ width: `${holding.allocation || 0}%` }}
-                                            transition={{ duration: 1, ease: "easeOut" }}
-                                            className="h-full bg-primary"
-                                        />
-                                    </div>
+                            <div className="w-16 flex flex-col items-end gap-1.5 shrink-0">
+                                <span className="text-xs font-black">{(holding.allocation || 0).toFixed(2)}%</span>
+                                <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                                    <motion.div
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${holding.allocation || 0}%` }}
+                                        transition={{ duration: 1, ease: "easeOut" }}
+                                        className="h-full bg-primary"
+                                    />
                                 </div>
                             </div>
 
                             {/* Gain/Loss */}
-                            <div className="col-span-3 text-right">
+                            <div className="w-24 text-right shrink-0">
                                 <div className={`flex items-center justify-end gap-1 font-black text-sm ${isPositive ? 'text-emerald-500' : isNegative ? 'text-rose-500' : 'text-muted-foreground'}`}>
                                     {isPositive ? <TrendingUp size={12} /> : isNegative ? <TrendingDown size={12} /> : <Minus size={12} />}
                                     <span>{formatCurrency(convertedGain, currency)}</span>
