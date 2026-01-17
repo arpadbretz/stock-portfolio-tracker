@@ -287,8 +287,8 @@ function PortfolioCommandCenterContent() {
         <div className="min-h-screen bg-background text-foreground flex flex-col md:flex-row">
 
             {/* --- SLIM SIDEBAR: Portfolio Multi-Viewer --- */}
-            <aside className="w-full md:w-20 lg:w-64 border-b md:border-b-0 md:border-r border-border bg-card/10 backdrop-blur-3xl md:h-screen sticky top-0 md:top-0 z-40 p-4 lg:p-6 flex flex-col transition-all duration-300">
-                <div className="flex items-center gap-3 mb-10 px-2">
+            <aside className="w-full md:w-20 lg:w-64 border-b md:border-b-0 md:border-r border-border bg-card/10 backdrop-blur-3xl md:h-screen sticky top-0 z-40 p-4 lg:p-6 flex flex-row md:flex-col items-center md:items-stretch overflow-x-auto md:overflow-visible transition-all duration-300 gap-4 md:gap-0 no-scrollbar">
+                <div className="flex items-center gap-3 md:mb-10 shrink-0">
                     <div className="p-2.5 bg-primary/10 rounded-xl text-primary shrink-0">
                         <LayoutGrid size={20} />
                     </div>
@@ -298,13 +298,14 @@ function PortfolioCommandCenterContent() {
                     </div>
                 </div>
 
-                <div className="flex-1 space-y-4 overflow-y-auto mb-6 custom-scrollbar px-1">
+                <div className="flex-1 flex flex-row md:flex-col gap-4 md:gap-4 md:space-y-4 overflow-x-auto md:overflow-y-auto md:mb-6 custom-scrollbar p-2 md:px-1">
+
                     {portfolios.map(portfolio => (
                         <button
                             key={portfolio.id}
                             onClick={() => setSelectedPortfolioId(portfolio.id)}
                             title={portfolio.name}
-                            className={`w-full group relative flex items-center transition-all ${selectedPortfolioId === portfolio.id ? 'opacity-100 scale-100' : 'opacity-60 hover:opacity-100 scale-95'}`}
+                            className={`group relative flex items-center transition-all shrink-0 ${selectedPortfolioId === portfolio.id ? 'opacity-100 scale-100' : 'opacity-60 hover:opacity-100 scale-95'}`}
                         >
                             <div
                                 className={`w-12 h-12 lg:w-10 lg:h-10 rounded-2xl flex items-center justify-center text-white font-black text-sm shrink-0 transition-all shadow-lg ${selectedPortfolioId === portfolio.id ? 'ring-2 ring-primary ring-offset-4 ring-offset-background' : ''}`}
@@ -325,7 +326,7 @@ function PortfolioCommandCenterContent() {
                     <button
                         onClick={() => { setShowCreate(true); resetForm(); }}
                         title="Initialize New Vault"
-                        className="w-12 h-12 lg:w-10 lg:h-10 border-2 border-dashed border-border rounded-2xl flex items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-all shrink-0 mx-auto lg:mx-0 group"
+                        className="w-12 h-12 lg:w-10 lg:h-10 border-2 border-dashed border-border rounded-2xl flex items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-all shrink-0 group"
                     >
                         <Plus size={20} className="group-hover:rotate-90 transition-transform duration-300" />
                     </button>
@@ -363,14 +364,14 @@ function PortfolioCommandCenterContent() {
                                         {selectedPortfolio.name[0]}
                                     </div>
                                     <div>
-                                        <div className="flex items-center gap-3">
-                                            <h2 className="text-5xl font-black tracking-tighter">{selectedPortfolio.name}</h2>
-                                            <div className="flex items-center gap-1.5 px-3 py-1 bg-muted rounded-full border border-border text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                                        <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3">
+                                            <h2 className="text-3xl md:text-5xl font-black tracking-tighter truncate max-w-[200px] md:max-w-none">{selectedPortfolio.name}</h2>
+                                            <div className="flex items-center gap-1.5 px-3 py-1 bg-muted rounded-full border border-border text-[8px] md:text-[10px] font-black uppercase tracking-widest text-muted-foreground w-fit">
                                                 {selectedPortfolio.is_public ? <Globe size={12} /> : <Lock size={12} />}
-                                                {selectedPortfolio.is_public ? 'Public Access' : 'Private Vault'}
+                                                {selectedPortfolio.is_public ? 'Public' : 'Private'}
                                             </div>
                                         </div>
-                                        <p className="text-muted-foreground font-medium mt-1 text-sm lg:text-base">
+                                        <p className="text-muted-foreground font-medium mt-1 text-xs md:text-sm lg:text-base max-w-lg">
                                             {selectedPortfolio.description || "Portfolio management initialized. Add trades to begin analysis."}
                                         </p>
                                     </div>
@@ -410,9 +411,9 @@ function PortfolioCommandCenterContent() {
                                             <div>
                                                 <div className="flex items-center gap-2 text-muted-foreground mb-4">
                                                     <DollarSign size={16} />
-                                                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">Net Liquidation Value</span>
+                                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap">Net Liquidation</span>
                                                 </div>
-                                                <div className="text-5xl font-black tracking-tighter mb-4 blur-stealth">
+                                                <div className="text-3xl lg:text-5xl font-black tracking-tighter mb-4 blur-stealth">
                                                     {formatCurrency(convertedMarketValue, currency)}
                                                 </div>
                                             </div>
@@ -434,16 +435,16 @@ function PortfolioCommandCenterContent() {
                                                     <Zap size={16} />
                                                     <span className="text-[10px] font-black uppercase tracking-[0.2em]">Asset Alpha</span>
                                                 </div>
-                                                <div className="text-5xl font-black tracking-tighter mb-4">
+                                                <div className="text-3xl lg:text-5xl font-black tracking-tighter mb-4">
                                                     {portfolioData.holdings.length}
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-3">
                                                 <div className="px-3 py-1.5 bg-primary/10 text-primary rounded-full font-black text-xs">
-                                                    {new Set(portfolioData.holdings.map(h => h.sector)).size || 1} Sectors Active
+                                                    {new Set(portfolioData.holdings.map(h => h.sector)).size || 1} Sectors
                                                 </div>
-                                                <div className="text-muted-foreground font-black text-[10px] uppercase tracking-widest">
-                                                    Diversification Level: Higher
+                                                <div className="text-muted-foreground font-black text-[10px] uppercase tracking-widest hidden md:block">
+                                                    High Diversification
                                                 </div>
                                             </div>
                                         </div>

@@ -34,7 +34,7 @@ export default function PortfolioComposition({ holdings, currency, exchangeRates
 
     return (
         <div className="space-y-6">
-            <div className="grid grid-cols-12 px-4 gap-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground pb-2 border-b border-border/50">
+            <div className="grid grid-cols-12 px-2 md:px-4 gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground pb-2 border-b border-border/50">
                 <div className="col-span-6">Asset</div>
                 <div className="col-span-3 text-right">Weight</div>
                 <div className="col-span-3 text-right">Gain/Loss</div>
@@ -47,7 +47,7 @@ export default function PortfolioComposition({ holdings, currency, exchangeRates
                     const convertedGain = convertCurrency(holding.unrealizedGain, currency, exchangeRates);
 
                     return (
-                        <div key={holding.ticker} className="grid grid-cols-12 items-center gap-4 group">
+                        <div key={holding.ticker} className="grid grid-cols-12 items-center gap-2 group px-2 md:px-4">
                             {/* Asset Info */}
                             <div className="col-span-6 flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center text-primary font-black text-xs shrink-0 group-hover:scale-110 transition-transform shadow-sm">
