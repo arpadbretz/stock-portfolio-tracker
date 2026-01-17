@@ -26,7 +26,9 @@ import {
     PieChart,
     Settings,
     MoreVertical,
-    BarChart3
+    BarChart3,
+    Eye,
+    EyeOff
 } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useUserPreferences } from '@/components/providers/UserPreferencesProvider';
@@ -61,7 +63,7 @@ const COLORS = [
 
 function PortfolioCommandCenterContent() {
     const { user, isLoading: authLoading } = useAuth();
-    const { preferredCurrency: currency, exchangeRates } = useUserPreferences();
+    const { preferredCurrency: currency, exchangeRates, stealthMode, setStealthMode } = useUserPreferences();
     const router = useRouter();
     const searchParams = useSearchParams();
 
@@ -483,9 +485,13 @@ function PortfolioCommandCenterContent() {
                                                 <h3 className="font-black text-xl tracking-tight">Composition</h3>
                                                 <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1">Weight & Unrealized Return</p>
                                             </div>
-                                            <div className="p-3 bg-muted rounded-2xl text-muted-foreground">
-                                                <PieChart size={20} />
-                                            </div>
+                                            <button
+                                                onClick={() => setStealthMode(!stealthMode)}
+                                                className={`p-3 rounded-2xl transition-all ${stealthMode ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+                                                title={stealthMode ? "Disable Stealth Mode" : "Enable Stealth Mode"}
+                                            >
+                                                {stealthMode ? <EyeOff size={20} /> : <Eye size={20} />}
+                                            </button>
                                         </div>
                                         <PortfolioComposition
                                             holdings={portfolioData.holdings}

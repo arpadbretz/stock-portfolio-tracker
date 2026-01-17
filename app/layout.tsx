@@ -3,6 +3,7 @@ import { Outfit, Inter } from "next/font/google";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { PostHogContextProvider } from './providers/posthog-provider'
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -44,23 +45,25 @@ export default function RootLayout({
         className={`${outfit.variable} ${inter.variable} font-inter antialiased bg-background text-foreground`}
       >
         <AuthProvider>
-          <UserPreferencesProvider>
-            <ThemeProvider>
-              {children}
-              <CookieBanner />
-              <CommandPalette />
-              <Toaster
-                position="bottom-right"
-                toastOptions={{
-                  style: {
-                    background: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    color: 'hsl(var(--foreground))',
-                  },
-                }}
-              />
-            </ThemeProvider>
-          </UserPreferencesProvider>
+          <PostHogContextProvider>
+            <UserPreferencesProvider>
+              <ThemeProvider>
+                {children}
+                <CookieBanner />
+                <CommandPalette />
+                <Toaster
+                  position="bottom-right"
+                  toastOptions={{
+                    style: {
+                      background: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      color: 'hsl(var(--foreground))',
+                    },
+                  }}
+                />
+              </ThemeProvider>
+            </UserPreferencesProvider>
+          </PostHogContextProvider>
         </AuthProvider>
         <Analytics />
         <SpeedInsights />

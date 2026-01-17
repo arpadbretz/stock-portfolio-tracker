@@ -2,6 +2,7 @@
 
 import { Holding, CurrencyCode } from '@/types/portfolio';
 import { formatCurrency, formatPercentage, convertCurrency } from '@/lib/portfolio';
+import { useUserPreferences } from '@/components/providers/UserPreferencesProvider';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -13,6 +14,8 @@ interface PortfolioCompositionProps {
 }
 
 export default function PortfolioComposition({ holdings, currency, exchangeRates, isLoading }: PortfolioCompositionProps) {
+    const { stealthMode, setStealthMode } = useUserPreferences();
+
     if (isLoading) {
         return (
             <div className="space-y-4">
@@ -60,8 +63,11 @@ export default function PortfolioComposition({ holdings, currency, exchangeRates
                             </div>
 
                             {/* Weight Bar */}
-                            <div className="w-16 flex flex-col items-end gap-1.5 shrink-0">
-                                <span className="text-xs font-black">{(holding.allocation || 0).toFixed(2)}%</span>
+                            <div
+                                className="w-16 flex flex-col items-end gap-1.5 shrink-0 cursor-pointer"
+                                onClick={() => setStealthMode(!stealthMode)}
+                            >
+                                <span className="text-xs font-black blur-stealth">{(holding.allocation || 0).toFixed(2)}%</span>
                                 <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
                                     <motion.div
                                         initial={{ width: 0 }}
@@ -73,12 +79,15 @@ export default function PortfolioComposition({ holdings, currency, exchangeRates
                             </div>
 
                             {/* Gain/Loss */}
-                            <div className="w-24 text-right shrink-0 hidden sm:block">
-                                <div className={`flex items-center justify-end gap-1 font-black text-sm ${isPositive ? 'text-emerald-500' : isNegative ? 'text-rose-500' : 'text-muted-foreground'}`}>
+                            <div
+                                className="w-24 text-right shrink-0 hidden sm:block cursor-pointer"
+                                onClick={() => setStealthMode(!stealthMode)}
+                            >
+                                <div className={`flex items-center justify-end gap-1 font-black text-sm blur-stealth ${isPositive ? 'text-emerald-500' : isNegative ? 'text-rose-500' : 'text-muted-foreground'}`}>
                                     {isPositive ? <TrendingUp size={12} /> : isNegative ? <TrendingDown size={12} /> : <Minus size={12} />}
                                     <span>{formatCurrency(convertedGain, currency)}</span>
                                 </div>
-                                <p className={`text-[10px] font-bold ${isPositive ? 'text-emerald-500/60' : isNegative ? 'text-rose-500/60' : 'text-muted-foreground/50'}`}>
+                                <p className={`text-[10px] font-bold blur-stealth ${isPositive ? 'text-emerald-500/60' : isNegative ? 'text-rose-500/60' : 'text-muted-foreground/50'}`}>
                                     {formatPercentage(holding.unrealizedGainPercent)}
                                 </p>
                             </div>
