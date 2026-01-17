@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { TrendingUp, Mail, Lock, ShieldCheck, ArrowRight, CheckCircle2, Github } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import posthog from 'posthog-js';
 
 // Google icon SVG component
 const GoogleIcon = () => (
@@ -54,6 +55,7 @@ export default function RegisterPage() {
             setLoading(false);
         } else {
             setSuccess(true);
+            posthog.capture('sign_up', { method: 'email', status: 'pending_verification' });
             toast.success('Check your email!', { description: 'We sent you a confirmation link' });
             setLoading(false);
         }
@@ -64,6 +66,8 @@ export default function RegisterPage() {
         setError(null);
 
         try {
+            posthog.capture('sign_up_initiated', { method: provider });
+
             const { error } = await supabase.auth.signInWithOAuth({
                 provider,
                 options: {

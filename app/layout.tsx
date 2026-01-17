@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { Outfit, Inter } from "next/font/google";
 import "./globals.css";
-import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { PostHogContextProvider } from './providers/posthog-provider'
+import PostHogPageview from './providers/PostHogPageview'
+import { Suspense } from 'react'
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -46,6 +47,9 @@ export default function RootLayout({
       >
         <AuthProvider>
           <PostHogContextProvider>
+            <Suspense fallback={null}>
+              <PostHogPageview />
+            </Suspense>
             <UserPreferencesProvider>
               <ThemeProvider>
                 {children}
@@ -65,7 +69,6 @@ export default function RootLayout({
             </UserPreferencesProvider>
           </PostHogContextProvider>
         </AuthProvider>
-        <Analytics />
         <SpeedInsights />
       </body>
     </html>
