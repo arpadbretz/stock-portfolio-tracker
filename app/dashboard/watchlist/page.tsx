@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { SkeletonWatchlist } from '@/components/Skeleton';
 import { toast } from 'sonner';
+import TickerSearch from '@/components/shared/TickerSearch';
 import { Area, AreaChart, ResponsiveContainer } from 'recharts';
 
 interface WatchlistItem {
@@ -345,14 +346,11 @@ export default function WatchlistPage() {
             {/* Add to Watchlist Form */}
             <div className="bg-card border border-border rounded-[40px] p-10 mb-12 shadow-2xl shadow-primary/5">
                 <form onSubmit={handleAddToWatchlist} className="flex flex-col md:flex-row gap-6">
-                    <div className="flex-1 relative">
-                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
-                        <input
-                            type="text"
-                            value={addSymbol}
-                            onChange={(e) => setAddSymbol(e.target.value.toUpperCase())}
+                    <div className="flex-1">
+                        <TickerSearch
+                            onSelect={(result) => setAddSymbol(result.symbol)}
                             placeholder="Add symbol to track (e.g., TSLA)"
-                            className="w-full pl-16 pr-6 py-5 bg-muted/30 border border-border rounded-[24px] font-black text-lg focus:outline-none focus:ring-4 focus:ring-primary/10 transition-all"
+                            inputClassName="w-full pl-16 pr-6 py-5 bg-muted/30 border border-border rounded-[24px] font-black text-lg focus:ring-primary/10"
                         />
                     </div>
                     <button

@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import TickerSearch from '@/components/shared/TickerSearch';
 
 interface DCFInputs {
     symbol: string;
@@ -429,12 +430,11 @@ function DCFCalculatorContent() {
                             Stock Lookup
                         </h3>
                         <div className="flex gap-3">
-                            <input
-                                type="text"
-                                value={inputs.symbol}
-                                onChange={(e) => handleInputChange('symbol', e.target.value.toUpperCase())}
+                            <TickerSearch
+                                onSelect={(result) => handleInputChange('symbol', result.symbol)}
                                 placeholder="Enter ticker (e.g., AAPL)"
-                                className="flex-1 px-4 py-3 bg-muted border border-border rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                className="flex-1"
+                                inputClassName="w-full px-4 py-3 bg-muted border border-border rounded-xl font-bold focus:ring-primary/30"
                             />
                             <button
                                 onClick={fetchStockData}

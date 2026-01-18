@@ -22,6 +22,7 @@ import {
     X,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import TickerSearch from '@/components/shared/TickerSearch';
 
 interface PriceAlert {
     id: string;
@@ -282,12 +283,10 @@ export default function AlertsPage() {
                             <h3 className="text-lg font-bold mb-4">Create Price Alert</h3>
                             <form onSubmit={handleCreateAlert} className="space-y-4">
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                    <input
-                                        type="text"
-                                        value={newSymbol}
-                                        onChange={(e) => setNewSymbol(e.target.value.toUpperCase())}
+                                    <TickerSearch
+                                        onSelect={(result) => setNewSymbol(result.symbol)}
                                         placeholder="Symbol (e.g., AAPL)"
-                                        className="px-4 py-3 bg-muted border border-border rounded-xl font-bold focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                        inputClassName="px-4 py-3 bg-muted border border-border rounded-xl font-bold focus:ring-primary/30"
                                     />
                                     <input
                                         type="number"
@@ -515,8 +514,8 @@ export default function AlertsPage() {
                                                 type="button"
                                                 onClick={() => setEditCondition('above')}
                                                 className={`flex-1 px-4 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${editCondition === 'above'
-                                                        ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/30'
-                                                        : 'bg-muted text-muted-foreground border border-border'
+                                                    ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/30'
+                                                    : 'bg-muted text-muted-foreground border border-border'
                                                     }`}
                                             >
                                                 <ArrowUp size={16} />
@@ -526,8 +525,8 @@ export default function AlertsPage() {
                                                 type="button"
                                                 onClick={() => setEditCondition('below')}
                                                 className={`flex-1 px-4 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${editCondition === 'below'
-                                                        ? 'bg-rose-500/10 text-rose-500 border border-rose-500/30'
-                                                        : 'bg-muted text-muted-foreground border border-border'
+                                                    ? 'bg-rose-500/10 text-rose-500 border border-rose-500/30'
+                                                    : 'bg-muted text-muted-foreground border border-border'
                                                     }`}
                                             >
                                                 <ArrowDown size={16} />

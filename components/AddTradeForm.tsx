@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2, Plus, Edit2, X } from 'lucide-react';
+import { Loader2, Plus, Edit2, X, Search } from 'lucide-react';
 import { Trade } from '@/types/portfolio';
 import { toast } from 'sonner';
+import TickerSearch from './shared/TickerSearch';
 
 const tradeSchema = z.object({
     ticker: z.string().min(1, 'Ticker is required').max(10, 'Ticker too long'),
@@ -37,6 +38,7 @@ export default function AddTradeForm({ portfolioId, onTradeAdded, editTrade, onC
         register,
         handleSubmit,
         reset,
+        setValue,
         formState: { errors },
     } = useForm<TradeFormValues>({
         resolver: zodResolver(tradeSchema),
@@ -137,12 +139,13 @@ export default function AddTradeForm({ portfolioId, onTradeAdded, editTrade, onC
                         <label className="block text-sm font-medium text-slate-300 mb-1.5">
                             Ticker Symbol
                         </label>
-                        <input
-                            {...register('ticker')}
-                            type="text"
-                            placeholder="AAPL"
-                            className="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all uppercase"
-                            disabled={isLoading}
+                        <TickerSearch
+                            onSelect={(result) => {
+                                setValue('ticker', result.symbol);
+                            }}
+                            placeholder="e.g. AAPL"
+                            inputClassName="bg-slate-900/50 border-slate-600 rounded-lg text-white placeholder-slate-400 focus:ring-emerald-500"
+                            initialValue={editTrade?.ticker || ''}
                         />
                         {errors.ticker && (
                             <p className="text-red-400 text-xs mt-1">{errors.ticker.message}</p>
