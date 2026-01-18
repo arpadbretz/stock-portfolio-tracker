@@ -28,11 +28,14 @@ export async function GET(
         if (!summary) {
             console.log('No summary data returned for institutions');
             return NextResponse.json({
-                symbol: ticker,
-                institutions: [],
-                funds: [],
-                breakdown: {},
-                message: 'No institutional data available'
+                success: true,
+                data: {
+                    symbol: ticker,
+                    institutions: [],
+                    funds: [],
+                    breakdown: {},
+                    message: 'No institutional data available'
+                }
             });
         }
 
@@ -71,14 +74,18 @@ export async function GET(
         };
 
         return NextResponse.json({
-            symbol: ticker,
-            institutions: institutionalHolders,
-            funds: fundHolders,
-            breakdown: ownershipBreakdown,
+            success: true,
+            data: {
+                symbol: ticker,
+                institutions: institutionalHolders,
+                funds: fundHolders,
+                breakdown: ownershipBreakdown,
+            }
         });
     } catch (error) {
         console.error(`Error fetching institutional data for ${symbol}:`, error);
         return NextResponse.json({
+            success: false,
             error: 'Failed to fetch institutional data',
             details: error instanceof Error ? error.message : String(error)
         }, { status: 500 });

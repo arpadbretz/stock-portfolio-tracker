@@ -255,9 +255,9 @@ export async function GET(
             lastUpdated: new Date().toISOString(),
         };
 
-        return NextResponse.json(stockData);
+        return NextResponse.json({ success: true, data: stockData });
     } catch (error) {
         console.error(`Error fetching stock data for ${symbol}:`, error);
-        return NextResponse.json({ error: 'Failed to fetch stock data' }, { status: 500 });
+        return NextResponse.json({ success: false, error: 'Failed to fetch stock data' }, { status: 500 });
     }
 }

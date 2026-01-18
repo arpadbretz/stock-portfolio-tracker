@@ -25,7 +25,7 @@ export async function GET(
         }).catch(() => null);
 
         if (!summary) {
-            return NextResponse.json({ error: 'No analyst data' }, { status: 404 });
+            return NextResponse.json({ success: false, error: 'No analyst data' }, { status: 404 });
         }
 
         const recommendations = summary?.recommendationTrend?.trend || [];
@@ -77,30 +77,33 @@ export async function GET(
         const numberOfAnalysts = financials.numberOfAnalystOpinions || totalAnalysts;
 
         return NextResponse.json({
-            symbol: ticker,
-            recommendation,
-            averageScore,
-            totalAnalysts,
-            breakdown: {
-                strongBuy: currentMonth.strongBuy || 0,
-                buy: currentMonth.buy || 0,
-                hold: currentMonth.hold || 0,
-                sell: currentMonth.sell || 0,
-                strongSell: currentMonth.strongSell || 0,
-            },
-            priceTarget: {
-                high: targetHigh,
-                low: targetLow,
-                mean: targetMean,
-                median: targetMedian,
-                current: currentPrice,
-                numberOfAnalysts,
-                upside: targetMean && currentPrice ? ((targetMean - currentPrice) / currentPrice * 100) : null,
-            },
-            recentActions,
+            success: true,
+            data: {
+                symbol: ticker,
+                recommendation,
+                averageScore,
+                totalAnalysts,
+                ratings: {
+                    strongBuy: currentMonth.strongBuy || 0,
+                    buy: currentMonth.buy || 0,
+                    hold: currentMonth.hold || 0,
+                    sell: currentMonth.sell || 0,
+                    strongSell: currentMonth.strongSell || 0,
+                },
+                priceTarget: {
+                    high: targetHigh,
+                    low: targetLow,
+                    mean: targetMean,
+                    median: targetMedian,
+                    current: currentPrice,
+                    numberOfAnalysts,
+                    upside: targetMean && currentPrice ? ((targetMean - currentPrice) / currentPrice * 100) : null,
+                },
+                recentActions,
+            }
         });
     } catch (error) {
         console.error(`Error fetching analyst data for ${symbol}:`, error);
-        return NextResponse.json({ error: 'Failed to fetch analyst data' }, { status: 500 });
+        return NextResponse.json({ success: false, error: 'Failed to fetch analyst data' }, { status: 500 });
     }
 }

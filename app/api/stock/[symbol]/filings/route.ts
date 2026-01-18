@@ -41,7 +41,7 @@ export async function GET(
         const cik = await getCIK(ticker);
 
         if (!cik) {
-            return NextResponse.json({ error: 'CIK not found for symbol' }, { status: 404 });
+            return NextResponse.json({ success: false, error: 'CIK not found for symbol' }, { status: 404 });
         }
 
         // Fetch filings from SEC EDGAR
@@ -81,13 +81,16 @@ export async function GET(
         }
 
         return NextResponse.json({
-            symbol: ticker,
-            cik: cik,
-            companyName: data.name,
-            filings: recentFilings,
+            success: true,
+            data: {
+                symbol: ticker,
+                cik: cik,
+                companyName: data.name,
+                filings: recentFilings,
+            }
         });
     } catch (error) {
         console.error(`Error fetching SEC filings for ${symbol}:`, error);
-        return NextResponse.json({ error: 'Failed to fetch SEC filings' }, { status: 500 });
+        return NextResponse.json({ success: false, error: 'Failed to fetch SEC filings' }, { status: 500 });
     }
 }

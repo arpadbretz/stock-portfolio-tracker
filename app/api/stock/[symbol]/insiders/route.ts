@@ -28,10 +28,13 @@ export async function GET(
         if (!summary) {
             console.log('No summary data returned for insiders');
             return NextResponse.json({
-                symbol: ticker,
-                transactions: [],
-                holders: [],
-                message: 'No insider data available'
+                success: true,
+                data: {
+                    symbol: ticker,
+                    transactions: [],
+                    holders: [],
+                    message: 'No insider data available'
+                }
             });
         }
 
@@ -66,13 +69,17 @@ export async function GET(
         }));
 
         return NextResponse.json({
-            symbol: ticker,
-            transactions: recentTransactions,
-            holders: insiderHolders,
+            success: true,
+            data: {
+                symbol: ticker,
+                transactions: recentTransactions,
+                holders: insiderHolders,
+            }
         });
     } catch (error) {
         console.error(`Error fetching insider data for ${symbol}:`, error);
         return NextResponse.json({
+            success: false,
             error: 'Failed to fetch insider data',
             details: error instanceof Error ? error.message : String(error)
         }, { status: 500 });

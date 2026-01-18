@@ -33,11 +33,14 @@ export async function GET(
         }));
 
         return NextResponse.json({
-            symbol: ticker,
-            news: newsItems,
+            success: true,
+            data: {
+                symbol: ticker,
+                news: newsItems,
+            }
         });
     } catch (error) {
         console.error(`Error fetching news for ${symbol}:`, error);
-        return NextResponse.json({ error: 'Failed to fetch news' }, { status: 500 });
+        return NextResponse.json({ success: false, error: 'Failed to fetch news' }, { status: 500 });
     }
 }
