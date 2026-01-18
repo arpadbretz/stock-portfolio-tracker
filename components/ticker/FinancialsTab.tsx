@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
     BarChart3,
@@ -38,27 +38,6 @@ type TimeFrame = 'annual' | 'quarterly';
 export default function FinancialsTab({ symbol, stock }: FinancialsTabProps) {
     const [view, setView] = useState<FinancialView>('income');
     const [timeFrame, setTimeFrame] = useState<TimeFrame>('annual');
-    const [isLoading, setIsLoading] = useState(true);
-    const [financialData, setFinancialData] = useState<any>(null);
-    const [expandedSection, setExpandedSection] = useState<string | null>('revenue');
-
-    useEffect(() => {
-        const fetchFinancials = async () => {
-            setIsLoading(true);
-            try {
-                const res = await fetch(`/api/stock/${symbol}/financials?type=${view}&period=${timeFrame}`);
-                const data = await res.json();
-                if (data.success) {
-                    setFinancialData(data.data);
-                }
-            } catch (err) {
-                console.error('Failed to fetch financials:', err);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchFinancials();
-    }, [symbol, view, timeFrame]);
 
     const formatCurrency = (val: number) => {
         if (val >= 1e12) return `$${(val / 1e12).toFixed(2)}T`;
