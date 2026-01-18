@@ -9,8 +9,6 @@ import {
     PieChart,
     Wallet,
     ArrowUpDown,
-    ChevronDown,
-    ChevronUp,
 } from 'lucide-react';
 import {
     AreaChart,
@@ -47,44 +45,98 @@ export default function FinancialsTab({ symbol, stock }: FinancialsTabProps) {
         return `$${val.toFixed(0)}`;
     };
 
-    const formatPercent = (val: number) => `${(val * 100).toFixed(1)}%`;
+    // Get the appropriate data based on timeframe
+    const getIncomeData = () => {
+        const data = timeFrame === 'quarterly'
+            ? stock?.incomeStatementQuarterly
+            : stock?.incomeStatement;
+        return (data || []).slice(0, 10).reverse().map((item: any) => ({
+            period: timeFrame === 'quarterly'
+                ? new Date(item.endDate).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
+                : new Date(item.endDate).getFullYear(),
+            revenue: item.totalRevenue,
+            costOfRevenue: item.costOfRevenue,
+            grossProfit: item.grossProfit,
+            operatingExpenses: item.operatingExpenses,
+            operatingIncome: item.operatingIncome,
+            netIncome: item.netIncome,
+            ebit: item.ebit,
+            ebitda: item.ebitda,
+            researchDevelopment: item.researchDevelopment,
+            sellingGeneralAdministrative: item.sellingGeneralAdministrative,
+            interestExpense: item.interestExpense,
+            incomeTaxExpense: item.incomeTaxExpense,
+        }));
+    };
 
-    // Use existing stock data for charts
-    const revenueData = stock?.incomeStatement?.slice(0, 10).reverse().map((item: any) => ({
-        year: new Date(item.endDate).getFullYear(),
-        revenue: item.totalRevenue,
-        netIncome: item.netIncome,
-        grossProfit: item.grossProfit,
-        operatingIncome: item.operatingIncome,
-    })) || [];
+    const getBalanceData = () => {
+        const data = timeFrame === 'quarterly'
+            ? stock?.balanceSheetQuarterly
+            : stock?.balanceSheet;
+        return (data || []).slice(0, 10).reverse().map((item: any) => ({
+            period: timeFrame === 'quarterly'
+                ? new Date(item.endDate).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
+                : new Date(item.endDate).getFullYear(),
+            totalAssets: item.totalAssets,
+            totalCurrentAssets: item.totalCurrentAssets,
+            cash: item.cash,
+            shortTermInvestments: item.shortTermInvestments,
+            netReceivables: item.netReceivables,
+            inventory: item.inventory,
+            propertyPlantEquipment: item.propertyPlantEquipment,
+            goodwill: item.goodwill,
+            intangibleAssets: item.intangibleAssets,
+            totalLiabilities: item.totalLiabilities,
+            totalCurrentLiabilities: item.totalCurrentLiabilities,
+            accountsPayable: item.accountsPayable,
+            shortTermDebt: item.shortTermDebt,
+            longTermDebt: item.longTermDebt,
+            totalDebt: item.totalDebt,
+            totalStockholderEquity: item.totalStockholderEquity,
+            retainedEarnings: item.retainedEarnings,
+        }));
+    };
 
-    const balanceData = stock?.balanceSheet?.slice(0, 10).reverse().map((item: any) => ({
-        year: new Date(item.endDate).getFullYear(),
-        totalAssets: item.totalAssets,
-        totalLiabilities: item.totalLiabilities,
-        totalEquity: item.totalStockholderEquity,
-        cash: item.cash,
-        longTermDebt: item.longTermDebt,
-    })) || [];
+    const getCashFlowData = () => {
+        const data = timeFrame === 'quarterly'
+            ? stock?.cashFlowQuarterly
+            : stock?.cashFlow;
+        return (data || []).slice(0, 10).reverse().map((item: any) => ({
+            period: timeFrame === 'quarterly'
+                ? new Date(item.endDate).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
+                : new Date(item.endDate).getFullYear(),
+            operatingCashflow: item.operatingCashflow,
+            investingCashflow: item.investingCashflow,
+            financingCashflow: item.financingCashflow,
+            freeCashflow: item.freeCashflow,
+            capitalExpenditures: item.capitalExpenditures,
+            depreciation: item.depreciation,
+            dividendsPaid: item.dividendsPaid,
+            stockRepurchases: item.stockRepurchases,
+            debtRepayment: item.debtRepayment,
+            netChangeInCash: item.netChangeInCash,
+        }));
+    };
 
-    const cashFlowData = stock?.cashFlow?.slice(0, 10).reverse().map((item: any) => ({
-        year: new Date(item.endDate).getFullYear(),
-        operatingCashFlow: item.operatingCashflow,
-        capex: item.capitalExpenditures,
-        freeCashFlow: item.freeCashflow,
-        dividends: item.dividendsPaid,
-    })) || [];
+    const revenueData = getIncomeData();
+    const balanceData = getBalanceData();
+    const cashFlowData = getCashFlowData();
+
+    // Check if we have any data
+    const hasIncomeData = revenueData.some((d: any) => d.revenue || d.netIncome);
+    const hasBalanceData = balanceData.some((d: any) => d.totalAssets || d.totalLiabilities);
+    const hasCashFlowData = cashFlowData.some((d: any) => d.operatingCashflow || d.freeCashflow);
 
     return (
         <div className="space-y-8">
             {/* View Selector */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center bg-muted/50 p-1 rounded-2xl">
+                <div className="flex items-center bg-muted/50 p-1 rounded-2xl overflow-x-auto">
                     {(['income', 'balance', 'cashflow'] as FinancialView[]).map((v) => (
                         <button
                             key={v}
                             onClick={() => setView(v)}
-                            className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${view === v
+                            className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${view === v
                                 ? 'bg-card text-foreground shadow-lg'
                                 : 'text-muted-foreground hover:text-foreground'
                                 }`}
@@ -124,16 +176,18 @@ export default function FinancialsTab({ symbol, stock }: FinancialsTabProps) {
                             </div>
                             <div>
                                 <h3 className="text-xl font-black">Revenue & Earnings</h3>
-                                <p className="text-sm text-muted-foreground">Historical growth trends</p>
+                                <p className="text-sm text-muted-foreground">
+                                    {timeFrame === 'quarterly' ? 'Quarterly' : 'Annual'} performance
+                                </p>
                             </div>
                         </div>
 
-                        {revenueData.length > 0 ? (
+                        {hasIncomeData ? (
                             <div className="h-[350px]">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={revenueData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                                        <XAxis dataKey="year" tick={{ fill: '#64748b', fontSize: 12, fontWeight: 700 }} />
+                                        <XAxis dataKey="period" tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }} />
                                         <YAxis tick={{ fill: '#64748b', fontSize: 10 }} tickFormatter={formatCurrency} />
                                         <Tooltip
                                             contentStyle={{
@@ -147,13 +201,15 @@ export default function FinancialsTab({ symbol, stock }: FinancialsTabProps) {
                                         />
                                         <Legend />
                                         <Bar dataKey="revenue" name="Revenue" fill="#10b981" radius={[8, 8, 0, 0]} />
+                                        <Bar dataKey="grossProfit" name="Gross Profit" fill="#22d3ee" radius={[8, 8, 0, 0]} />
+                                        <Bar dataKey="operatingIncome" name="Operating Income" fill="#f59e0b" radius={[8, 8, 0, 0]} />
                                         <Bar dataKey="netIncome" name="Net Income" fill="#3b82f6" radius={[8, 8, 0, 0]} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
                         ) : (
                             <div className="h-[350px] flex items-center justify-center text-muted-foreground">
-                                No income data available
+                                No {timeFrame} income data available
                             </div>
                         )}
                     </motion.div>
@@ -175,30 +231,30 @@ export default function FinancialsTab({ symbol, stock }: FinancialsTabProps) {
                             </div>
                         </div>
 
-                        {revenueData.length > 0 ? (
+                        {hasIncomeData ? (
                             <div className="h-[300px]">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <LineChart data={revenueData.map((d: any) => ({
                                         ...d,
-                                        grossMargin: d.revenue ? (d.grossProfit / d.revenue) * 100 : 0,
-                                        operatingMargin: d.revenue ? (d.operatingIncome / d.revenue) * 100 : 0,
-                                        netMargin: d.revenue ? (d.netIncome / d.revenue) * 100 : 0,
+                                        grossMargin: d.revenue && d.grossProfit ? (d.grossProfit / d.revenue) * 100 : null,
+                                        operatingMargin: d.revenue && d.operatingIncome ? (d.operatingIncome / d.revenue) * 100 : null,
+                                        netMargin: d.revenue && d.netIncome ? (d.netIncome / d.revenue) * 100 : null,
                                     }))}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                                        <XAxis dataKey="year" tick={{ fill: '#64748b', fontSize: 12, fontWeight: 700 }} />
-                                        <YAxis tick={{ fill: '#64748b', fontSize: 10 }} tickFormatter={(v) => `${v.toFixed(0)}%`} />
+                                        <XAxis dataKey="period" tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }} />
+                                        <YAxis tick={{ fill: '#64748b', fontSize: 10 }} tickFormatter={(v) => `${v?.toFixed(0) || 0}%`} />
                                         <Tooltip
                                             contentStyle={{
                                                 backgroundColor: 'hsl(var(--card))',
                                                 borderColor: 'hsl(var(--border))',
                                                 borderRadius: '16px',
                                             }}
-                                            formatter={(value) => [`${(value as number).toFixed(1)}%`, '']}
+                                            formatter={(value) => value ? [`${(value as number).toFixed(1)}%`, ''] : ['N/A', '']}
                                         />
                                         <Legend />
-                                        <Line type="monotone" dataKey="grossMargin" name="Gross Margin" stroke="#10b981" strokeWidth={3} dot={{ r: 4 }} />
-                                        <Line type="monotone" dataKey="operatingMargin" name="Operating Margin" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4 }} />
-                                        <Line type="monotone" dataKey="netMargin" name="Net Margin" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} />
+                                        <Line type="monotone" dataKey="grossMargin" name="Gross Margin" stroke="#10b981" strokeWidth={3} dot={{ r: 4 }} connectNulls />
+                                        <Line type="monotone" dataKey="operatingMargin" name="Operating Margin" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4 }} connectNulls />
+                                        <Line type="monotone" dataKey="netMargin" name="Net Margin" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} connectNulls />
                                     </LineChart>
                                 </ResponsiveContainer>
                             </div>
@@ -228,9 +284,9 @@ export default function FinancialsTab({ symbol, stock }: FinancialsTabProps) {
                                 <thead>
                                     <tr className="border-b border-border">
                                         <th className="text-left py-3 px-4 font-black uppercase tracking-widest text-[10px] text-muted-foreground sticky left-0 bg-card">Metric</th>
-                                        {revenueData.slice(-5).map((d: any) => (
-                                            <th key={d.year} className="text-right py-3 px-4 font-black uppercase tracking-widest text-[10px] text-muted-foreground">
-                                                {d.year}
+                                        {revenueData.slice(-5).map((d: any, i: number) => (
+                                            <th key={i} className="text-right py-3 px-4 font-black uppercase tracking-widest text-[10px] text-muted-foreground min-w-[100px]">
+                                                {d.period}
                                             </th>
                                         ))}
                                     </tr>
@@ -238,14 +294,19 @@ export default function FinancialsTab({ symbol, stock }: FinancialsTabProps) {
                                 <tbody className="divide-y divide-border/30">
                                     {[
                                         { key: 'revenue', label: 'Total Revenue' },
+                                        { key: 'costOfRevenue', label: 'Cost of Revenue' },
                                         { key: 'grossProfit', label: 'Gross Profit' },
+                                        { key: 'researchDevelopment', label: 'R&D' },
+                                        { key: 'sellingGeneralAdministrative', label: 'SG&A' },
                                         { key: 'operatingIncome', label: 'Operating Income' },
+                                        { key: 'interestExpense', label: 'Interest Expense' },
+                                        { key: 'incomeTaxExpense', label: 'Income Tax' },
                                         { key: 'netIncome', label: 'Net Income' },
-                                    ].map((row) => (
+                                    ].filter(row => revenueData.some((d: any) => d[row.key])).map((row) => (
                                         <tr key={row.key} className="hover:bg-muted/30 transition-colors">
                                             <td className="py-3 px-4 font-bold sticky left-0 bg-card">{row.label}</td>
-                                            {revenueData.slice(-5).map((d: any) => (
-                                                <td key={d.year} className="py-3 px-4 text-right font-bold tabular-nums">
+                                            {revenueData.slice(-5).map((d: any, i: number) => (
+                                                <td key={i} className="py-3 px-4 text-right font-bold tabular-nums">
                                                     {d[row.key] ? formatCurrency(d[row.key]) : '—'}
                                                 </td>
                                             ))}
@@ -272,16 +333,18 @@ export default function FinancialsTab({ symbol, stock }: FinancialsTabProps) {
                             </div>
                             <div>
                                 <h3 className="text-xl font-black">Assets vs Liabilities</h3>
-                                <p className="text-sm text-muted-foreground">Financial position over time</p>
+                                <p className="text-sm text-muted-foreground">
+                                    {timeFrame === 'quarterly' ? 'Quarterly' : 'Annual'} financial position
+                                </p>
                             </div>
                         </div>
 
-                        {balanceData.length > 0 ? (
+                        {hasBalanceData ? (
                             <div className="h-[350px]">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={balanceData}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                                        <XAxis dataKey="year" tick={{ fill: '#64748b', fontSize: 12, fontWeight: 700 }} />
+                                        <XAxis dataKey="period" tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }} />
                                         <YAxis tick={{ fill: '#64748b', fontSize: 10 }} tickFormatter={formatCurrency} />
                                         <Tooltip
                                             contentStyle={{
@@ -294,13 +357,13 @@ export default function FinancialsTab({ symbol, stock }: FinancialsTabProps) {
                                         <Legend />
                                         <Bar dataKey="totalAssets" name="Total Assets" fill="#10b981" radius={[8, 8, 0, 0]} />
                                         <Bar dataKey="totalLiabilities" name="Total Liabilities" fill="#f43f5e" radius={[8, 8, 0, 0]} />
-                                        <Bar dataKey="totalEquity" name="Shareholders' Equity" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+                                        <Bar dataKey="totalStockholderEquity" name="Shareholders' Equity" fill="#3b82f6" radius={[8, 8, 0, 0]} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
                         ) : (
                             <div className="h-[350px] flex items-center justify-center text-muted-foreground">
-                                No balance sheet data available
+                                No {timeFrame} balance sheet data available
                             </div>
                         )}
                     </motion.div>
@@ -324,25 +387,33 @@ export default function FinancialsTab({ symbol, stock }: FinancialsTabProps) {
                                 <thead>
                                     <tr className="border-b border-border">
                                         <th className="text-left py-3 px-4 font-black uppercase tracking-widest text-[10px] text-muted-foreground sticky left-0 bg-card">Metric</th>
-                                        {balanceData.slice(-5).map((d: any) => (
-                                            <th key={d.year} className="text-right py-3 px-4 font-black uppercase tracking-widest text-[10px] text-muted-foreground">
-                                                {d.year}
+                                        {balanceData.slice(-5).map((d: any, i: number) => (
+                                            <th key={i} className="text-right py-3 px-4 font-black uppercase tracking-widest text-[10px] text-muted-foreground min-w-[100px]">
+                                                {d.period}
                                             </th>
                                         ))}
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border/30">
                                     {[
-                                        { key: 'totalAssets', label: 'Total Assets' },
-                                        { key: 'cash', label: 'Cash & Equivalents' },
-                                        { key: 'totalLiabilities', label: 'Total Liabilities' },
-                                        { key: 'longTermDebt', label: 'Long-Term Debt' },
-                                        { key: 'totalEquity', label: "Shareholders' Equity" },
-                                    ].map((row) => (
+                                        { key: 'totalAssets', label: 'Total Assets', section: 'assets' },
+                                        { key: 'totalCurrentAssets', label: '  Current Assets', section: 'assets' },
+                                        { key: 'cash', label: '    Cash & Equivalents', section: 'assets' },
+                                        { key: 'netReceivables', label: '    Receivables', section: 'assets' },
+                                        { key: 'inventory', label: '    Inventory', section: 'assets' },
+                                        { key: 'propertyPlantEquipment', label: '  Property & Equipment', section: 'assets' },
+                                        { key: 'goodwill', label: '  Goodwill', section: 'assets' },
+                                        { key: 'totalLiabilities', label: 'Total Liabilities', section: 'liabs' },
+                                        { key: 'totalCurrentLiabilities', label: '  Current Liabilities', section: 'liabs' },
+                                        { key: 'accountsPayable', label: '    Accounts Payable', section: 'liabs' },
+                                        { key: 'longTermDebt', label: '  Long-Term Debt', section: 'liabs' },
+                                        { key: 'totalStockholderEquity', label: "Shareholders' Equity", section: 'equity' },
+                                        { key: 'retainedEarnings', label: '  Retained Earnings', section: 'equity' },
+                                    ].filter(row => balanceData.some((d: any) => d[row.key])).map((row) => (
                                         <tr key={row.key} className="hover:bg-muted/30 transition-colors">
-                                            <td className="py-3 px-4 font-bold sticky left-0 bg-card">{row.label}</td>
-                                            {balanceData.slice(-5).map((d: any) => (
-                                                <td key={d.year} className="py-3 px-4 text-right font-bold tabular-nums">
+                                            <td className="py-3 px-4 font-bold sticky left-0 bg-card whitespace-pre">{row.label}</td>
+                                            {balanceData.slice(-5).map((d: any, i: number) => (
+                                                <td key={i} className="py-3 px-4 text-right font-bold tabular-nums">
                                                     {d[row.key] ? formatCurrency(d[row.key]) : '—'}
                                                 </td>
                                             ))}
@@ -369,11 +440,13 @@ export default function FinancialsTab({ symbol, stock }: FinancialsTabProps) {
                             </div>
                             <div>
                                 <h3 className="text-xl font-black">Cash Flow Trends</h3>
-                                <p className="text-sm text-muted-foreground">Operating, investing, and free cash flow</p>
+                                <p className="text-sm text-muted-foreground">
+                                    {timeFrame === 'quarterly' ? 'Quarterly' : 'Annual'} cash flows
+                                </p>
                             </div>
                         </div>
 
-                        {cashFlowData.length > 0 ? (
+                        {hasCashFlowData ? (
                             <div className="h-[350px]">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <AreaChart data={cashFlowData}>
@@ -388,7 +461,7 @@ export default function FinancialsTab({ symbol, stock }: FinancialsTabProps) {
                                             </linearGradient>
                                         </defs>
                                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                                        <XAxis dataKey="year" tick={{ fill: '#64748b', fontSize: 12, fontWeight: 700 }} />
+                                        <XAxis dataKey="period" tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }} />
                                         <YAxis tick={{ fill: '#64748b', fontSize: 10 }} tickFormatter={formatCurrency} />
                                         <Tooltip
                                             contentStyle={{
@@ -399,23 +472,62 @@ export default function FinancialsTab({ symbol, stock }: FinancialsTabProps) {
                                             formatter={(value) => [formatCurrency(value as number), '']}
                                         />
                                         <Legend />
-                                        <Area type="monotone" dataKey="operatingCashFlow" name="Operating Cash Flow" stroke="#10b981" fill="url(#colorOCF)" strokeWidth={3} />
-                                        <Area type="monotone" dataKey="freeCashFlow" name="Free Cash Flow" stroke="#3b82f6" fill="url(#colorFCF)" strokeWidth={3} />
+                                        <Area type="monotone" dataKey="operatingCashflow" name="Operating Cash Flow" stroke="#10b981" fill="url(#colorOCF)" strokeWidth={3} />
+                                        <Area type="monotone" dataKey="freeCashflow" name="Free Cash Flow" stroke="#3b82f6" fill="url(#colorFCF)" strokeWidth={3} />
                                     </AreaChart>
                                 </ResponsiveContainer>
                             </div>
                         ) : (
                             <div className="h-[350px] flex items-center justify-center text-muted-foreground">
-                                No cash flow data available
+                                No {timeFrame} cash flow data available
                             </div>
                         )}
                     </motion.div>
+
+                    {/* Cash Flow Activities Breakdown */}
+                    {hasCashFlowData && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.1 }}
+                            className="bg-card border border-border rounded-[40px] p-8"
+                        >
+                            <div className="flex items-center gap-4 mb-8">
+                                <div className="p-3 bg-purple-500/10 rounded-2xl">
+                                    <BarChart3 className="text-purple-500" size={20} />
+                                </div>
+                                <h3 className="text-xl font-black">Cash Flow by Activity</h3>
+                            </div>
+
+                            <div className="h-[300px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={cashFlowData}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                                        <XAxis dataKey="period" tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }} />
+                                        <YAxis tick={{ fill: '#64748b', fontSize: 10 }} tickFormatter={formatCurrency} />
+                                        <Tooltip
+                                            contentStyle={{
+                                                backgroundColor: 'hsl(var(--card))',
+                                                borderColor: 'hsl(var(--border))',
+                                                borderRadius: '16px',
+                                            }}
+                                            formatter={(value) => [formatCurrency(value as number), '']}
+                                        />
+                                        <Legend />
+                                        <Bar dataKey="operatingCashflow" name="Operating" fill="#10b981" radius={[4, 4, 0, 0]} />
+                                        <Bar dataKey="investingCashflow" name="Investing" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                                        <Bar dataKey="financingCashflow" name="Financing" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </motion.div>
+                    )}
 
                     {/* Cash Flow Table */}
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 }}
+                        transition={{ delay: 0.15 }}
                         className="bg-card border border-border rounded-[40px] p-8 overflow-hidden"
                     >
                         <div className="flex items-center gap-4 mb-8">
@@ -430,24 +542,29 @@ export default function FinancialsTab({ symbol, stock }: FinancialsTabProps) {
                                 <thead>
                                     <tr className="border-b border-border">
                                         <th className="text-left py-3 px-4 font-black uppercase tracking-widest text-[10px] text-muted-foreground sticky left-0 bg-card">Metric</th>
-                                        {cashFlowData.slice(-5).map((d: any) => (
-                                            <th key={d.year} className="text-right py-3 px-4 font-black uppercase tracking-widest text-[10px] text-muted-foreground">
-                                                {d.year}
+                                        {cashFlowData.slice(-5).map((d: any, i: number) => (
+                                            <th key={i} className="text-right py-3 px-4 font-black uppercase tracking-widest text-[10px] text-muted-foreground min-w-[100px]">
+                                                {d.period}
                                             </th>
                                         ))}
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border/30">
                                     {[
-                                        { key: 'operatingCashFlow', label: 'Operating Cash Flow' },
-                                        { key: 'capex', label: 'Capital Expenditures' },
-                                        { key: 'freeCashFlow', label: 'Free Cash Flow' },
-                                        { key: 'dividends', label: 'Dividends Paid' },
-                                    ].map((row) => (
+                                        { key: 'operatingCashflow', label: 'Operating Cash Flow' },
+                                        { key: 'depreciation', label: '  Depreciation' },
+                                        { key: 'investingCashflow', label: 'Investing Cash Flow' },
+                                        { key: 'capitalExpenditures', label: '  Capital Expenditures' },
+                                        { key: 'financingCashflow', label: 'Financing Cash Flow' },
+                                        { key: 'dividendsPaid', label: '  Dividends Paid' },
+                                        { key: 'stockRepurchases', label: '  Stock Repurchases' },
+                                        { key: 'freeCashflow', label: 'Free Cash Flow' },
+                                        { key: 'netChangeInCash', label: 'Net Change in Cash' },
+                                    ].filter(row => cashFlowData.some((d: any) => d[row.key])).map((row) => (
                                         <tr key={row.key} className="hover:bg-muted/30 transition-colors">
-                                            <td className="py-3 px-4 font-bold sticky left-0 bg-card">{row.label}</td>
-                                            {cashFlowData.slice(-5).map((d: any) => (
-                                                <td key={d.year} className={`py-3 px-4 text-right font-bold tabular-nums ${row.key === 'capex' && d[row.key] < 0 ? 'text-rose-500' : ''}`}>
+                                            <td className="py-3 px-4 font-bold sticky left-0 bg-card whitespace-pre">{row.label}</td>
+                                            {cashFlowData.slice(-5).map((d: any, i: number) => (
+                                                <td key={i} className={`py-3 px-4 text-right font-bold tabular-nums ${row.key === 'capitalExpenditures' && d[row.key] < 0 ? 'text-rose-500' : ''}`}>
                                                     {d[row.key] ? formatCurrency(Math.abs(d[row.key])) : '—'}
                                                 </td>
                                             ))}

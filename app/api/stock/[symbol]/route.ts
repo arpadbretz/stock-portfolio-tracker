@@ -10,13 +10,13 @@ export async function GET(
     const { symbol } = await params;
 
     if (!symbol) {
-        return NextResponse.json({ error: 'Symbol required' }, { status: 400 });
+        return NextResponse.json({ success: false, error: 'Symbol required' }, { status: 400 });
     }
 
     try {
         const ticker = symbol.toUpperCase();
 
-        // Fetch comprehensive stock data including financial statements
+        // Fetch comprehensive stock data including BOTH annual AND quarterly financial statements
         const [quote, summary] = await Promise.all([
             yf.quote(ticker),
             yf.quoteSummary(ticker, {
@@ -27,9 +27,14 @@ export async function GET(
                     'defaultKeyStatistics',
                     'earnings',
                     'calendarEvents',
+                    // Annual statements
                     'incomeStatementHistory',
                     'balanceSheetHistory',
                     'cashflowStatementHistory',
+                    // Quarterly statements
+                    'incomeStatementHistoryQuarterly',
+                    'balanceSheetHistoryQuarterly',
+                    'cashflowStatementHistoryQuarterly',
                 ]
             }).catch((e: any) => {
                 console.warn('quoteSummary partial failure:', e.message);
@@ -38,7 +43,7 @@ export async function GET(
         ]);
 
         if (!quote) {
-            return NextResponse.json({ error: 'Stock not found' }, { status: 404 });
+            return NextResponse.json({ success: false, error: 'Stock not found' }, { status: 404 });
         }
 
         const profile = summary?.assetProfile || {};
@@ -53,114 +58,266 @@ export async function GET(
         const balanceAnnual = summary?.balanceSheetHistory?.balanceSheetStatements || [];
         const cashflowAnnual = summary?.cashflowStatementHistory?.cashflowStatements || [];
 
-        // USER REQUESTED DEBUG LOG
-        console.log(`[${ticker}] incomeStatementHistory structure:`, JSON.stringify(summary?.incomeStatementHistory, null, 2));
+        // Get quarterly statements
+        const incomeQuarterly = summary?.incomeStatementHistoryQuarterly?.incomeStatementHistory || [];
+        const balanceQuarterly = summary?.balanceSheetHistoryQuarterly?.balanceSheetStatements || [];
+        const cashflowQuarterly = summary?.cashflowStatementHistoryQuarterly?.cashflowStatements || [];
 
         console.log(`[${ticker}] Financial data available:`, {
-            incomeStatements: incomeAnnual.length,
-            balanceSheets: balanceAnnual.length,
-            cashFlows: cashflowAnnual.length,
-            hasFinancialData: !!financials,
+            incomeAnnual: incomeAnnual.length,
+            incomeQuarterly: incomeQuarterly.length,
+            balanceAnnual: balanceAnnual.length,
+            balanceQuarterly: balanceQuarterly.length,
+            cashflowAnnual: cashflowAnnual.length,
+            cashflowQuarterly: cashflowQuarterly.length,
         });
 
         // Get next earnings date from calendar
         const earningsDate = calendar?.earnings?.earningsDate?.[0] || earnings?.earningsDate?.[0] || null;
 
-        // Robust value extraction helper
-        const extractValue = (item: any, field: string): number | null => {
-            if (!item || item[field] === undefined || item[field] === null) return null;
-            const val = item[field];
-            if (typeof val === 'number') return val;
-            if (typeof val === 'object' && val.raw !== undefined) return val.raw;
-            if (typeof val === 'object' && val.value !== undefined) return val.value;
+        // Robust value extraction helper - handles both raw values and nested objects
+        const extractValue = (item: any, ...fields: string[]): number | null => {
+            for (const field of fields) {
+                if (!item || item[field] === undefined || item[field] === null) continue;
+                const val = item[field];
+                if (typeof val === 'number') return val;
+                if (typeof val === 'object' && val.raw !== undefined) return val.raw;
+                if (typeof val === 'object' && val.value !== undefined) return val.value;
+            }
             return null;
         };
 
-        // Simple processing - only include fields that actually have data
+        // Extract date from item
+        const extractDate = (item: any): string | null => {
+            const date = item?.endDate;
+            if (!date) return null;
+            if (typeof date === 'string') return date;
+            if (typeof date === 'object' && date.raw) {
+                return new Date(date.raw * 1000).toISOString();
+            }
+            return null;
+        };
+
+        // Enhanced income statement processing with more fields
         const processIncomeStatement = (item: any) => {
             if (!item) return null;
 
-            // Format date if it's an object
-            let date = item.endDate;
-            if (typeof date === 'object' && date.raw) {
-                date = new Date(date.raw * 1000).toISOString();
-            }
+            const date = extractDate(item);
+            if (!date) return null;
 
             const result: any = { endDate: date };
 
-            // Map common fields with fallbacks
+            // Revenue
             const rev = extractValue(item, 'totalRevenue');
             if (rev !== null) result.totalRevenue = rev;
 
-            const ni = extractValue(item, 'netIncome') || extractValue(item, 'netIncomeApplicableToCommonShares');
+            // Cost of Revenue
+            const cor = extractValue(item, 'costOfRevenue');
+            if (cor !== null) result.costOfRevenue = cor;
+
+            // Gross Profit
+            const gp = extractValue(item, 'grossProfit');
+            if (gp !== null) result.grossProfit = gp;
+
+            // Operating Expenses
+            const opex = extractValue(item, 'operatingExpenses', 'totalOperatingExpenses');
+            if (opex !== null) result.operatingExpenses = opex;
+
+            // R&D
+            const rd = extractValue(item, 'researchDevelopment', 'researchAndDevelopment');
+            if (rd !== null) result.researchDevelopment = rd;
+
+            // SGA
+            const sga = extractValue(item, 'sellingGeneralAdministrative');
+            if (sga !== null) result.sellingGeneralAdministrative = sga;
+
+            // Operating Income
+            const oi = extractValue(item, 'operatingIncome');
+            if (oi !== null) result.operatingIncome = oi;
+
+            // EBIT
+            const ebit = extractValue(item, 'ebit');
+            if (ebit !== null) result.ebit = ebit;
+
+            // EBITDA (calculated if not available)
+            const ebitda = extractValue(item, 'ebitda');
+            if (ebitda !== null) result.ebitda = ebitda;
+
+            // Interest Expense
+            const interest = extractValue(item, 'interestExpense');
+            if (interest !== null) result.interestExpense = interest;
+
+            // Pre-tax Income
+            const pretax = extractValue(item, 'incomeBeforeTax');
+            if (pretax !== null) result.incomeBeforeTax = pretax;
+
+            // Income Tax
+            const tax = extractValue(item, 'incomeTaxExpense');
+            if (tax !== null) result.incomeTaxExpense = tax;
+
+            // Net Income
+            const ni = extractValue(item, 'netIncome', 'netIncomeApplicableToCommonShares', 'netIncomeFromContinuingOps');
             if (ni !== null) result.netIncome = ni;
 
-            const gp = extractValue(item, 'grossProfit');
-            if (gp !== null && gp !== 0) result.grossProfit = gp;
-
-            const oi = extractValue(item, 'operatingIncome');
-            if (oi !== null && oi !== 0) result.operatingIncome = oi;
-
-            const ebit = extractValue(item, 'ebit');
-            if (ebit !== null && ebit !== 0) result.ebit = ebit;
+            // EPS
+            const eps = extractValue(item, 'dilutedEPS', 'basicEPS');
+            if (eps !== null) result.eps = eps;
 
             return Object.keys(result).length > 1 ? result : null;
         };
 
+        // Enhanced balance sheet processing with more fields
         const processBalanceSheet = (item: any) => {
             if (!item) return null;
 
-            let date = item.endDate;
-            if (typeof date === 'object' && date.raw) {
-                date = new Date(date.raw * 1000).toISOString();
-            }
+            const date = extractDate(item);
+            if (!date) return null;
 
             const result: any = { endDate: date };
 
+            // Assets
             const assets = extractValue(item, 'totalAssets');
             if (assets !== null) result.totalAssets = assets;
 
-            const liabs = extractValue(item, 'totalLiab') || extractValue(item, 'totalLiabilities');
-            if (liabs !== null) result.totalLiabilities = liabs;
+            // Current Assets
+            const currentAssets = extractValue(item, 'totalCurrentAssets');
+            if (currentAssets !== null) result.totalCurrentAssets = currentAssets;
 
-            const equity = extractValue(item, 'totalStockholderEquity') || extractValue(item, 'totalShareholderEquity');
-            if (equity !== null) result.totalStockholderEquity = equity;
-
-            const cash = extractValue(item, 'cash') || extractValue(item, 'cashAndCashEquivalents');
+            // Cash
+            const cash = extractValue(item, 'cash', 'cashAndCashEquivalents');
             if (cash !== null) result.cash = cash;
 
-            const debt = extractValue(item, 'longTermDebt') || extractValue(item, 'totalDebt');
-            if (debt !== null) result.longTermDebt = debt;
+            // Short Term Investments
+            const sti = extractValue(item, 'shortTermInvestments');
+            if (sti !== null) result.shortTermInvestments = sti;
+
+            // Receivables
+            const receivables = extractValue(item, 'netReceivables', 'accountsReceivable');
+            if (receivables !== null) result.netReceivables = receivables;
+
+            // Inventory
+            const inventory = extractValue(item, 'inventory');
+            if (inventory !== null) result.inventory = inventory;
+
+            // Non-current Assets
+            const nonCurrentAssets = extractValue(item, 'totalNonCurrentAssets');
+            if (nonCurrentAssets !== null) result.totalNonCurrentAssets = nonCurrentAssets;
+
+            // Property Plant Equipment
+            const ppe = extractValue(item, 'propertyPlantEquipment', 'netPPE');
+            if (ppe !== null) result.propertyPlantEquipment = ppe;
+
+            // Goodwill
+            const gw = extractValue(item, 'goodWill', 'goodwill');
+            if (gw !== null) result.goodwill = gw;
+
+            // Intangibles
+            const intangibles = extractValue(item, 'intangibleAssets');
+            if (intangibles !== null) result.intangibleAssets = intangibles;
+
+            // Total Liabilities
+            const liabs = extractValue(item, 'totalLiab', 'totalLiabilities');
+            if (liabs !== null) result.totalLiabilities = liabs;
+
+            // Current Liabilities
+            const currentLiabs = extractValue(item, 'totalCurrentLiabilities');
+            if (currentLiabs !== null) result.totalCurrentLiabilities = currentLiabs;
+
+            // Accounts Payable
+            const ap = extractValue(item, 'accountsPayable');
+            if (ap !== null) result.accountsPayable = ap;
+
+            // Short Term Debt
+            const std = extractValue(item, 'shortLongTermDebt', 'shortTermDebt');
+            if (std !== null) result.shortTermDebt = std;
+
+            // Long Term Debt
+            const ltd = extractValue(item, 'longTermDebt');
+            if (ltd !== null) result.longTermDebt = ltd;
+
+            // Total Debt
+            const totalDebt = extractValue(item, 'totalDebt');
+            if (totalDebt !== null) result.totalDebt = totalDebt;
+
+            // Stockholders' Equity
+            const equity = extractValue(item, 'totalStockholderEquity', 'totalShareholderEquity', 'stockholdersEquity');
+            if (equity !== null) result.totalStockholderEquity = equity;
+
+            // Retained Earnings
+            const re = extractValue(item, 'retainedEarnings');
+            if (re !== null) result.retainedEarnings = re;
+
+            // Common Stock
+            const cs = extractValue(item, 'commonStock');
+            if (cs !== null) result.commonStock = cs;
 
             return Object.keys(result).length > 1 ? result : null;
         };
 
+        // Enhanced cash flow processing with more fields
         const processCashFlow = (item: any) => {
             if (!item) return null;
 
-            let date = item.endDate;
-            if (typeof date === 'object' && date.raw) {
-                date = new Date(date.raw * 1000).toISOString();
-            }
+            const date = extractDate(item);
+            if (!date) return null;
 
             const result: any = { endDate: date };
 
+            // Net Income
             const ni = extractValue(item, 'netIncome');
             if (ni !== null) result.netIncome = ni;
 
-            const ocf = extractValue(item, 'totalCashFromOperatingActivities') || extractValue(item, 'operatingCashflow');
+            // Depreciation
+            const dep = extractValue(item, 'depreciation', 'depreciationAndAmortization');
+            if (dep !== null) result.depreciation = dep;
+
+            // Operating Cash Flow
+            const ocf = extractValue(item, 'totalCashFromOperatingActivities', 'operatingCashflow');
             if (ocf !== null) result.operatingCashflow = ocf;
 
+            // Changes in Working Capital
+            const wc = extractValue(item, 'changeToNetincome', 'changeInWorkingCapital');
+            if (wc !== null) result.changeInWorkingCapital = wc;
+
+            // Capital Expenditures
             const capex = extractValue(item, 'capitalExpenditures');
             if (capex !== null) result.capitalExpenditures = capex;
 
-            const fcf = extractValue(item, 'freeCashflow');
-            if (fcf !== null) result.freeCashflow = fcf;
+            // Investments
+            const investments = extractValue(item, 'investments');
+            if (investments !== null) result.investments = investments;
 
-            // Calculate FCF if missing but we have components
-            if (result.operatingCashflow !== undefined && capex !== null && result.freeCashflow === undefined) {
+            // Investing Cash Flow
+            const icf = extractValue(item, 'totalCashflowsFromInvestingActivities', 'investingCashflow');
+            if (icf !== null) result.investingCashflow = icf;
+
+            // Dividends Paid
+            const div = extractValue(item, 'dividendsPaid');
+            if (div !== null) result.dividendsPaid = div;
+
+            // Stock Repurchases
+            const buyback = extractValue(item, 'repurchaseOfStock');
+            if (buyback !== null) result.stockRepurchases = buyback;
+
+            // Debt Repayment
+            const debtRepay = extractValue(item, 'repaymentOfDebt');
+            if (debtRepay !== null) result.debtRepayment = debtRepay;
+
+            // Financing Cash Flow
+            const fcf = extractValue(item, 'totalCashFromFinancingActivities', 'financingCashflow');
+            if (fcf !== null) result.financingCashflow = fcf;
+
+            // Free Cash Flow (calculate if not present)
+            const freeCF = extractValue(item, 'freeCashflow');
+            if (freeCF !== null) {
+                result.freeCashflow = freeCF;
+            } else if (result.operatingCashflow !== undefined && capex !== null) {
                 result.freeCashflow = result.operatingCashflow + capex; // capex is usually negative
             }
+
+            // Net Change in Cash
+            const netChange = extractValue(item, 'changeInCash');
+            if (netChange !== null) result.netChangeInCash = netChange;
 
             return Object.keys(result).length > 1 ? result : null;
         };
@@ -247,10 +404,15 @@ export async function GET(
             earningsDate: earningsDate,
             earningsQuarterlyGrowth: keyStats.earningsQuarterlyGrowth || null,
 
-            // Financial Statements (Annual) - filtered to only include non-null entries
+            // Financial Statements - ANNUAL
             incomeStatement: incomeAnnual.map(processIncomeStatement).filter(Boolean),
             balanceSheet: balanceAnnual.map(processBalanceSheet).filter(Boolean),
             cashFlow: cashflowAnnual.map(processCashFlow).filter(Boolean),
+
+            // Financial Statements - QUARTERLY (NEW!)
+            incomeStatementQuarterly: incomeQuarterly.map(processIncomeStatement).filter(Boolean),
+            balanceSheetQuarterly: balanceQuarterly.map(processBalanceSheet).filter(Boolean),
+            cashFlowQuarterly: cashflowQuarterly.map(processCashFlow).filter(Boolean),
 
             lastUpdated: new Date().toISOString(),
         };
