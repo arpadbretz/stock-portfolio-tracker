@@ -24,6 +24,17 @@
 | DASH-002 | Quick Actions Bar | ✅ | 2h | Implemented Jan 12, 2026 |
 | DASH-003 | Widget Customization | ✅ | 8h | Implemented Jan 12, 2026 |
 | DASH-015 | Advanced Trade Tracker & P&L Logger | ⬜ | 12h | Track realized/unrealized P&L based on trade history integration |
+| DASH-016 | Side Panel for Watchlist Details | ⬜ | 4h | View stock data without leaving the watchlist |
+
+## UX & Cohesion (New Focus)
+
+| ID | Task | Status | Effort | Notes |
+|----|------|--------|--------|-------|
+| UX-101 | Inline Alerts on Ticker Page | ✅ | 2h | Implemented Jan 17, 2026 |
+| UX-102 | Inline DCF Preview on Ticker Page | ✅ | 4h | Implemented Jan 17, 2026 |
+| UX-103 | Breadcrumb Navigation | ✅ | 2h | Implemented Jan 17, 2026 |
+| UX-104 | Global Action Hotkeys | ✅ | 3h | Implemented Jan 17, 2026 |
+| UX-105 | Persistent Side Navigation | ⬜ | 4h | Improve desktop layout for faster switching |
 
 ## Stock Research (Ticker Page)
 

@@ -1,6 +1,7 @@
 'use client';
 
 import Navigation from '@/components/Navigation';
+import Breadcrumbs from '@/components/shared/Breadcrumbs';
 
 export default function DashboardLayout({
     children,
@@ -17,7 +18,10 @@ export default function DashboardLayout({
 
             <Navigation />
             <div className="lg:pl-72 pt-20 lg:pt-0 min-h-screen">
-                {children}
+                <main className="max-w-[1600px] mx-auto px-6 py-8 lg:py-12">
+                    <Breadcrumbs />
+                    {children}
+                </main>
             </div>
         </div>
     );

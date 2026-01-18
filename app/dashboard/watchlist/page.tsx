@@ -262,7 +262,7 @@ export default function WatchlistPage() {
     }
 
     return (
-        <div className="min-h-screen text-foreground px-6 py-10 lg:px-12 max-w-[1400px] mx-auto">
+        <div className="pb-20">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
                 <div>

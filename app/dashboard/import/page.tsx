@@ -178,7 +178,7 @@ export default function ImportPage() {
     if (authLoading) return null;
 
     return (
-        <div className="p-6 md:p-10">
+        <div>
             <div className="max-w-4xl mx-auto">
                 <header className="mb-10 flex items-center justify-between">
                     <div>

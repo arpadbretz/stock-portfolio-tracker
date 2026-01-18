@@ -467,266 +467,263 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen text-foreground scroll-smooth relative">
-      <main className="px-6 py-10 lg:px-12 max-w-[1600px] mx-auto">
-        {/* Intelligence Header */}
-        <header className="flex flex-col gap-10 mb-12">
-          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-8">
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <div className="p-1 px-3 bg-primary/10 rounded-full border border-primary/20">
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">System Dashboard</span>
-                </div>
-                <div className="h-1 w-1 bg-border rounded-full" />
-                <div className="flex items-center gap-2 text-muted-foreground text-[10px] font-black uppercase tracking-widest">
-                  <Clock size={12} />
-                  <span>Sync: {lastUpdated ? new Date(lastUpdated).toLocaleTimeString() : '--:--'}</span>
-                </div>
+    <div className="scroll-smooth relative">
+      {/* Intelligence Header */}
+      <header className="flex flex-col gap-10 mb-12">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-8">
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <div className="p-1 px-3 bg-primary/10 rounded-full border border-primary/20">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">System Dashboard</span>
               </div>
-              <h1 className="text-4xl md:text-5xl font-black tracking-tighter leading-none">
-                Investment <span className="text-primary text-glow-primary">Protocol.</span>
-              </h1>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="bg-card/40 backdrop-blur-xl border border-border/50 p-1.5 rounded-[22px] flex items-center shadow-xl shadow-black/5">
-                {(['USD', 'EUR', 'HUF'] as CurrencyCode[]).map((c) => (
-                  <button
-                    key={c}
-                    onClick={() => {
-                      setCurrency(c);
-                      localStorage.setItem('preferredCurrency', c);
-                    }}
-                    className={`px-6 py-2.5 rounded-[18px] text-[10px] font-black uppercase tracking-widest transition-all ${currency === c
-                      ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
-                      : 'text-muted-foreground hover:text-foreground'
-                      }`}
-                  >
-                    {c}
-                  </button>
-                ))}
+              <div className="h-1 w-1 bg-border rounded-full" />
+              <div className="flex items-center gap-2 text-muted-foreground text-[10px] font-black uppercase tracking-widest">
+                <Clock size={12} />
+                <span>Sync: {lastUpdated ? new Date(lastUpdated).toLocaleTimeString() : '--:--'}</span>
               </div>
-
-              {portfolio && (
-                <PortfolioSwitcher
-                  currentPortfolioId={portfolio.id}
-                  onPortfolioChange={handlePortfolioChange}
-                />
-              )}
-
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => fetchPortfolio(true)}
-                disabled={isRefreshing}
-                className="p-3.5 rounded-2xl bg-card border border-border shadow-md hover:bg-muted transition-all disabled:opacity-50"
-                title="Refresh data"
-              >
-                <RefreshCw size={20} className={isRefreshing ? 'animate-spin text-primary' : 'text-foreground'} />
-              </motion.button>
-
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setIsEditing(!isEditing)}
-                className={`p-3.5 rounded-2xl border shadow-md transition-all ${isEditing
-                  ? 'bg-primary text-primary-foreground border-primary'
-                  : 'bg-card border-border hover:bg-muted'
-                  }`}
-                title="Customize dashboard"
-              >
-                <Settings2 size={20} className={isEditing ? '' : 'text-foreground'} />
-              </motion.button>
             </div>
+            <h1 className="text-4xl md:text-5xl font-black tracking-tighter leading-none">
+              Investment <span className="text-primary text-glow-primary">Protocol.</span>
+            </h1>
           </div>
 
-        </header>
-
-        {/* Widget Gallery (Slide-in Panel) */}
-        <WidgetGallery
-          isOpen={isGalleryOpen}
-          onClose={() => setIsGalleryOpen(false)}
-          hiddenWidgets={hiddenWidgets}
-          onAddWidget={addWidget}
-          onReset={resetLayout}
-        />
-
-        {/* Edit Mode Toolbar */}
-        <EditToolbar
-          isEditing={isEditing}
-          onToggleEdit={() => setIsEditing(false)}
-          onOpenGallery={() => setIsGalleryOpen(true)}
-          hiddenCount={hiddenWidgets.length}
-          isSyncing={isSyncing}
-        />
-
-        {/* Quick Actions Bar */}
-        <div className="flex flex-wrap gap-3 mb-8 p-4 bg-card/30 backdrop-blur-md border border-border/30 rounded-2xl">
-          <button
-            onClick={() => fetchPortfolio(true)}
-            disabled={isRefreshing}
-            className="flex items-center gap-2 px-4 py-2.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl font-bold text-sm transition-all disabled:opacity-50"
-          >
-            <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
-            Refresh Prices
-          </button>
-
-          <button
-            onClick={() => setIsFormOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded-xl font-bold text-sm transition-all"
-          >
-            <PlusCircle size={16} />
-            Add Trade
-          </button>
-
-          <Link
-            href="/dashboard/report"
-            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-500 rounded-xl font-bold text-sm transition-all"
-          >
-            <LineChart size={16} />
-            Full Report
-          </Link>
-
-          <a
-            href={`data:text/csv;charset=utf-8,${encodeURIComponent(
-              'Symbol,Shares,Avg Price,Current Price,Market Value,Gain/Loss\n' +
-              holdings.map(h =>
-                `${h.ticker},${h.shares},${(h.avgCostBasis ?? 0).toFixed(2)},${(h.currentPrice ?? 0).toFixed(2)},${(h.marketValue ?? 0).toFixed(2)},${(h.unrealizedGain ?? 0).toFixed(2)}`
-              ).join('\n')
-            )}`}
-            download={`portfolio-${new Date().toISOString().split('T')[0]}.csv`}
-            className="flex items-center gap-2 px-4 py-2.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 rounded-xl font-bold text-sm transition-all"
-          >
-            <Download size={16} />
-            Export CSV
-          </a>
-
-          <div className="flex-1 flex items-center justify-end">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Zap size={14} className="text-primary" />
-              <span className="font-bold">Quick Actions</span>
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="bg-card/40 backdrop-blur-xl border border-border/50 p-1.5 rounded-[22px] flex items-center shadow-xl shadow-black/5">
+              {(['USD', 'EUR', 'HUF'] as CurrencyCode[]).map((c) => (
+                <button
+                  key={c}
+                  onClick={() => {
+                    setCurrency(c);
+                    localStorage.setItem('preferredCurrency', c);
+                  }}
+                  className={`px-6 py-2.5 rounded-[18px] text-[10px] font-black uppercase tracking-widest transition-all ${currency === c
+                    ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+                    : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                >
+                  {c}
+                </button>
+              ))}
             </div>
-          </div>
-        </div>
 
-        {/* Rapid Action Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-          <Link
-            href="/dashboard/import"
-            className="flex items-center justify-between p-8 bg-card/60 backdrop-blur-md border border-border/40 rounded-[32px] hover:border-primary/30 transition-all group overflow-hidden relative shadow-lg shadow-black/5"
-          >
-            <div className="relative z-10 flex items-center gap-6">
-              <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Upload size={24} className="text-foreground" />
-              </div>
-              <div>
-                <h3 className="font-black text-lg tracking-tight">Bulk Import</h3>
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">CSV trade upload</p>
-              </div>
-            </div>
-            <ChevronRight size={24} className="text-muted-foreground group-hover:translate-x-1 group-hover:text-primary transition-all" />
-            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-              <Database size={80} />
-            </div>
-          </Link>
+            {portfolio && (
+              <PortfolioSwitcher
+                currentPortfolioId={portfolio.id}
+                onPortfolioChange={handlePortfolioChange}
+              />
+            )}
 
-          <button
-            onClick={() => {
-              setIsFormOpen(!isFormOpen);
-              if (editingTrade) setEditingTrade(null);
-            }}
-            className="flex items-center justify-between p-8 bg-primary text-primary-foreground rounded-[32px] shadow-2xl shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all group relative overflow-hidden"
-          >
-            <div className="relative z-10 flex items-center gap-6">
-              <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center group-hover:rotate-90 transition-transform duration-500">
-                <PlusCircle size={28} />
-              </div>
-              <div className="text-left">
-                <h3 className="font-black text-lg tracking-tight">New Trade</h3>
-                <p className="text-xs text-primary-foreground/70 font-black uppercase tracking-widest">Manual entry</p>
-              </div>
-            </div>
-            <ChevronRight size={24} />
-            <div className="absolute bottom-0 right-0 p-4 opacity-10">
-              <TrendingUp size={100} />
-            </div>
-          </button>
-        </div>
-
-        {/* Trade Form */}
-        <AnimatePresence>
-          {(isFormOpen || editingTrade) && (
-            <motion.div
-              initial={{ opacity: 0, height: 0, y: -40 }}
-              animate={{ opacity: 1, height: 'auto', y: 0 }}
-              exit={{ opacity: 0, height: 0, y: -40 }}
-              className="overflow-hidden mb-12"
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => fetchPortfolio(true)}
+              disabled={isRefreshing}
+              className="p-3.5 rounded-2xl bg-card border border-border shadow-md hover:bg-muted transition-all disabled:opacity-50"
+              title="Refresh data"
             >
-              <div className="pb-8 pt-4">
-                <AddTradeForm
-                  portfolioId={portfolio?.id || ''}
-                  editTrade={editingTrade}
-                  onCancel={() => {
-                    setIsFormOpen(false);
-                    setEditingTrade(null);
-                  }}
-                  onTradeAdded={() => {
-                    fetchPortfolio(true);
-                    setIsFormOpen(false);
-                    setEditingTrade(null);
-                  }}
-                />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              <RefreshCw size={20} className={isRefreshing ? 'animate-spin text-primary' : 'text-foreground'} />
+            </motion.button>
 
-        {/* ============ WIDGET GRID ============ */}
-        <section className="mb-12">
-          <DashboardGrid
-            isEditing={isEditing}
-            layouts={layouts}
-            visibleWidgets={visibleWidgetIds}
-            widgetSizes={widgetSizes}
-            onLayoutChange={saveLayouts}
-            onRemoveWidget={removeWidget}
-            onResizeWidget={resizeWidget}
-            renderWidget={renderWidgetContent}
-            widgetRegistry={WIDGET_DEFINITIONS}
-          />
-        </section>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setIsEditing(!isEditing)}
+              className={`p-3.5 rounded-2xl border shadow-md transition-all ${isEditing
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'bg-card border-border hover:bg-muted'
+                }`}
+              title="Customize dashboard"
+            >
+              <Settings2 size={20} className={isEditing ? '' : 'text-foreground'} />
+            </motion.button>
+          </div>
+        </div>
 
-        {/* Neural Hub Footer */}
-        <motion.div
-          whileHover={{ scale: 1.01 }}
-          className="p-12 bg-gradient-to-br from-primary/5 via-accent/5 to-transparent border border-white/5 rounded-[64px] relative overflow-hidden group shadow-2xl"
+      </header>
+
+      {/* Widget Gallery (Slide-in Panel) */}
+      <WidgetGallery
+        isOpen={isGalleryOpen}
+        onClose={() => setIsGalleryOpen(false)}
+        hiddenWidgets={hiddenWidgets}
+        onAddWidget={addWidget}
+        onReset={resetLayout}
+      />
+
+      {/* Edit Mode Toolbar */}
+      <EditToolbar
+        isEditing={isEditing}
+        onToggleEdit={() => setIsEditing(false)}
+        onOpenGallery={() => setIsGalleryOpen(true)}
+        hiddenCount={hiddenWidgets.length}
+        isSyncing={isSyncing}
+      />
+
+      {/* Quick Actions Bar */}
+      <div className="flex flex-wrap gap-3 mb-8 p-4 bg-card/30 backdrop-blur-md border border-border/30 rounded-2xl">
+        <button
+          onClick={() => fetchPortfolio(true)}
+          disabled={isRefreshing}
+          className="flex items-center gap-2 px-4 py-2.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl font-bold text-sm transition-all disabled:opacity-50"
         >
-          <div className="relative z-10 flex flex-col md:flex-row items-center gap-12">
-            <div className="p-6 bg-primary/20 rounded-3xl shadow-inner shrink-0">
-              <Database className="text-primary" size={40} />
+          <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
+          Refresh Prices
+        </button>
+
+        <button
+          onClick={() => setIsFormOpen(true)}
+          className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded-xl font-bold text-sm transition-all"
+        >
+          <PlusCircle size={16} />
+          Add Trade
+        </button>
+
+        <Link
+          href="/dashboard/report"
+          className="flex items-center gap-2 px-4 py-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-500 rounded-xl font-bold text-sm transition-all"
+        >
+          <LineChart size={16} />
+          Full Report
+        </Link>
+
+        <a
+          href={`data:text/csv;charset=utf-8,${encodeURIComponent(
+            'Symbol,Shares,Avg Price,Current Price,Market Value,Gain/Loss\n' +
+            holdings.map(h =>
+              `${h.ticker},${h.shares},${(h.avgCostBasis ?? 0).toFixed(2)},${(h.currentPrice ?? 0).toFixed(2)},${(h.marketValue ?? 0).toFixed(2)},${(h.unrealizedGain ?? 0).toFixed(2)}`
+            ).join('\n')
+          )}`}
+          download={`portfolio-${new Date().toISOString().split('T')[0]}.csv`}
+          className="flex items-center gap-2 px-4 py-2.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 rounded-xl font-bold text-sm transition-all"
+        >
+          <Download size={16} />
+          Export CSV
+        </a>
+
+        <div className="flex-1 flex items-center justify-end">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Zap size={14} className="text-primary" />
+            <span className="font-bold">Quick Actions</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Rapid Action Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+        <Link
+          href="/dashboard/import"
+          className="flex items-center justify-between p-8 bg-card/60 backdrop-blur-md border border-border/40 rounded-[32px] hover:border-primary/30 transition-all group overflow-hidden relative shadow-lg shadow-black/5"
+        >
+          <div className="relative z-10 flex items-center gap-6">
+            <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Upload size={24} className="text-foreground" />
             </div>
-            <div className="flex-1 text-center md:text-left">
-              <h3 className="text-4xl font-black tracking-tighter mb-4 leading-none">Valuation Neural Hub</h3>
-              <p className="text-muted-foreground text-lg font-medium max-w-2xl leading-relaxed">
-                Institutional-grade DCF and comparative valuation models launching in Q1. Unified alpha discovery for sophisticated capital management.
-              </p>
+            <div>
+              <h3 className="font-black text-lg tracking-tight">Bulk Import</h3>
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">CSV trade upload</p>
             </div>
-            <div className="flex items-center gap-6">
-              <div className="flex flex-col items-end">
-                <span className="px-4 py-1.5 bg-muted rounded-full text-[10px] font-black uppercase tracking-widest text-muted-foreground">Operational Alpha</span>
-                <div className="flex items-center gap-2 mt-2">
-                  <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-primary">System Encoding</span>
-                </div>
+          </div>
+          <ChevronRight size={24} className="text-muted-foreground group-hover:translate-x-1 group-hover:text-primary transition-all" />
+          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+            <Database size={80} />
+          </div>
+        </Link>
+
+        <button
+          onClick={() => {
+            setIsFormOpen(!isFormOpen);
+            if (editingTrade) setEditingTrade(null);
+          }}
+          className="flex items-center justify-between p-8 bg-primary text-primary-foreground rounded-[32px] shadow-2xl shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all group relative overflow-hidden"
+        >
+          <div className="relative z-10 flex items-center gap-6">
+            <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center group-hover:rotate-90 transition-transform duration-500">
+              <PlusCircle size={28} />
+            </div>
+            <div className="text-left">
+              <h3 className="font-black text-lg tracking-tight">New Trade</h3>
+              <p className="text-xs text-primary-foreground/70 font-black uppercase tracking-widest">Manual entry</p>
+            </div>
+          </div>
+          <ChevronRight size={24} />
+          <div className="absolute bottom-0 right-0 p-4 opacity-10">
+            <TrendingUp size={100} />
+          </div>
+        </button>
+      </div>
+
+      {/* Trade Form */}
+      <AnimatePresence>
+        {(isFormOpen || editingTrade) && (
+          <motion.div
+            initial={{ opacity: 0, height: 0, y: -40 }}
+            animate={{ opacity: 1, height: 'auto', y: 0 }}
+            exit={{ opacity: 0, height: 0, y: -40 }}
+            className="overflow-hidden mb-12"
+          >
+            <div className="pb-8 pt-4">
+              <AddTradeForm
+                portfolioId={portfolio?.id || ''}
+                editTrade={editingTrade}
+                onCancel={() => {
+                  setIsFormOpen(false);
+                  setEditingTrade(null);
+                }}
+                onTradeAdded={() => {
+                  fetchPortfolio(true);
+                  setIsFormOpen(false);
+                  setEditingTrade(null);
+                }}
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ============ WIDGET GRID ============ */}
+      <section className="mb-12">
+        <DashboardGrid
+          isEditing={isEditing}
+          layouts={layouts}
+          visibleWidgets={visibleWidgetIds}
+          widgetSizes={widgetSizes}
+          onLayoutChange={saveLayouts}
+          onRemoveWidget={removeWidget}
+          onResizeWidget={resizeWidget}
+          renderWidget={renderWidgetContent}
+          widgetRegistry={WIDGET_DEFINITIONS}
+        />
+      </section>
+
+      {/* Neural Hub Footer */}
+      <motion.div
+        whileHover={{ scale: 1.01 }}
+        className="p-12 bg-gradient-to-br from-primary/5 via-accent/5 to-transparent border border-white/5 rounded-[64px] relative overflow-hidden group shadow-2xl"
+      >
+        <div className="relative z-10 flex flex-col md:flex-row items-center gap-12">
+          <div className="p-6 bg-primary/20 rounded-3xl shadow-inner shrink-0">
+            <Database className="text-primary" size={40} />
+          </div>
+          <div className="flex-1 text-center md:text-left">
+            <h3 className="text-4xl font-black tracking-tighter mb-4 leading-none">Valuation Neural Hub</h3>
+            <p className="text-muted-foreground text-lg font-medium max-w-2xl leading-relaxed">
+              Institutional-grade DCF and comparative valuation models launching in Q1. Unified alpha discovery for sophisticated capital management.
+            </p>
+          </div>
+          <div className="flex items-center gap-6">
+            <div className="flex flex-col items-end">
+              <span className="px-4 py-1.5 bg-muted rounded-full text-[10px] font-black uppercase tracking-widest text-muted-foreground">Operational Alpha</span>
+              <div className="flex items-center gap-2 mt-2">
+                <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-primary">System Encoding</span>
               </div>
             </div>
           </div>
-          <div className="absolute -bottom-20 -right-20 opacity-5 rotate-12">
-            <Database size={300} className="text-primary" />
-          </div>
-        </motion.div>
-      </main>
-
+        </div>
+        <div className="absolute -bottom-20 -right-20 opacity-5 rotate-12">
+          <Database size={300} className="text-primary" />
+        </div>
+      </motion.div>
       <style jsx global>{`
         .text-glow-primary {
           text-shadow: 0 0 40px rgba(16, 185, 129, 0.4);
