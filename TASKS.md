@@ -310,10 +310,10 @@
 | WATCH-002 | Custom Columns | ⬜ | 4h | 🔴 Add/remove columns: P/E, dividends, etc. |
 | WATCH-003 | Sorting & Filtering | ✅ | 3h | Implemented Jan 19: sort by symbol/name/price/change/since added |
 | WATCH-004 | Bulk Actions | ✅ | 2h | Implemented Jan 19: multi-select, move, delete |
-| WATCH-005 | Auto-Refresh | ⬜ | 2h | 🔴 Real-time or configurable interval |
-| WATCH-006 | Kanban Board View | ✅ | 6h | Implemented Jan 19: Researching → Ready → Holding → Sold |
+| WATCH-005 | Auto-Refresh | ✅ | 2h | Implemented Jan 19: Off/30s/1m/5m interval dropdown |
+| WATCH-006 | Kanban Board View | ✅ | 6h | Implemented Jan 19: Stage buttons + DB persistence |
 | WATCH-007 | Table View | ✅ | 4h | Implemented Jan 19: List view with sortable columns |
-| WATCH-008 | Comparison Mode | ⬜ | 4h | 🔴 Side-by-side stock comparison |
+| WATCH-008 | Comparison Mode | ✅ | 4h | Implemented Jan 19: Compare up to 3 stocks side-by-side |
 | WATCH-009 | Sector Heatmap | ⬜ | 3h | 🔴 Visual of performance by sector |
 | WATCH-010 | Inline Quick View | ⬜ | 3h | Expand row for mini-chart + stats |
 | WATCH-011 | News Badges | ⬜ | 2h | Indicator for recent news |

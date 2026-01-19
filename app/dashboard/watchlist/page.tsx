@@ -58,9 +58,11 @@ interface WatchlistItem {
     changePercent?: number;
     group_id: string | null;
     sparklineData?: any[];
-    // Additional metrics for sorting/filtering
+    stage?: KanbanStage;
+    // Additional metrics
     peRatio?: number;
     marketCap?: number;
+    dividendYield?: number;
     sinceAddedPercent?: number;
 }
 
@@ -113,6 +115,13 @@ export default function WatchlistPage() {
         holding: [],
         sold: [],
     });
+
+    // Auto-refresh
+    const [autoRefreshInterval, setAutoRefreshInterval] = useState<number>(0); // 0 = off, else seconds
+
+    // Comparison mode
+    const [compareItems, setCompareItems] = useState<string[]>([]);
+    const [isCompareMode, setIsCompareMode] = useState(false);
 
     useEffect(() => {
         if (!authLoading && !user) {
@@ -203,17 +212,20 @@ export default function WatchlistPage() {
                 );
                 setWatchlist(itemsWithData);
 
-                // Initialize Kanban data based on groups or create default
+                // Initialize Kanban data from stage field in DB
                 const newKanbanData: Record<KanbanStage, string[]> = {
                     researching: [],
                     ready: [],
                     holding: [],
                     sold: [],
                 };
-                // For now, put all items in "researching" by default
-                // TODO: Add stage field to watchlist items in DB
                 itemsWithData.forEach((item: WatchlistItem) => {
-                    newKanbanData.researching.push(item.symbol);
+                    const stage = item.stage || 'researching';
+                    if (newKanbanData[stage]) {
+                        newKanbanData[stage].push(item.symbol);
+                    } else {
+                        newKanbanData.researching.push(item.symbol);
+                    }
                 });
                 setKanbanData(newKanbanData);
             }
@@ -231,6 +243,55 @@ export default function WatchlistPage() {
             fetchWatchlist();
         }
     }, [user, fetchGroups, fetchWatchlist]);
+
+    // Auto-refresh effect
+    useEffect(() => {
+        if (autoRefreshInterval <= 0 || !user) return;
+        const interval = setInterval(() => fetchWatchlist(true), autoRefreshInterval * 1000);
+        return () => clearInterval(interval);
+    }, [autoRefreshInterval, user, fetchWatchlist]);
+
+    // Handle Kanban stage change
+    const handleStageChange = async (symbol: string, newStage: KanbanStage) => {
+        try {
+            await fetch('/api/watchlist', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ symbol, stage: newStage }),
+            });
+            // Update local state
+            setWatchlist(prev => prev.map(item =>
+                item.symbol === symbol ? { ...item, stage: newStage } : item
+            ));
+            // Update kanban data
+            setKanbanData(prev => {
+                const newData = { ...prev };
+                // Remove from all stages
+                Object.keys(newData).forEach(stage => {
+                    newData[stage as KanbanStage] = newData[stage as KanbanStage].filter(s => s !== symbol);
+                });
+                // Add to new stage
+                newData[newStage].push(symbol);
+                return newData;
+            });
+        } catch {
+            toast.error('Failed to update stage');
+        }
+    };
+
+    // Toggle comparison item
+    const toggleCompareItem = (symbol: string) => {
+        setCompareItems(prev => {
+            if (prev.includes(symbol)) {
+                return prev.filter(s => s !== symbol);
+            }
+            if (prev.length >= 3) {
+                toast.error('Compare up to 3 stocks');
+                return prev;
+            }
+            return [...prev, symbol];
+        });
+    };
 
     // Sorted watchlist
     const sortedWatchlist = useMemo(() => {
@@ -502,6 +563,37 @@ export default function WatchlistPage() {
                             <Columns size={18} />
                         </button>
                     </div>
+
+                    {/* Auto-Refresh Dropdown */}
+                    <div className="relative group">
+                        <button className={`p-3 rounded-xl transition-all flex items-center gap-1 ${autoRefreshInterval > 0 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}>
+                            <RefreshCw size={16} className={autoRefreshInterval > 0 ? 'animate-spin' : ''} />
+                            {autoRefreshInterval > 0 && <span className="text-xs font-bold">{autoRefreshInterval}s</span>}
+                        </button>
+                        <div className="absolute top-full right-0 mt-2 bg-card border border-border rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 min-w-[120px]">
+                            {[0, 30, 60, 300].map(sec => (
+                                <button
+                                    key={sec}
+                                    onClick={() => setAutoRefreshInterval(sec)}
+                                    className={`w-full px-4 py-2.5 text-left text-sm font-bold hover:bg-muted transition-colors first:rounded-t-xl last:rounded-b-xl ${autoRefreshInterval === sec ? 'text-primary' : ''}`}
+                                >
+                                    {sec === 0 ? 'Off' : sec === 60 ? '1 min' : sec === 300 ? '5 min' : `${sec}s`}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Compare Mode Toggle */}
+                    <button
+                        onClick={() => {
+                            setIsCompareMode(!isCompareMode);
+                            if (isCompareMode) setCompareItems([]);
+                        }}
+                        className={`p-3 rounded-xl transition-all ${isCompareMode ? 'bg-amber-500 text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+                        title="Compare Stocks"
+                    >
+                        <BarChart3 size={18} />
+                    </button>
 
                     {/* Select Mode Toggle */}
                     <button
@@ -814,7 +906,7 @@ export default function WatchlistPage() {
                                         <motion.div
                                             key={item.id}
                                             layout
-                                            className="bg-card border border-border rounded-2xl p-4 cursor-grab active:cursor-grabbing hover:shadow-lg hover:border-primary/20 transition-all group"
+                                            className="bg-card border border-border rounded-2xl p-4 hover:shadow-lg hover:border-primary/20 transition-all group"
                                         >
                                             <div className="flex items-start justify-between mb-3">
                                                 <div>
@@ -825,15 +917,33 @@ export default function WatchlistPage() {
                                                         {item.name || 'Loading...'}
                                                     </p>
                                                 </div>
-                                                <GripVertical size={16} className="text-muted-foreground/50 group-hover:text-muted-foreground transition-colors" />
+                                                <button
+                                                    onClick={() => handleRemove(item.symbol)}
+                                                    className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-rose-500 hover:bg-rose-500/10 transition-all opacity-0 group-hover:opacity-100"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
                                             </div>
-                                            <div className="flex items-center justify-between">
+                                            <div className="flex items-center justify-between mb-3">
                                                 <span className="font-black">
                                                     ${item.currentPrice?.toLocaleString(undefined, { minimumFractionDigits: 2 }) || '—'}
                                                 </span>
                                                 <span className={`text-sm font-bold ${(item.changePercent ?? 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
                                                     {(item.changePercent ?? 0) >= 0 ? '+' : ''}{(item.changePercent ?? 0).toFixed(2)}%
                                                 </span>
+                                            </div>
+                                            {/* Stage change buttons */}
+                                            <div className="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                {KANBAN_STAGES.filter(s => s.id !== stage.id).map(s => (
+                                                    <button
+                                                        key={s.id}
+                                                        onClick={() => handleStageChange(item.symbol, s.id)}
+                                                        className="flex-1 py-1.5 text-[9px] font-bold uppercase rounded-lg transition-all hover:scale-105"
+                                                        style={{ backgroundColor: `${s.color}20`, color: s.color }}
+                                                    >
+                                                        → {s.label.split(' ')[0]}
+                                                    </button>
+                                                ))}
                                             </div>
                                         </motion.div>
                                     );
@@ -879,6 +989,15 @@ export default function WatchlistPage() {
                                         </div>
 
                                         <div className="flex items-center gap-2">
+                                            {isCompareMode && (
+                                                <button
+                                                    onClick={() => toggleCompareItem(item.symbol)}
+                                                    className={`p-3 rounded-2xl transition-all active:scale-90 ${compareItems.includes(item.symbol) ? 'bg-amber-500 text-white' : 'bg-muted/50 text-muted-foreground hover:bg-amber-500/10 hover:text-amber-500'}`}
+                                                    title="Compare"
+                                                >
+                                                    <BarChart3 size={18} />
+                                                </button>
+                                            )}
                                             <button
                                                 onClick={() => setMoveItem(item)}
                                                 className="p-3 rounded-2xl bg-muted/50 text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all active:scale-90"
@@ -959,6 +1078,75 @@ export default function WatchlistPage() {
                     </AnimatePresence>
                 </div>
             )}
+
+            {/* Comparison Mode Panel */}
+            <AnimatePresence>
+                {isCompareMode && compareItems.length > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 50 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 50 }}
+                        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-card border border-amber-500/30 rounded-[32px] p-6 shadow-2xl shadow-amber-500/20 min-w-[600px] max-w-[900px]"
+                    >
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-black text-lg flex items-center gap-2">
+                                <BarChart3 className="text-amber-500" size={20} />
+                                Comparing {compareItems.length} Stocks
+                            </h3>
+                            <button onClick={() => { setIsCompareMode(false); setCompareItems([]); }} className="p-2 rounded-xl hover:bg-muted">
+                                <X size={18} />
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                            {compareItems.map(symbol => {
+                                const item = watchlist.find(w => w.symbol === symbol);
+                                if (!item) return null;
+                                return (
+                                    <div key={symbol} className="bg-muted/50 rounded-2xl p-4 relative">
+                                        <button
+                                            onClick={() => toggleCompareItem(symbol)}
+                                            className="absolute top-2 right-2 p-1 rounded-lg hover:bg-rose-500/10 text-muted-foreground hover:text-rose-500"
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                        <h4 className="font-black text-xl mb-1">{symbol}</h4>
+                                        <p className="text-[10px] text-muted-foreground truncate uppercase mb-3">{item.name}</p>
+                                        <div className="space-y-2 text-sm">
+                                            <div className="flex justify-between">
+                                                <span className="text-muted-foreground">Price</span>
+                                                <span className="font-bold">${item.currentPrice?.toFixed(2) || '—'}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-muted-foreground">Change</span>
+                                                <span className={`font-bold ${(item.changePercent ?? 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                    {(item.changePercent ?? 0) >= 0 ? '+' : ''}{(item.changePercent ?? 0).toFixed(2)}%
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-muted-foreground">Since Added</span>
+                                                <span className={`font-bold ${(item.sinceAddedPercent ?? 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                    {item.sinceAddedPercent != null ? `${item.sinceAddedPercent >= 0 ? '+' : ''}${item.sinceAddedPercent.toFixed(1)}%` : '—'}
+                                                </span>
+                                            </div>
+                                            {item.peRatio && (
+                                                <div className="flex justify-between">
+                                                    <span className="text-muted-foreground">P/E Ratio</span>
+                                                    <span className="font-bold">{item.peRatio.toFixed(1)}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                            {compareItems.length < 3 && (
+                                <div className="border-2 border-dashed border-border rounded-2xl p-4 flex items-center justify-center text-muted-foreground">
+                                    <p className="text-sm font-bold">Click stocks to add</p>
+                                </div>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Move to Group Modal */}
             <AnimatePresence>

@@ -96,7 +96,7 @@ export async function PATCH(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { symbol, group_id, target_price, notes } = body;
+        const { symbol, group_id, target_price, notes, stage } = body;
 
         if (!symbol) {
             return NextResponse.json({ error: 'Symbol is required' }, { status: 400 });
@@ -106,6 +106,7 @@ export async function PATCH(request: NextRequest) {
         if (group_id !== undefined) updateData.group_id = group_id;
         if (target_price !== undefined) updateData.target_price = target_price;
         if (notes !== undefined) updateData.notes = notes;
+        if (stage !== undefined) updateData.stage = stage;
 
         const { data, error } = await supabase
             .from('watchlists')
