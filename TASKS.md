@@ -307,7 +307,7 @@
 | ID | Task | Status | Effort | Notes |
 |----|------|--------|--------|-------|
 | WATCH-001 | Watchlist Groups | ✅ | 4h | Category folders implemented Jan 15 |
-| WATCH-002 | Custom Columns | ⬜ | 4h | 🔴 Add/remove columns: P/E, dividends, etc. |
+| WATCH-002 | Custom Columns | ✅ | 4h | Implemented Jan 19: P/E, Market Cap, Dividend, Beta, 52W Range |
 | WATCH-003 | Sorting & Filtering | ✅ | 3h | Implemented Jan 19: sort by symbol/name/price/change/since added |
 | WATCH-004 | Bulk Actions | ✅ | 2h | Implemented Jan 19: multi-select, move, delete |
 | WATCH-005 | Auto-Refresh | ✅ | 2h | Implemented Jan 19: Off/30s/1m/5m interval dropdown |

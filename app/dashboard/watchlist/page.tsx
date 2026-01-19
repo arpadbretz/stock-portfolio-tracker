@@ -126,6 +126,32 @@ export default function WatchlistPage() {
     const [compareItems, setCompareItems] = useState<string[]>([]);
     const [isCompareMode, setIsCompareMode] = useState(false);
 
+    // Custom columns
+    type ColumnKey = 'pe' | 'marketCap' | 'dividend' | 'beta' | '52wRange';
+    const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(new Set(['pe', 'marketCap']));
+    const [isColumnsDropdownOpen, setIsColumnsDropdownOpen] = useState(false);
+
+    const AVAILABLE_COLUMNS: { key: ColumnKey; label: string }[] = [
+        { key: 'pe', label: 'P/E Ratio' },
+        { key: 'marketCap', label: 'Market Cap' },
+        { key: 'dividend', label: 'Dividend' },
+        { key: 'beta', label: 'Beta' },
+        { key: '52wRange', label: '52W Range' },
+    ];
+
+    const toggleColumn = (key: ColumnKey) => {
+        setVisibleColumns(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(key)) {
+                newSet.delete(key);
+            } else {
+                newSet.add(key);
+            }
+            localStorage.setItem('watchlist-columns', JSON.stringify([...newSet]));
+            return newSet;
+        });
+    };
+
     useEffect(() => {
         if (!authLoading && !user) {
             router.push('/login');
@@ -136,6 +162,7 @@ export default function WatchlistPage() {
     useEffect(() => {
         const savedView = localStorage.getItem('watchlist-view');
         const savedSort = localStorage.getItem('watchlist-sort');
+        const savedColumns = localStorage.getItem('watchlist-columns');
         if (savedView && ['grid', 'table', 'kanban'].includes(savedView)) {
             setViewMode(savedView as ViewMode);
         }
@@ -144,6 +171,12 @@ export default function WatchlistPage() {
                 const { field, direction } = JSON.parse(savedSort);
                 setSortField(field);
                 setSortDirection(direction);
+            } catch { }
+        }
+        if (savedColumns) {
+            try {
+                const cols = JSON.parse(savedColumns);
+                setVisibleColumns(new Set(cols));
             } catch { }
         }
     }, []);
@@ -614,6 +647,41 @@ export default function WatchlistPage() {
                         <CheckSquare size={18} />
                     </button>
 
+                    {/* Custom Columns Dropdown (Table view only) */}
+                    {viewMode === 'table' && (
+                        <div className="relative">
+                            <button
+                                onClick={() => setIsColumnsDropdownOpen(!isColumnsDropdownOpen)}
+                                className={`p-3 rounded-xl transition-all ${isColumnsDropdownOpen ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+                                title="Custom Columns"
+                            >
+                                <Settings size={18} />
+                            </button>
+                            {isColumnsDropdownOpen && (
+                                <>
+                                    <div className="fixed inset-0 z-40" onClick={() => setIsColumnsDropdownOpen(false)} />
+                                    <div className="absolute top-full right-0 mt-2 bg-card border border-border rounded-xl shadow-xl z-50 min-w-[160px] p-2">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-2 py-1 mb-1">Show Columns</p>
+                                        {AVAILABLE_COLUMNS.map(col => (
+                                            <button
+                                                key={col.key}
+                                                onClick={() => toggleColumn(col.key)}
+                                                className="w-full px-3 py-2 text-left text-sm font-bold hover:bg-muted transition-colors rounded-lg flex items-center gap-2"
+                                            >
+                                                {visibleColumns.has(col.key) ? (
+                                                    <CheckSquare size={14} className="text-primary" />
+                                                ) : (
+                                                    <Square size={14} className="text-muted-foreground" />
+                                                )}
+                                                {col.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    )}
+
                     <button
                         onClick={() => setIsGroupModalOpen(true)}
                         className="flex items-center gap-2 px-6 py-3 bg-muted border border-border rounded-xl font-bold text-sm hover:bg-muted/80 transition-all active:scale-95"
@@ -814,6 +882,32 @@ export default function WatchlistPage() {
                                         Since Added <SortIcon field="sinceAddedPercent" />
                                     </button>
                                 </th>
+                                {/* Dynamic Custom Columns */}
+                                {visibleColumns.has('pe') && (
+                                    <th className="p-4 text-right hidden xl:table-cell">
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">P/E</span>
+                                    </th>
+                                )}
+                                {visibleColumns.has('marketCap') && (
+                                    <th className="p-4 text-right hidden xl:table-cell">
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Mkt Cap</span>
+                                    </th>
+                                )}
+                                {visibleColumns.has('dividend') && (
+                                    <th className="p-4 text-right hidden xl:table-cell">
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Div</span>
+                                    </th>
+                                )}
+                                {visibleColumns.has('beta') && (
+                                    <th className="p-4 text-right hidden xl:table-cell">
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Beta</span>
+                                    </th>
+                                )}
+                                {visibleColumns.has('52wRange') && (
+                                    <th className="p-4 text-center w-24 hidden xl:table-cell">
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">52W</span>
+                                    </th>
+                                )}
                                 <th className="p-4 text-center w-24 hidden lg:table-cell">
                                     <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Stage</span>
                                 </th>
@@ -857,6 +951,49 @@ export default function WatchlistPage() {
                                             </span>
                                         ) : '—'}
                                     </td>
+                                    {/* Dynamic Custom Column Cells */}
+                                    {visibleColumns.has('pe') && (
+                                        <td className="p-4 text-right hidden xl:table-cell font-bold">
+                                            {item.peRatio?.toFixed(1) || '—'}
+                                        </td>
+                                    )}
+                                    {visibleColumns.has('marketCap') && (
+                                        <td className="p-4 text-right hidden xl:table-cell font-bold">
+                                            {item.marketCap
+                                                ? item.marketCap >= 1e12
+                                                    ? `$${(item.marketCap / 1e12).toFixed(1)}T`
+                                                    : item.marketCap >= 1e9
+                                                        ? `$${(item.marketCap / 1e9).toFixed(1)}B`
+                                                        : `$${(item.marketCap / 1e6).toFixed(0)}M`
+                                                : '—'}
+                                        </td>
+                                    )}
+                                    {visibleColumns.has('dividend') && (
+                                        <td className="p-4 text-right hidden xl:table-cell font-bold">
+                                            {item.dividendYield ? `${(item.dividendYield * 100).toFixed(2)}%` : '—'}
+                                        </td>
+                                    )}
+                                    {visibleColumns.has('beta') && (
+                                        <td className="p-4 text-right hidden xl:table-cell font-bold">
+                                            {item.beta?.toFixed(2) || '—'}
+                                        </td>
+                                    )}
+                                    {visibleColumns.has('52wRange') && (
+                                        <td className="p-4 hidden xl:table-cell">
+                                            {item.fiftyTwoWeekLow && item.fiftyTwoWeekHigh && item.currentPrice ? (
+                                                <div className="w-16 mx-auto">
+                                                    <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                                                        <div
+                                                            className="h-full bg-primary rounded-full"
+                                                            style={{
+                                                                width: `${Math.min(100, Math.max(0, ((item.currentPrice - item.fiftyTwoWeekLow) / (item.fiftyTwoWeekHigh - item.fiftyTwoWeekLow)) * 100))}%`
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ) : '—'}
+                                        </td>
+                                    )}
                                     <td className="p-4 hidden lg:table-cell">
                                         <div className="relative group/stage">
                                             <button
