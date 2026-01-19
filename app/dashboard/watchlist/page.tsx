@@ -40,6 +40,8 @@ import {
     Filter,
     GripVertical,
     Flame,
+    Newspaper,
+    CalendarDays,
 } from 'lucide-react';
 import { SkeletonWatchlist } from '@/components/Skeleton';
 import { toast } from 'sonner';
@@ -69,6 +71,9 @@ interface WatchlistItem {
     beta?: number;
     sinceAddedPercent?: number;
     sector?: string;
+    // News & Earnings
+    recentNewsCount?: number;
+    earningsDate?: string;
 }
 
 interface WatchlistGroup {
@@ -248,6 +253,8 @@ export default function WatchlistPage() {
                                 fiftyTwoWeekLow: priceData?.fiftyTwoWeekLow,
                                 beta: priceData?.beta,
                                 sector: priceData?.sector || 'Unknown',
+                                earningsDate: priceData?.earningsDate || priceData?.earningsTimestamp,
+                                recentNewsCount: priceData?.recentNewsCount || 0,
                                 sparklineData: chartData.data?.slice(-7).map((d: any) => ({ value: d.close })) || [],
                                 sinceAddedPercent,
                             };
@@ -942,9 +949,31 @@ export default function WatchlistPage() {
                                             </td>
                                         )}
                                         <td className="p-4">
-                                            <Link href={`/dashboard/ticker/${item.symbol}`} className="font-black text-lg hover:text-primary transition-colors">
-                                                {item.symbol}
-                                            </Link>
+                                            <div className="flex items-center gap-2">
+                                                <Link href={`/dashboard/ticker/${item.symbol}`} className="font-black text-lg hover:text-primary transition-colors">
+                                                    {item.symbol}
+                                                </Link>
+                                                {item.recentNewsCount && item.recentNewsCount > 0 && (
+                                                    <span className="flex items-center gap-0.5 px-1.5 py-0.5 bg-blue-500/20 text-blue-500 rounded-full text-[8px] font-bold" title={`${item.recentNewsCount} recent news`}>
+                                                        <Newspaper size={9} />
+                                                        {item.recentNewsCount}
+                                                    </span>
+                                                )}
+                                                {item.earningsDate && (() => {
+                                                    const earnings = new Date(item.earningsDate);
+                                                    const now = new Date();
+                                                    const daysUntil = Math.ceil((earnings.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                                                    if (daysUntil > 0 && daysUntil <= 14) {
+                                                        return (
+                                                            <span className="flex items-center gap-0.5 px-1.5 py-0.5 bg-amber-500/20 text-amber-500 rounded-full text-[8px] font-bold" title={`Earnings: ${earnings.toLocaleDateString()}`}>
+                                                                <CalendarDays size={9} />
+                                                                {daysUntil}d
+                                                            </span>
+                                                        );
+                                                    }
+                                                    return null;
+                                                })()}
+                                            </div>
                                         </td>
                                         <td className="p-4 text-muted-foreground text-sm truncate max-w-[200px] hidden md:table-cell">
                                             {item.name || '—'}
@@ -1411,6 +1440,26 @@ export default function WatchlistPage() {
                                                             {KANBAN_STAGES.find(s => s.id === item.stage)?.label || item.stage}
                                                         </span>
                                                     )}
+                                                    {item.recentNewsCount && item.recentNewsCount > 0 && (
+                                                        <span className="flex items-center gap-1 px-2 py-0.5 bg-blue-500/20 text-blue-500 rounded-full text-[9px] font-bold" title={`${item.recentNewsCount} recent news`}>
+                                                            <Newspaper size={10} />
+                                                            {item.recentNewsCount}
+                                                        </span>
+                                                    )}
+                                                    {item.earningsDate && (() => {
+                                                        const earnings = new Date(item.earningsDate);
+                                                        const now = new Date();
+                                                        const daysUntil = Math.ceil((earnings.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                                                        if (daysUntil > 0 && daysUntil <= 14) {
+                                                            return (
+                                                                <span className="flex items-center gap-1 px-2 py-0.5 bg-amber-500/20 text-amber-500 rounded-full text-[9px] font-bold" title={`Earnings: ${earnings.toLocaleDateString()}`}>
+                                                                    <CalendarDays size={10} />
+                                                                    {daysUntil}d
+                                                                </span>
+                                                            );
+                                                        }
+                                                        return null;
+                                                    })()}
                                                     <ChevronRight size={18} className="text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
                                                 </div>
                                                 <p className="text-[10px] font-black text-muted-foreground truncate uppercase tracking-[0.2em]">{item.name || 'Resolving...'}</p>
