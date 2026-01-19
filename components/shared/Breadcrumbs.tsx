@@ -11,13 +11,33 @@ export default function Breadcrumbs() {
     // Don't show on root or just dashboard
     if (paths.length <= 1) return null;
 
-    const breadcrumbs = paths.map((path, index) => {
-        const href = `/${paths.slice(0, index + 1).join('/')}`;
-        const label = path.charAt(0).toUpperCase() + path.slice(1).replace(/-/g, ' ');
-        const isLast = index === paths.length - 1;
+    // Custom label mapping for better UX
+    const labelMap: Record<string, string> = {
+        'ticker': 'Stock Search',
+        'dcf': 'DCF Calculator',
+        'portfolios': 'Portfolios',
+        'manage': 'Command Center',
+        'watchlist': 'Watchlist',
+        'alerts': 'Price Alerts',
+        'stocks': 'Stock Search',
+        'report': 'Report',
+        'import': 'Import',
+        'account': 'Account',
+    };
 
-        return { label, href, isLast };
-    });
+    const breadcrumbs = paths
+        // Skip the first 'dashboard' segment since we show it as Home
+        .filter((path, index) => !(index === 0 && path.toLowerCase() === 'dashboard'))
+        .map((path, index, filteredPaths) => {
+            // Reconstruct href considering we always start with /dashboard
+            const href = `/dashboard/${filteredPaths.slice(0, index + 1).join('/')}`;
+            // Use label map or capitalize
+            const label = labelMap[path.toLowerCase()] ||
+                (path.charAt(0).toUpperCase() + path.slice(1).replace(/-/g, ' '));
+            const isLast = index === filteredPaths.length - 1;
+
+            return { label, href, isLast };
+        });
 
     return (
         <nav className="flex items-center gap-2 mb-8 text-[10px] font-black uppercase tracking-widest text-muted-foreground overflow-x-auto no-scrollbar py-2">

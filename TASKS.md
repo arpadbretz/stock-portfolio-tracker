@@ -32,9 +32,10 @@
 |----|------|--------|--------|-------|
 | UX-101 | Inline Alerts on Ticker Page | ✅ | 2h | Implemented Jan 17, 2026 |
 | UX-102 | Inline DCF Preview on Ticker Page | ✅ | 4h | Implemented Jan 17, 2026 |
-| UX-103 | Breadcrumb Navigation | ✅ | 2h | Implemented Jan 17, 2026 |
+| UX-103 | Breadcrumb Navigation | ✅ | 2h | Fixed Jan 19, 2026 - correct path labels |
 | UX-104 | Global Action Hotkeys | ✅ | 3h | Implemented Jan 17, 2026 |
 | UX-105 | Persistent Side Navigation | ⬜ | 4h | Improve desktop layout for faster switching |
+| UX-106 | Ticker Page Tabbed Refactor | ✅ | 8h | Implemented Jan 19, 2026 |
 
 ## Stock Research (Ticker Page)
 
@@ -43,6 +44,7 @@
 | TICK-001 | Technical Indicators | ✅ | 6h | Implemented Jan 12, 2026 |
 | TICK-002 | Peer Comparison Table | ✅ | 4h | Implemented Jan 12, 2026 |
 | TICK-003 | Quick Add to Portfolio | ✅ | 2h | Implemented Jan 11, 2026 |
+| TICK-004 | fundamentalsTimeSeries Integration | ✅ | 6h | Implemented Jan 19, 2026 - Enhanced financial data |
 | PORT-008 | Portfolio Value History tracking | ✅ | 8h | Implemented Jan 14: Migration + Sync Engine + Triggers |
 
 
@@ -110,8 +112,33 @@
 | DASH-008 | Performance Timeframes | ✅ | 3h | 1W, 1M, 3M, YTD, 1Y, All implemented Jan 15 |
 | UX-005 | Onboarding Tour | ⬜ | 4h | Critical for new users |
 | UX-006 | Empty State Designs | ✅ | 3h | Implemented Jan 12, 2026 |
-| DASH-010 | Benchmark Comparison | ✅ | 6h | Implemented Jan 14: Portfolio vs S&P 500 line chart |
+| DASH-010 | Benchmark Comparison | 🔄 | 6h | Implemented Jan 14, needs fix - not updating |
 | DASH-014 | Portfolio Allocation Chart | ✅ | 2h | Implemented Jan 13, 2026 - Stocks by % weight |
+
+## Portfolio Analytics (🔴 HIGH PRIORITY)
+
+| ID | Task | Status | Effort | Notes |
+|----|------|--------|--------|-------|
+| PORT-010 | Time-Weighted Returns (TWR) | ⬜ | 6h | 🔴 Measure skill vs market |
+| PORT-011 | Benchmark Comparison (Enhanced) | ⬜ | 4h | 🔴 vs S&P 500, sector ETF, custom |
+| PORT-012 | Sector Exposure Heatmap | ⬜ | 4h | 🔴 Over/under-weight visualization |
+| PORT-013 | Risk Metrics Dashboard | ⬜ | 6h | 🔴 Sharpe, Sortino, Max Drawdown, Beta |
+| PORT-014 | Trade Tagging System | ⬜ | 4h | 🔴 Tag: momentum, value, earnings |
+| PORT-015 | Win/Loss Analytics | ⬜ | 4h | 🔴 P&L by tag, holding period |
+| PORT-016 | Trade Notes & Screenshots | ⬜ | 3h | 🔴 Attach thesis to trades |
+| PORT-017 | Monthly Performance Reports | ⬜ | 4h | 🔴 Auto-generated reviews |
+
+## Portfolio Features (🟡 MED/LOW PRIORITY)
+
+| ID | Task | Status | Effort | Notes |
+|----|------|--------|--------|-------|
+| PORT-020 | Rebalancing Tool | ⬜ | 6h | Target allocation vs actual |
+| PORT-021 | Dividend Tracker | ⬜ | 4h | Track dividends, yield on cost |
+| PORT-022 | Tax Lot Management | ⬜ | 6h | FIFO/LIFO/Specific ID |
+| PORT-023 | Export to CSV/PDF | ⬜ | 4h | Professional reports |
+| PORT-024 | Portfolio Leaderboard | ⬜ | 4h | Opt-in anonymous ranking |
+| PORT-025 | Copy Portfolio | ⬜ | 3h | Copy weights from public portfolios |
+| PORT-026 | Comments on Shared | ⬜ | 3h | Viewers can comment |
 
 ---
 
@@ -266,23 +293,37 @@
 | ALRT-004 | Push Notifications | ⬜ | 4h | Browser/PWA push |
 | ALRT-005 | Alert Templates | ⬜ | 2h | Preset conditions |
 
-## DCF Calculator
+## DCF Calculator (🔴 URGENT REVAMP)
 
 | ID | Task | Status | Effort | Notes |
 |----|------|--------|--------|-------|
-| DCF-001 | Sensitivity Analysis | ⬜ | 4h | Grid of outcomes |
-| DCF-002 | Monte Carlo Simulation | ⬜ | 8h | Probability distribution |
-| DCF-003 | Scenario Comparison | ⬜ | 4h | Bull/Base/Bear side-by-side |
-| DCF-004 | Export to PDF | ⬜ | 4h | Professional report |
+| DCF-001 | Sensitivity Tables | ⬜ | 4h | 2D grid: growth rate vs discount rate |
+| DCF-002 | Reverse DCF | ⬜ | 3h | "What growth is priced in?" |
+| DCF-003 | Monte Carlo Simulation | ⬜ | 8h | 10k scenarios, probability distribution |
+| DCF-004 | Multiple Valuation Models | ⬜ | 6h | Add DDM, P/E comps, EV/EBITDA |
+| DCF-005 | Historical FCF Chart | ⬜ | 3h | Show 10yr FCF trend |
+| DCF-006 | Analyst Estimates Integration | ⬜ | 4h | Pull consensus estimates |
+| DCF-007 | Quality Score Indicator | ⬜ | 2h | Data confidence/completeness |
+| DCF-008 | Share Analysis Link | ⬜ | 3h | Shareable read-only DCF |
+| DCF-009 | PDF Export | ⬜ | 4h | Professional investment memo |
+| DCF-010 | Sector Templates | ⬜ | 4h | Pre-built models (SaaS, bank, REIT) |
 
-## Watchlist
+## Watchlist (🔴 HIGH PRIORITY)
 
 | ID | Task | Status | Effort | Notes |
 |----|------|--------|--------|-------|
 | WATCH-001 | Watchlist Groups | ✅ | 4h | Category folders implemented Jan 15 |
-| WATCH-002 | Custom Columns | ⬜ | 3h | User-selected metrics |
-| WATCH-003 | Bulk Actions | ⬜ | 2h | Multi-select delete |
-| WATCH-004 | Drag-and-Drop Order | ⬜ | 3h | Manual reordering |
+| WATCH-002 | Custom Columns | ⬜ | 4h | 🔴 Add/remove columns: P/E, dividends, etc. |
+| WATCH-003 | Sorting & Filtering | ⬜ | 3h | 🔴 Sort by any metric, filter by criteria |
+| WATCH-004 | Bulk Actions | ⬜ | 2h | 🔴 Multi-select, move, delete, add alerts |
+| WATCH-005 | Auto-Refresh | ⬜ | 2h | 🔴 Real-time or configurable interval |
+| WATCH-006 | Kanban Board View | ⬜ | 6h | 🔴 Drag: Researching → Ready → Holding → Sold |
+| WATCH-007 | Grid/Card View | ⬜ | 4h | 🔴 Card layout with mini charts |
+| WATCH-008 | Comparison Mode | ⬜ | 4h | 🔴 Side-by-side stock comparison |
+| WATCH-009 | Sector Heatmap | ⬜ | 3h | 🔴 Visual of performance by sector |
+| WATCH-010 | Inline Quick View | ⬜ | 3h | Expand row for mini-chart + stats |
+| WATCH-011 | News Badges | ⬜ | 2h | Indicator for recent news |
+| WATCH-012 | Earnings Calendar Highlights | ⬜ | 2h | Show upcoming earnings |
 
 ## Landing Page
 
@@ -297,7 +338,7 @@
 | ID | Task | Status | Effort | Notes |
 |----|------|--------|--------|-------|
 | UX-005 | Onboarding Tour | ⬜ | 4h | react-joyride setup |
-| UX-006 | Empty State Designs | ⬜ | 3h | Better no-data messages |
+| UX-006 | Empty State Designs | ✅ | 3h | Implemented Jan 12, 2026 |
 | UX-007 | Offline Support (PWA) | ⬜ | 4h | Service worker caching |
 | UX-008 | Breadcrumb Navigation | ⬜ | 2h | Path indicators |
 
@@ -350,18 +391,26 @@
 | ALRT-006 | SMS Alerts | ⬜ | 4h | Twilio integration |
 | ALRT-007 | Recurring Alerts | ⬜ | 3h | Auto-reset feature |
 
-## DCF Calculator
+## DCF Calculator (🟢 LATER PHASE)
 
 | ID | Task | Status | Effort | Notes |
 |----|------|--------|--------|-------|
-| DCF-005 | DDM Model | ⬜ | 6h | Dividend discount |
-| DCF-006 | Comps Valuation | ⬜ | 8h | Comparable multiples |
-
-## Watchlist
+| DCF-020 | DDM Model | ⬜ | 6h | Dividend discount model |
+| DCF-021 | Comps Valuation | ⬜ | 8h | Comparable multiples |
+| DCF-022 | Assumption Ranges | ⬜ | 3h | Industry-typical growth rates |
+| DCF-023 | Explanation Tooltips | ⬜ | 2h | "What is WACC?" hovers |
+| DCF-024 | Video Tutorials | ⬜ | 4h | Embedded guides |
+| DCF-025 | Community Assumptions | ⬜ | 6h | Anonymized peer inputs |
+| DCF-026 | Version History | ⬜ | 4h | Track assumption changes |
+## Watchlist (🟡 MEDIUM PRIORITY)
 
 | ID | Task | Status | Effort | Notes |
 |----|------|--------|--------|-------|
-| WATCH-005 | Watchlist Sharing | ⬜ | 4h | Public share links |
+| WATCH-020 | Watchlist Sharing | ⬜ | 4h | Public share links |
+| WATCH-021 | Target Price Progress | ⬜ | 2h | Visual bar to target |
+| WATCH-022 | Multi-Condition Alerts | ⬜ | 4h | "Alert when P/E < 15 AND RSI < 30" |
+| WATCH-023 | Alert Templates | ⬜ | 2h | Save reusable configurations |
+| WATCH-024 | Expiring Alerts | ⬜ | 2h | Auto-cleanup after trade |
 
 ## Landing Page
 
@@ -456,14 +505,21 @@
 
 | Priority | Total | Done | Remaining |
 |----------|-------|------|-----------|
-| 🔴 High Priority | 36 | 29 | 7 |
+| 🔴 High Priority (Core + DCF + Watchlist + Portfolio) | 62 | 32 | 30 |
 | 🚀 Beta Launch | 66 | 23 | 43 |
-| 🟡 Medium Priority | 33 | 0 | 33 |
-| 🟢 Low Priority | 20 | 0 | 20 |
+| 🟡 Medium Priority | 48 | 4 | 44 |
+| 🟢 Low Priority | 35 | 0 | 35 |
 | ✅ Pre-Completed | 43 | 43 | 0 |
-| **TOTAL** | **198** | **89** | **109** |
+| **TOTAL** | **254** | **102** | **152** |
 
-**Overall Completion:** 44.9%
+**Overall Completion:** 40.2%
+
+### 🔴 URGENT PRIORITIES (Jan 19, 2026)
+
+1. **DCF Revamp** - Sensitivity tables, reverse DCF, Monte Carlo
+2. **Watchlist Upgrade** - Custom columns, sorting, Kanban view
+3. **Portfolio Analytics** - TWR, benchmark, risk metrics, trade journal
+4. **Breadcrumb Fix** - Fix "Ticker" → "Stock Search" path
 
 ### 🔧 Beta Tooling Status
 
@@ -477,8 +533,8 @@
 | **Sentry** | Error Tracking | ⬜ Setup Needed |
 | **PostHog** | Product Analytics | ⬜ Setup Needed |
 
-> 📋 **Reprioritization Note (Jan 12, 2026):** Moved 5 tasks from Medium to High priority:
-> DASH-004 (Market Overview), DASH-008 (Timeframes), DASH-010 (Benchmark), UX-005 (Onboarding), UX-006 (Empty States)
+> 📋 **Major Update (Jan 19, 2026):** Added 45+ new features across DCF, Watchlist, and Portfolio pages.
+> Focus areas: DCF revamp (urgent), Watchlist power features (urgent), Portfolio analytics (high).
 
 ### Beta Readiness Breakdown
 
@@ -496,4 +552,4 @@
 
 ---
 
-*Updated: January 12, 2026*
+*Updated: January 19, 2026*
