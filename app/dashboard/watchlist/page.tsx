@@ -807,6 +807,9 @@ export default function WatchlistPage() {
                                         Since Added <SortIcon field="sinceAddedPercent" />
                                     </button>
                                 </th>
+                                <th className="p-4 text-center w-24 hidden lg:table-cell">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Stage</span>
+                                </th>
                                 <th className="p-4 text-center w-28 hidden md:table-cell">Chart</th>
                                 <th className="p-4 w-20"></th>
                             </tr>
@@ -846,6 +849,31 @@ export default function WatchlistPage() {
                                                 {item.sinceAddedPercent >= 0 ? '+' : ''}{item.sinceAddedPercent.toFixed(1)}%
                                             </span>
                                         ) : '—'}
+                                    </td>
+                                    <td className="p-4 hidden lg:table-cell">
+                                        <div className="relative group/stage">
+                                            <button
+                                                className="px-2.5 py-1 rounded-full text-[9px] font-bold uppercase mx-auto block"
+                                                style={{
+                                                    backgroundColor: `${KANBAN_STAGES.find(s => s.id === (item.stage || 'researching'))?.color || '#3b82f6'}20`,
+                                                    color: KANBAN_STAGES.find(s => s.id === (item.stage || 'researching'))?.color || '#3b82f6'
+                                                }}
+                                            >
+                                                {KANBAN_STAGES.find(s => s.id === (item.stage || 'researching'))?.label.split(' ')[0] || 'Research'}
+                                            </button>
+                                            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-card border border-border rounded-xl shadow-xl opacity-0 invisible group-hover/stage:opacity-100 group-hover/stage:visible transition-all z-50 min-w-[120px]">
+                                                {KANBAN_STAGES.map(s => (
+                                                    <button
+                                                        key={s.id}
+                                                        onClick={() => handleStageChange(item.symbol, s.id)}
+                                                        className={`w-full px-3 py-2 text-left text-xs font-bold hover:bg-muted transition-colors first:rounded-t-xl last:rounded-b-xl flex items-center gap-2 ${item.stage === s.id ? 'bg-muted' : ''}`}
+                                                    >
+                                                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
+                                                        {s.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
                                     </td>
                                     <td className="p-4 hidden md:table-cell">
                                         <div className="w-20 h-8 mx-auto">
@@ -982,6 +1010,17 @@ export default function WatchlistPage() {
                                             <Link href={`/dashboard/ticker/${item.symbol}`} className="flex-1">
                                                 <div className="flex items-center gap-3 mb-2">
                                                     <h3 className="text-3xl font-black tracking-tighter group-hover:text-primary transition-colors">{item.symbol}</h3>
+                                                    {item.stage && item.stage !== 'researching' && (
+                                                        <span
+                                                            className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase"
+                                                            style={{
+                                                                backgroundColor: `${KANBAN_STAGES.find(s => s.id === item.stage)?.color || '#3b82f6'}20`,
+                                                                color: KANBAN_STAGES.find(s => s.id === item.stage)?.color || '#3b82f6'
+                                                            }}
+                                                        >
+                                                            {KANBAN_STAGES.find(s => s.id === item.stage)?.label || item.stage}
+                                                        </span>
+                                                    )}
                                                     <ChevronRight size={18} className="text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
                                                 </div>
                                                 <p className="text-[10px] font-black text-muted-foreground truncate uppercase tracking-[0.2em]">{item.name || 'Resolving...'}</p>
