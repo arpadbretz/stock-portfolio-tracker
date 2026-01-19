@@ -21,7 +21,7 @@ export async function GET(
         const ticker = symbol.toUpperCase();
 
         // Fetch quote and summary data
-        const [quote, summary, annualData, quarterlyData] = await Promise.all([
+        const [quote, summary, annualData] = await Promise.all([
             yf.quote(ticker),
             yf.quoteSummary(ticker, {
                 modules: [
@@ -45,16 +45,6 @@ export async function GET(
             }).catch((e: any) => {
                 console.warn('fundamentalsTimeSeries annual failure:', e.message);
                 return [];
-            }),
-            // Use fundamentalsTimeSeries for quarterly financial data (past 3 years)
-            yf.fundamentalsTimeSeries(ticker, {
-                period1: new Date(new Date().getFullYear() - 3, 0, 1),
-                period2: new Date(),
-                type: 'quarterly',
-                module: 'all'
-            }).catch((e: any) => {
-                console.warn('fundamentalsTimeSeries quarterly failure:', e.message);
-                return [];
             })
         ]);
 
@@ -69,7 +59,7 @@ export async function GET(
         const earnings = summary?.earnings || {};
         const calendar = summary?.calendarEvents || {};
 
-        console.log(`[${ticker}] fundamentalsTimeSeries data: annual=${annualData.length}, quarterly=${quarterlyData.length}`);
+        console.log(`[${ticker}] fundamentalsTimeSeries data: annual=${annualData?.length || 0}`);
 
         // Get next earnings date from calendar
         const earningsDate = calendar?.earnings?.earningsDate?.[0] || earnings?.earningsDate?.[0] || null;
@@ -252,23 +242,6 @@ export async function GET(
                 .filter(Boolean)
                 .sort((a: any, b: any) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime()),
             cashFlow: annualData
-                .map(processCashFlow)
-                .map(filterNullValues)
-                .filter(Boolean)
-                .sort((a: any, b: any) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime()),
-
-            // Financial Statements - QUARTERLY (from fundamentalsTimeSeries)
-            incomeStatementQuarterly: quarterlyData
-                .map(processIncomeStatement)
-                .map(filterNullValues)
-                .filter(Boolean)
-                .sort((a: any, b: any) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime()),
-            balanceSheetQuarterly: quarterlyData
-                .map(processBalanceSheet)
-                .map(filterNullValues)
-                .filter(Boolean)
-                .sort((a: any, b: any) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime()),
-            cashFlowQuarterly: quarterlyData
                 .map(processCashFlow)
                 .map(filterNullValues)
                 .filter(Boolean)

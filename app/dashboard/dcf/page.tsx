@@ -152,18 +152,57 @@ function DCFCalculatorContent() {
         setIsLoading(true);
         try {
             const res = await fetch(`/api/stock/${inputs.symbol.toUpperCase()}`);
-            const data = await res.json();
+            const response = await res.json();
 
-            if (data.price) {
+            if (response.success && response.data) {
+                const data = response.data;
                 setStockName(data.name || inputs.symbol);
+
+                // Get the most recent free cash flow from cash flow statement if available
+                const latestCashFlow = data.cashFlow && data.cashFlow.length > 0
+                    ? data.cashFlow[data.cashFlow.length - 1]
+                    : null;
+                const freeCashFlowFromStatement = latestCashFlow?.freeCashflow;
+
+                // Get the most recent balance sheet for cash and debt
+                const latestBalanceSheet = data.balanceSheet && data.balanceSheet.length > 0
+                    ? data.balanceSheet[data.balanceSheet.length - 1]
+                    : null;
+
+                // Calculate historical revenue growth if we have income statements
+                let estimatedGrowthRate = 15; // default
+                if (data.incomeStatement && data.incomeStatement.length >= 2) {
+                    const statements = data.incomeStatement;
+                    const oldestRevenue = statements[0]?.totalRevenue;
+                    const latestRevenue = statements[statements.length - 1]?.totalRevenue;
+                    if (oldestRevenue && latestRevenue && oldestRevenue > 0) {
+                        const years = statements.length - 1;
+                        const cagr = (Math.pow(latestRevenue / oldestRevenue, 1 / years) - 1) * 100;
+                        estimatedGrowthRate = Math.min(Math.max(cagr, 5), 30); // Clamp between 5-30%
+                    }
+                }
+
                 setInputs(prev => ({
                     ...prev,
                     currentPrice: data.price || 0,
-                    freeCashFlow: data.freeCashflow ? data.freeCashflow / 1e9 : 0,
-                    sharesOutstanding: data.marketCap && data.price ? Math.round(data.marketCap / data.price / 1e6) : 0,
-                    cashAndEquivalents: data.totalCash ? data.totalCash / 1e9 : 0,
-                    totalDebt: data.totalDebt ? data.totalDebt / 1e9 : 0,
+                    // Use FCF from cash flow statement if available, otherwise use financialData field
+                    freeCashFlow: freeCashFlowFromStatement
+                        ? freeCashFlowFromStatement / 1e9
+                        : (data.freeCashflow ? data.freeCashflow / 1e9 : 0),
+                    sharesOutstanding: data.marketCap && data.price
+                        ? Math.round(data.marketCap / data.price / 1e6)
+                        : (data.sharesOutstanding ? data.sharesOutstanding / 1e6 : 0),
+                    // Use balance sheet data if available
+                    cashAndEquivalents: latestBalanceSheet?.cash
+                        ? latestBalanceSheet.cash / 1e9
+                        : (data.totalCash ? data.totalCash / 1e9 : 0),
+                    totalDebt: latestBalanceSheet?.totalDebt
+                        ? latestBalanceSheet.totalDebt / 1e9
+                        : (data.totalDebt ? data.totalDebt / 1e9 : 0),
                     beta: data.beta || 1.0,
+                    // Set estimated growth rate based on historical performance
+                    growthRateYear1to5: estimatedGrowthRate,
+                    growthRateYear6to10: Math.max(estimatedGrowthRate * 0.5, 4), // Fade to half in years 6-10
                 }));
             }
         } catch (err) {

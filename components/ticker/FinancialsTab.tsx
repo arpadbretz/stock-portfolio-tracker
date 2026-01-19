@@ -31,11 +31,9 @@ interface FinancialsTabProps {
 }
 
 type FinancialView = 'income' | 'balance' | 'cashflow';
-type TimeFrame = 'annual' | 'quarterly';
 
 export default function FinancialsTab({ symbol, stock }: FinancialsTabProps) {
     const [view, setView] = useState<FinancialView>('income');
-    const [timeFrame, setTimeFrame] = useState<TimeFrame>('annual');
 
     const formatCurrency = (val: number) => {
         if (val >= 1e12) return `$${(val / 1e12).toFixed(2)}T`;
@@ -45,82 +43,60 @@ export default function FinancialsTab({ symbol, stock }: FinancialsTabProps) {
         return `$${val.toFixed(0)}`;
     };
 
-    // Get the appropriate data based on timeframe
-    const getIncomeData = () => {
-        const data = timeFrame === 'quarterly'
-            ? stock?.incomeStatementQuarterly
-            : stock?.incomeStatement;
-        return (data || []).slice(0, 10).reverse().map((item: any) => ({
-            period: timeFrame === 'quarterly'
-                ? new Date(item.endDate).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
-                : new Date(item.endDate).getFullYear(),
-            revenue: item.totalRevenue,
-            costOfRevenue: item.costOfRevenue,
-            grossProfit: item.grossProfit,
-            operatingExpenses: item.operatingExpenses,
-            operatingIncome: item.operatingIncome,
-            netIncome: item.netIncome,
-            ebit: item.ebit,
-            ebitda: item.ebitda,
-            researchDevelopment: item.researchDevelopment,
-            sellingGeneralAdministrative: item.sellingGeneralAdministrative,
-            interestExpense: item.interestExpense,
-            incomeTaxExpense: item.incomeTaxExpense,
-        }));
-    };
+    // Get income statement data (annual only now)
+    const revenueData = (stock?.incomeStatement || []).slice(0, 10).map((item: any) => ({
+        year: new Date(item.endDate).getFullYear(),
+        revenue: item.totalRevenue,
+        costOfRevenue: item.costOfRevenue,
+        grossProfit: item.grossProfit,
+        operatingExpenses: item.operatingExpenses,
+        operatingIncome: item.operatingIncome || item.ebit,
+        netIncome: item.netIncome,
+        ebit: item.ebit,
+        ebitda: item.ebitda,
+        researchDevelopment: item.researchDevelopment,
+        sellingGeneralAdministrative: item.sellingGeneralAdministrative,
+        interestExpense: item.interestExpense,
+        incomeTaxExpense: item.incomeTaxExpense,
+        eps: item.eps,
+    }));
 
-    const getBalanceData = () => {
-        const data = timeFrame === 'quarterly'
-            ? stock?.balanceSheetQuarterly
-            : stock?.balanceSheet;
-        return (data || []).slice(0, 10).reverse().map((item: any) => ({
-            period: timeFrame === 'quarterly'
-                ? new Date(item.endDate).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
-                : new Date(item.endDate).getFullYear(),
-            totalAssets: item.totalAssets,
-            totalCurrentAssets: item.totalCurrentAssets,
-            cash: item.cash,
-            shortTermInvestments: item.shortTermInvestments,
-            netReceivables: item.netReceivables,
-            inventory: item.inventory,
-            propertyPlantEquipment: item.propertyPlantEquipment,
-            goodwill: item.goodwill,
-            intangibleAssets: item.intangibleAssets,
-            totalLiabilities: item.totalLiabilities,
-            totalCurrentLiabilities: item.totalCurrentLiabilities,
-            accountsPayable: item.accountsPayable,
-            shortTermDebt: item.shortTermDebt,
-            longTermDebt: item.longTermDebt,
-            totalDebt: item.totalDebt,
-            totalStockholderEquity: item.totalStockholderEquity,
-            retainedEarnings: item.retainedEarnings,
-        }));
-    };
+    // Get balance sheet data (annual only now)
+    const balanceData = (stock?.balanceSheet || []).slice(0, 10).map((item: any) => ({
+        year: new Date(item.endDate).getFullYear(),
+        totalAssets: item.totalAssets,
+        totalCurrentAssets: item.totalCurrentAssets,
+        cash: item.cash,
+        shortTermInvestments: item.shortTermInvestments,
+        netReceivables: item.netReceivables,
+        inventory: item.inventory,
+        propertyPlantEquipment: item.propertyPlantEquipment,
+        goodwill: item.goodwill,
+        intangibleAssets: item.intangibleAssets,
+        totalLiabilities: item.totalLiabilities,
+        totalCurrentLiabilities: item.totalCurrentLiabilities,
+        accountsPayable: item.accountsPayable,
+        shortTermDebt: item.shortTermDebt,
+        longTermDebt: item.longTermDebt,
+        totalDebt: item.totalDebt,
+        totalStockholderEquity: item.totalStockholderEquity,
+        retainedEarnings: item.retainedEarnings,
+    }));
 
-    const getCashFlowData = () => {
-        const data = timeFrame === 'quarterly'
-            ? stock?.cashFlowQuarterly
-            : stock?.cashFlow;
-        return (data || []).slice(0, 10).reverse().map((item: any) => ({
-            period: timeFrame === 'quarterly'
-                ? new Date(item.endDate).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
-                : new Date(item.endDate).getFullYear(),
-            operatingCashflow: item.operatingCashflow,
-            investingCashflow: item.investingCashflow,
-            financingCashflow: item.financingCashflow,
-            freeCashflow: item.freeCashflow,
-            capitalExpenditures: item.capitalExpenditures,
-            depreciation: item.depreciation,
-            dividendsPaid: item.dividendsPaid,
-            stockRepurchases: item.stockRepurchases,
-            debtRepayment: item.debtRepayment,
-            netChangeInCash: item.netChangeInCash,
-        }));
-    };
-
-    const revenueData = getIncomeData();
-    const balanceData = getBalanceData();
-    const cashFlowData = getCashFlowData();
+    // Get cash flow data (annual only now)
+    const cashFlowData = (stock?.cashFlow || []).slice(0, 10).map((item: any) => ({
+        year: new Date(item.endDate).getFullYear(),
+        operatingCashflow: item.operatingCashflow,
+        investingCashflow: item.investingCashflow,
+        financingCashflow: item.financingCashflow,
+        freeCashflow: item.freeCashflow,
+        capitalExpenditures: item.capitalExpenditures,
+        depreciation: item.depreciation,
+        dividendsPaid: item.dividendsPaid,
+        stockRepurchases: item.stockRepurchases,
+        debtRepayment: item.debtRepayment,
+        netChangeInCash: item.netChangeInCash,
+    }));
 
     // Check if we have any data
     const hasIncomeData = revenueData.some((d: any) => d.revenue || d.netIncome);
@@ -130,35 +106,19 @@ export default function FinancialsTab({ symbol, stock }: FinancialsTabProps) {
     return (
         <div className="space-y-8">
             {/* View Selector */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center bg-muted/50 p-1 rounded-2xl overflow-x-auto">
-                    {(['income', 'balance', 'cashflow'] as FinancialView[]).map((v) => (
-                        <button
-                            key={v}
-                            onClick={() => setView(v)}
-                            className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${view === v
-                                ? 'bg-card text-foreground shadow-lg'
-                                : 'text-muted-foreground hover:text-foreground'
-                                }`}
-                        >
-                            {v === 'income' ? 'Income Statement' : v === 'balance' ? 'Balance Sheet' : 'Cash Flow'}
-                        </button>
-                    ))}
-                </div>
-                <div className="flex items-center bg-muted/50 p-1 rounded-xl">
-                    {(['annual', 'quarterly'] as TimeFrame[]).map((tf) => (
-                        <button
-                            key={tf}
-                            onClick={() => setTimeFrame(tf)}
-                            className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${timeFrame === tf
-                                ? 'bg-primary text-primary-foreground'
-                                : 'text-muted-foreground hover:text-foreground'
-                                }`}
-                        >
-                            {tf}
-                        </button>
-                    ))}
-                </div>
+            <div className="flex items-center bg-muted/50 p-1 rounded-2xl overflow-x-auto w-fit">
+                {(['income', 'balance', 'cashflow'] as FinancialView[]).map((v) => (
+                    <button
+                        key={v}
+                        onClick={() => setView(v)}
+                        className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${view === v
+                            ? 'bg-card text-foreground shadow-lg'
+                            : 'text-muted-foreground hover:text-foreground'
+                            }`}
+                    >
+                        {v === 'income' ? 'Income Statement' : v === 'balance' ? 'Balance Sheet' : 'Cash Flow'}
+                    </button>
+                ))}
             </div>
 
             {/* Income Statement View */}
@@ -176,9 +136,7 @@ export default function FinancialsTab({ symbol, stock }: FinancialsTabProps) {
                             </div>
                             <div>
                                 <h3 className="text-xl font-black">Revenue & Earnings</h3>
-                                <p className="text-sm text-muted-foreground">
-                                    {timeFrame === 'quarterly' ? 'Quarterly' : 'Annual'} performance
-                                </p>
+                                <p className="text-sm text-muted-foreground">Annual performance trends</p>
                             </div>
                         </div>
 
@@ -187,7 +145,7 @@ export default function FinancialsTab({ symbol, stock }: FinancialsTabProps) {
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={revenueData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                                        <XAxis dataKey="period" tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }} />
+                                        <XAxis dataKey="year" tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }} />
                                         <YAxis tick={{ fill: '#64748b', fontSize: 10 }} tickFormatter={formatCurrency} />
                                         <Tooltip
                                             contentStyle={{
@@ -209,7 +167,7 @@ export default function FinancialsTab({ symbol, stock }: FinancialsTabProps) {
                             </div>
                         ) : (
                             <div className="h-[350px] flex items-center justify-center text-muted-foreground">
-                                No {timeFrame} income data available
+                                No annual income data available
                             </div>
                         )}
                     </motion.div>
@@ -241,7 +199,7 @@ export default function FinancialsTab({ symbol, stock }: FinancialsTabProps) {
                                         netMargin: d.revenue && d.netIncome ? (d.netIncome / d.revenue) * 100 : null,
                                     }))}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                                        <XAxis dataKey="period" tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }} />
+                                        <XAxis dataKey="year" tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }} />
                                         <YAxis tick={{ fill: '#64748b', fontSize: 10 }} tickFormatter={(v) => `${v?.toFixed(0) || 0}%`} />
                                         <Tooltip
                                             contentStyle={{
@@ -286,7 +244,7 @@ export default function FinancialsTab({ symbol, stock }: FinancialsTabProps) {
                                         <th className="text-left py-3 px-4 font-black uppercase tracking-widest text-[10px] text-muted-foreground sticky left-0 bg-card">Metric</th>
                                         {revenueData.slice(-5).map((d: any, i: number) => (
                                             <th key={i} className="text-right py-3 px-4 font-black uppercase tracking-widest text-[10px] text-muted-foreground min-w-[100px]">
-                                                {d.period}
+                                                {d.year}
                                             </th>
                                         ))}
                                     </tr>
@@ -299,6 +257,7 @@ export default function FinancialsTab({ symbol, stock }: FinancialsTabProps) {
                                         { key: 'researchDevelopment', label: 'R&D' },
                                         { key: 'sellingGeneralAdministrative', label: 'SG&A' },
                                         { key: 'operatingIncome', label: 'Operating Income' },
+                                        { key: 'ebitda', label: 'EBITDA' },
                                         { key: 'interestExpense', label: 'Interest Expense' },
                                         { key: 'incomeTaxExpense', label: 'Income Tax' },
                                         { key: 'netIncome', label: 'Net Income' },
@@ -333,9 +292,7 @@ export default function FinancialsTab({ symbol, stock }: FinancialsTabProps) {
                             </div>
                             <div>
                                 <h3 className="text-xl font-black">Assets vs Liabilities</h3>
-                                <p className="text-sm text-muted-foreground">
-                                    {timeFrame === 'quarterly' ? 'Quarterly' : 'Annual'} financial position
-                                </p>
+                                <p className="text-sm text-muted-foreground">Annual financial position</p>
                             </div>
                         </div>
 
@@ -344,7 +301,7 @@ export default function FinancialsTab({ symbol, stock }: FinancialsTabProps) {
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={balanceData}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                                        <XAxis dataKey="period" tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }} />
+                                        <XAxis dataKey="year" tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }} />
                                         <YAxis tick={{ fill: '#64748b', fontSize: 10 }} tickFormatter={formatCurrency} />
                                         <Tooltip
                                             contentStyle={{
@@ -363,7 +320,7 @@ export default function FinancialsTab({ symbol, stock }: FinancialsTabProps) {
                             </div>
                         ) : (
                             <div className="h-[350px] flex items-center justify-center text-muted-foreground">
-                                No {timeFrame} balance sheet data available
+                                No balance sheet data available
                             </div>
                         )}
                     </motion.div>
@@ -389,26 +346,26 @@ export default function FinancialsTab({ symbol, stock }: FinancialsTabProps) {
                                         <th className="text-left py-3 px-4 font-black uppercase tracking-widest text-[10px] text-muted-foreground sticky left-0 bg-card">Metric</th>
                                         {balanceData.slice(-5).map((d: any, i: number) => (
                                             <th key={i} className="text-right py-3 px-4 font-black uppercase tracking-widest text-[10px] text-muted-foreground min-w-[100px]">
-                                                {d.period}
+                                                {d.year}
                                             </th>
                                         ))}
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border/30">
                                     {[
-                                        { key: 'totalAssets', label: 'Total Assets', section: 'assets' },
-                                        { key: 'totalCurrentAssets', label: '  Current Assets', section: 'assets' },
-                                        { key: 'cash', label: '    Cash & Equivalents', section: 'assets' },
-                                        { key: 'netReceivables', label: '    Receivables', section: 'assets' },
-                                        { key: 'inventory', label: '    Inventory', section: 'assets' },
-                                        { key: 'propertyPlantEquipment', label: '  Property & Equipment', section: 'assets' },
-                                        { key: 'goodwill', label: '  Goodwill', section: 'assets' },
-                                        { key: 'totalLiabilities', label: 'Total Liabilities', section: 'liabs' },
-                                        { key: 'totalCurrentLiabilities', label: '  Current Liabilities', section: 'liabs' },
-                                        { key: 'accountsPayable', label: '    Accounts Payable', section: 'liabs' },
-                                        { key: 'longTermDebt', label: '  Long-Term Debt', section: 'liabs' },
-                                        { key: 'totalStockholderEquity', label: "Shareholders' Equity", section: 'equity' },
-                                        { key: 'retainedEarnings', label: '  Retained Earnings', section: 'equity' },
+                                        { key: 'totalAssets', label: 'Total Assets' },
+                                        { key: 'totalCurrentAssets', label: '  Current Assets' },
+                                        { key: 'cash', label: '    Cash & Equivalents' },
+                                        { key: 'netReceivables', label: '    Receivables' },
+                                        { key: 'inventory', label: '    Inventory' },
+                                        { key: 'propertyPlantEquipment', label: '  Property & Equipment' },
+                                        { key: 'goodwill', label: '  Goodwill' },
+                                        { key: 'totalLiabilities', label: 'Total Liabilities' },
+                                        { key: 'totalCurrentLiabilities', label: '  Current Liabilities' },
+                                        { key: 'accountsPayable', label: '    Accounts Payable' },
+                                        { key: 'longTermDebt', label: '  Long-Term Debt' },
+                                        { key: 'totalStockholderEquity', label: "Shareholders' Equity" },
+                                        { key: 'retainedEarnings', label: '  Retained Earnings' },
                                     ].filter(row => balanceData.some((d: any) => d[row.key])).map((row) => (
                                         <tr key={row.key} className="hover:bg-muted/30 transition-colors">
                                             <td className="py-3 px-4 font-bold sticky left-0 bg-card whitespace-pre">{row.label}</td>
@@ -440,9 +397,7 @@ export default function FinancialsTab({ symbol, stock }: FinancialsTabProps) {
                             </div>
                             <div>
                                 <h3 className="text-xl font-black">Cash Flow Trends</h3>
-                                <p className="text-sm text-muted-foreground">
-                                    {timeFrame === 'quarterly' ? 'Quarterly' : 'Annual'} cash flows
-                                </p>
+                                <p className="text-sm text-muted-foreground">Annual cash flow analysis</p>
                             </div>
                         </div>
 
@@ -461,7 +416,7 @@ export default function FinancialsTab({ symbol, stock }: FinancialsTabProps) {
                                             </linearGradient>
                                         </defs>
                                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                                        <XAxis dataKey="period" tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }} />
+                                        <XAxis dataKey="year" tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }} />
                                         <YAxis tick={{ fill: '#64748b', fontSize: 10 }} tickFormatter={formatCurrency} />
                                         <Tooltip
                                             contentStyle={{
@@ -479,7 +434,7 @@ export default function FinancialsTab({ symbol, stock }: FinancialsTabProps) {
                             </div>
                         ) : (
                             <div className="h-[350px] flex items-center justify-center text-muted-foreground">
-                                No {timeFrame} cash flow data available
+                                No cash flow data available
                             </div>
                         )}
                     </motion.div>
@@ -503,7 +458,7 @@ export default function FinancialsTab({ symbol, stock }: FinancialsTabProps) {
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={cashFlowData}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                                        <XAxis dataKey="period" tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }} />
+                                        <XAxis dataKey="year" tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }} />
                                         <YAxis tick={{ fill: '#64748b', fontSize: 10 }} tickFormatter={formatCurrency} />
                                         <Tooltip
                                             contentStyle={{
@@ -544,7 +499,7 @@ export default function FinancialsTab({ symbol, stock }: FinancialsTabProps) {
                                         <th className="text-left py-3 px-4 font-black uppercase tracking-widest text-[10px] text-muted-foreground sticky left-0 bg-card">Metric</th>
                                         {cashFlowData.slice(-5).map((d: any, i: number) => (
                                             <th key={i} className="text-right py-3 px-4 font-black uppercase tracking-widest text-[10px] text-muted-foreground min-w-[100px]">
-                                                {d.period}
+                                                {d.year}
                                             </th>
                                         ))}
                                     </tr>
