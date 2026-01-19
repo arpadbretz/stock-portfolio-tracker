@@ -63,6 +63,9 @@ interface WatchlistItem {
     peRatio?: number;
     marketCap?: number;
     dividendYield?: number;
+    fiftyTwoWeekHigh?: number;
+    fiftyTwoWeekLow?: number;
+    beta?: number;
     sinceAddedPercent?: number;
 }
 
@@ -200,8 +203,12 @@ export default function WatchlistPage() {
                                 change: priceData?.change,
                                 changePercent: priceData?.changePercent,
                                 name: priceData?.name || item.name,
-                                peRatio: priceData?.pe,
+                                peRatio: priceData?.pe || priceData?.trailingPE || priceData?.forwardPE,
                                 marketCap: priceData?.marketCap,
+                                dividendYield: priceData?.dividendYield,
+                                fiftyTwoWeekHigh: priceData?.fiftyTwoWeekHigh,
+                                fiftyTwoWeekLow: priceData?.fiftyTwoWeekLow,
+                                beta: priceData?.beta,
                                 sparklineData: chartData.data?.slice(-7).map((d: any) => ({ value: d.close })) || [],
                                 sinceAddedPercent,
                             };
@@ -901,6 +908,14 @@ export default function WatchlistPage() {
                                             >
                                                 <Folder size={16} />
                                             </button>
+                                            {isCompareMode && (
+                                                <button
+                                                    onClick={() => toggleCompareItem(item.symbol)}
+                                                    className={`p-2 rounded-lg transition-all ${compareItems.includes(item.symbol) ? 'bg-amber-500 text-white' : 'text-muted-foreground hover:bg-amber-500/10 hover:text-amber-500'}`}
+                                                >
+                                                    <BarChart3 size={16} />
+                                                </button>
+                                            )}
                                             <button
                                                 onClick={() => handleRemove(item.symbol)}
                                                 className="p-2 rounded-lg text-muted-foreground hover:bg-rose-500/10 hover:text-rose-500 transition-all"
@@ -945,12 +960,22 @@ export default function WatchlistPage() {
                                                         {item.name || 'Loading...'}
                                                     </p>
                                                 </div>
-                                                <button
-                                                    onClick={() => handleRemove(item.symbol)}
-                                                    className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-rose-500 hover:bg-rose-500/10 transition-all opacity-0 group-hover:opacity-100"
-                                                >
-                                                    <Trash2 size={14} />
-                                                </button>
+                                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    {isCompareMode && (
+                                                        <button
+                                                            onClick={() => toggleCompareItem(item.symbol)}
+                                                            className={`p-1.5 rounded-lg transition-all ${compareItems.includes(item.symbol) ? 'bg-amber-500 text-white' : 'text-muted-foreground/50 hover:text-amber-500 hover:bg-amber-500/10'}`}
+                                                        >
+                                                            <BarChart3 size={14} />
+                                                        </button>
+                                                    )}
+                                                    <button
+                                                        onClick={() => handleRemove(item.symbol)}
+                                                        className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-rose-500 hover:bg-rose-500/10 transition-all"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                </div>
                                             </div>
                                             <div className="flex items-center justify-between mb-3">
                                                 <span className="font-black">
@@ -1140,6 +1165,12 @@ export default function WatchlistPage() {
                             {compareItems.map(symbol => {
                                 const item = watchlist.find(w => w.symbol === symbol);
                                 if (!item) return null;
+
+                                // Calculate 52-week range position
+                                const rangePosition = item.fiftyTwoWeekLow && item.fiftyTwoWeekHigh && item.currentPrice
+                                    ? ((item.currentPrice - item.fiftyTwoWeekLow) / (item.fiftyTwoWeekHigh - item.fiftyTwoWeekLow)) * 100
+                                    : null;
+
                                 return (
                                     <div key={symbol} className="bg-muted/50 rounded-2xl p-4 relative">
                                         <button
@@ -1149,28 +1180,64 @@ export default function WatchlistPage() {
                                             <X size={14} />
                                         </button>
                                         <h4 className="font-black text-xl mb-1">{symbol}</h4>
-                                        <p className="text-[10px] text-muted-foreground truncate uppercase mb-3">{item.name}</p>
+                                        <p className="text-[10px] text-muted-foreground truncate uppercase mb-4">{item.name}</p>
+
+                                        {/* Price Section */}
+                                        <div className="flex items-baseline gap-2 mb-4">
+                                            <span className="text-2xl font-black">${item.currentPrice?.toFixed(2) || '—'}</span>
+                                            <span className={`text-sm font-bold ${(item.changePercent ?? 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                {(item.changePercent ?? 0) >= 0 ? '+' : ''}{(item.changePercent ?? 0).toFixed(2)}%
+                                            </span>
+                                        </div>
+
                                         <div className="space-y-2 text-sm">
-                                            <div className="flex justify-between">
-                                                <span className="text-muted-foreground">Price</span>
-                                                <span className="font-bold">${item.currentPrice?.toFixed(2) || '—'}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-muted-foreground">Change</span>
-                                                <span className={`font-bold ${(item.changePercent ?? 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                                    {(item.changePercent ?? 0) >= 0 ? '+' : ''}{(item.changePercent ?? 0).toFixed(2)}%
-                                                </span>
-                                            </div>
                                             <div className="flex justify-between">
                                                 <span className="text-muted-foreground">Since Added</span>
                                                 <span className={`font-bold ${(item.sinceAddedPercent ?? 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
                                                     {item.sinceAddedPercent != null ? `${item.sinceAddedPercent >= 0 ? '+' : ''}${item.sinceAddedPercent.toFixed(1)}%` : '—'}
                                                 </span>
                                             </div>
-                                            {item.peRatio && (
-                                                <div className="flex justify-between">
-                                                    <span className="text-muted-foreground">P/E Ratio</span>
-                                                    <span className="font-bold">{item.peRatio.toFixed(1)}</span>
+                                            <div className="flex justify-between">
+                                                <span className="text-muted-foreground">P/E Ratio</span>
+                                                <span className="font-bold">{item.peRatio?.toFixed(1) || '—'}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-muted-foreground">Market Cap</span>
+                                                <span className="font-bold">
+                                                    {item.marketCap
+                                                        ? item.marketCap >= 1e12
+                                                            ? `$${(item.marketCap / 1e12).toFixed(1)}T`
+                                                            : item.marketCap >= 1e9
+                                                                ? `$${(item.marketCap / 1e9).toFixed(1)}B`
+                                                                : `$${(item.marketCap / 1e6).toFixed(0)}M`
+                                                        : '—'}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-muted-foreground">Dividend</span>
+                                                <span className="font-bold">
+                                                    {item.dividendYield ? `${(item.dividendYield * 100).toFixed(2)}%` : '—'}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-muted-foreground">Beta</span>
+                                                <span className="font-bold">{item.beta?.toFixed(2) || '—'}</span>
+                                            </div>
+
+                                            {/* 52-Week Range Bar */}
+                                            {rangePosition !== null && (
+                                                <div className="pt-2">
+                                                    <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
+                                                        <span>${item.fiftyTwoWeekLow?.toFixed(0)}</span>
+                                                        <span className="font-bold">52W Range</span>
+                                                        <span>${item.fiftyTwoWeekHigh?.toFixed(0)}</span>
+                                                    </div>
+                                                    <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                                                        <div
+                                                            className="h-full bg-primary rounded-full"
+                                                            style={{ width: `${Math.min(100, Math.max(0, rangePosition))}%` }}
+                                                        />
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
