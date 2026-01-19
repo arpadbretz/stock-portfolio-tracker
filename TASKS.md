@@ -315,7 +315,7 @@
 | WATCH-007 | Table View | ✅ | 4h | Implemented Jan 19: List view with sortable columns |
 | WATCH-008 | Comparison Mode | ✅ | 4h | Implemented Jan 19: Compare up to 3 stocks side-by-side |
 | WATCH-009 | Sector Heatmap | ✅ | 3h | Implemented Jan 20: Grouped by sector with performance colors |
-| WATCH-010 | Inline Quick View | ⬜ | 3h | Expand row for mini-chart + stats |
+| WATCH-010 | Inline Quick View | ✅ | 3h | Implemented Jan 20: Click eye icon to expand row with chart + stats |
 | WATCH-011 | News Badges | ⬜ | 2h | Indicator for recent news |
 | WATCH-012 | Earnings Calendar Highlights | ⬜ | 2h | Show upcoming earnings |
 | WATCH-013 | View Mode Persistence | ✅ | 1h | Implemented Jan 19: localStorage preferences |

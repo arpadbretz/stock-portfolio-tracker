@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
@@ -153,6 +153,9 @@ export default function WatchlistPage() {
             return newSet;
         });
     };
+
+    // Inline Quick View
+    const [expandedItem, setExpandedItem] = useState<string | null>(null);
 
     useEffect(() => {
         if (!authLoading && !user) {
@@ -927,151 +930,258 @@ export default function WatchlistPage() {
                         </thead>
                         <tbody>
                             {sortedWatchlist.map((item, idx) => (
-                                <tr
-                                    key={item.id}
-                                    className={`border-b border-border/50 hover:bg-muted/30 transition-colors ${selectedItems.has(item.symbol) ? 'bg-primary/5' : ''}`}
-                                >
-                                    {isSelectMode && (
+                                <React.Fragment key={item.id}>
+                                    <tr
+                                        className={`border-b border-border/50 hover:bg-muted/30 transition-colors ${selectedItems.has(item.symbol) ? 'bg-primary/5' : ''}`}
+                                    >
+                                        {isSelectMode && (
+                                            <td className="p-4">
+                                                <button onClick={() => toggleSelectItem(item.symbol)} className="text-muted-foreground hover:text-foreground">
+                                                    {selectedItems.has(item.symbol) ? <CheckSquare size={18} className="text-primary" /> : <Square size={18} />}
+                                                </button>
+                                            </td>
+                                        )}
                                         <td className="p-4">
-                                            <button onClick={() => toggleSelectItem(item.symbol)} className="text-muted-foreground hover:text-foreground">
-                                                {selectedItems.has(item.symbol) ? <CheckSquare size={18} className="text-primary" /> : <Square size={18} />}
-                                            </button>
+                                            <Link href={`/dashboard/ticker/${item.symbol}`} className="font-black text-lg hover:text-primary transition-colors">
+                                                {item.symbol}
+                                            </Link>
                                         </td>
-                                    )}
-                                    <td className="p-4">
-                                        <Link href={`/dashboard/ticker/${item.symbol}`} className="font-black text-lg hover:text-primary transition-colors">
-                                            {item.symbol}
-                                        </Link>
-                                    </td>
-                                    <td className="p-4 text-muted-foreground text-sm truncate max-w-[200px] hidden md:table-cell">
-                                        {item.name || '—'}
-                                    </td>
-                                    <td className="p-4 text-right font-black">
-                                        {item.currentPrice ? `$${item.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '—'}
-                                    </td>
-                                    <td className="p-4 text-right">
-                                        <span className={`font-black ${(item.changePercent ?? 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                            {(item.changePercent ?? 0) >= 0 ? '+' : ''}{(item.changePercent ?? 0).toFixed(2)}%
-                                        </span>
-                                    </td>
-                                    <td className="p-4 text-right hidden lg:table-cell">
-                                        {item.sinceAddedPercent != null ? (
-                                            <span className={`font-black ${item.sinceAddedPercent >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                                {item.sinceAddedPercent >= 0 ? '+' : ''}{item.sinceAddedPercent.toFixed(1)}%
+                                        <td className="p-4 text-muted-foreground text-sm truncate max-w-[200px] hidden md:table-cell">
+                                            {item.name || '—'}
+                                        </td>
+                                        <td className="p-4 text-right font-black">
+                                            {item.currentPrice ? `$${item.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '—'}
+                                        </td>
+                                        <td className="p-4 text-right">
+                                            <span className={`font-black ${(item.changePercent ?? 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                {(item.changePercent ?? 0) >= 0 ? '+' : ''}{(item.changePercent ?? 0).toFixed(2)}%
                                             </span>
-                                        ) : '—'}
-                                    </td>
-                                    {/* Dynamic Custom Column Cells */}
-                                    {visibleColumns.has('pe') && (
-                                        <td className="p-4 text-right hidden xl:table-cell font-bold">
-                                            {item.peRatio?.toFixed(1) || '—'}
                                         </td>
-                                    )}
-                                    {visibleColumns.has('marketCap') && (
-                                        <td className="p-4 text-right hidden xl:table-cell font-bold">
-                                            {item.marketCap
-                                                ? item.marketCap >= 1e12
-                                                    ? `$${(item.marketCap / 1e12).toFixed(1)}T`
-                                                    : item.marketCap >= 1e9
-                                                        ? `$${(item.marketCap / 1e9).toFixed(1)}B`
-                                                        : `$${(item.marketCap / 1e6).toFixed(0)}M`
-                                                : '—'}
-                                        </td>
-                                    )}
-                                    {visibleColumns.has('dividend') && (
-                                        <td className="p-4 text-right hidden xl:table-cell font-bold">
-                                            {item.dividendYield ? `${(item.dividendYield * 100).toFixed(2)}%` : '—'}
-                                        </td>
-                                    )}
-                                    {visibleColumns.has('beta') && (
-                                        <td className="p-4 text-right hidden xl:table-cell font-bold">
-                                            {item.beta?.toFixed(2) || '—'}
-                                        </td>
-                                    )}
-                                    {visibleColumns.has('52wRange') && (
-                                        <td className="p-4 hidden xl:table-cell">
-                                            {item.fiftyTwoWeekLow && item.fiftyTwoWeekHigh && item.currentPrice ? (
-                                                <div className="w-16 mx-auto">
-                                                    <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                                                        <div
-                                                            className="h-full bg-primary rounded-full"
-                                                            style={{
-                                                                width: `${Math.min(100, Math.max(0, ((item.currentPrice - item.fiftyTwoWeekLow) / (item.fiftyTwoWeekHigh - item.fiftyTwoWeekLow)) * 100))}%`
-                                                            }}
-                                                        />
-                                                    </div>
-                                                </div>
+                                        <td className="p-4 text-right hidden lg:table-cell">
+                                            {item.sinceAddedPercent != null ? (
+                                                <span className={`font-black ${item.sinceAddedPercent >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                    {item.sinceAddedPercent >= 0 ? '+' : ''}{item.sinceAddedPercent.toFixed(1)}%
+                                                </span>
                                             ) : '—'}
                                         </td>
-                                    )}
-                                    <td className="p-4 hidden lg:table-cell">
-                                        <div className="relative group/stage">
-                                            <button
-                                                className="px-2.5 py-1 rounded-full text-[9px] font-bold uppercase mx-auto block"
-                                                style={{
-                                                    backgroundColor: `${KANBAN_STAGES.find(s => s.id === (item.stage || 'researching'))?.color || '#3b82f6'}20`,
-                                                    color: KANBAN_STAGES.find(s => s.id === (item.stage || 'researching'))?.color || '#3b82f6'
-                                                }}
-                                            >
-                                                {KANBAN_STAGES.find(s => s.id === (item.stage || 'researching'))?.label.split(' ')[0] || 'Research'}
-                                            </button>
-                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-card border border-border rounded-xl shadow-xl opacity-0 invisible group-hover/stage:opacity-100 group-hover/stage:visible transition-all z-50 min-w-[120px]">
-                                                {KANBAN_STAGES.map(s => (
-                                                    <button
-                                                        key={s.id}
-                                                        onClick={() => handleStageChange(item.symbol, s.id)}
-                                                        className={`w-full px-3 py-2 text-left text-xs font-bold hover:bg-muted transition-colors first:rounded-t-xl last:rounded-b-xl flex items-center gap-2 ${item.stage === s.id ? 'bg-muted' : ''}`}
-                                                    >
-                                                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
-                                                        {s.label}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="p-4 hidden md:table-cell">
-                                        <div className="w-20 h-8 mx-auto">
-                                            {item.sparklineData && item.sparklineData.length > 0 && (
-                                                <ResponsiveContainer width="100%" height="100%">
-                                                    <AreaChart data={item.sparklineData}>
-                                                        <Area
-                                                            type="monotone"
-                                                            dataKey="value"
-                                                            stroke={(item.changePercent ?? 0) >= 0 ? '#10b981' : '#f43f5e'}
-                                                            strokeWidth={2}
-                                                            fill="transparent"
-                                                            isAnimationActive={false}
-                                                        />
-                                                    </AreaChart>
-                                                </ResponsiveContainer>
-                                            )}
-                                        </div>
-                                    </td>
-                                    <td className="p-4">
-                                        <div className="flex items-center justify-end gap-1">
-                                            <button
-                                                onClick={() => setMoveItem(item)}
-                                                className="p-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
-                                            >
-                                                <Folder size={16} />
-                                            </button>
-                                            {isCompareMode && (
+                                        {/* Dynamic Custom Column Cells */}
+                                        {visibleColumns.has('pe') && (
+                                            <td className="p-4 text-right hidden xl:table-cell font-bold">
+                                                {item.peRatio?.toFixed(1) || '—'}
+                                            </td>
+                                        )}
+                                        {visibleColumns.has('marketCap') && (
+                                            <td className="p-4 text-right hidden xl:table-cell font-bold">
+                                                {item.marketCap
+                                                    ? item.marketCap >= 1e12
+                                                        ? `$${(item.marketCap / 1e12).toFixed(1)}T`
+                                                        : item.marketCap >= 1e9
+                                                            ? `$${(item.marketCap / 1e9).toFixed(1)}B`
+                                                            : `$${(item.marketCap / 1e6).toFixed(0)}M`
+                                                    : '—'}
+                                            </td>
+                                        )}
+                                        {visibleColumns.has('dividend') && (
+                                            <td className="p-4 text-right hidden xl:table-cell font-bold">
+                                                {item.dividendYield ? `${(item.dividendYield * 100).toFixed(2)}%` : '—'}
+                                            </td>
+                                        )}
+                                        {visibleColumns.has('beta') && (
+                                            <td className="p-4 text-right hidden xl:table-cell font-bold">
+                                                {item.beta?.toFixed(2) || '—'}
+                                            </td>
+                                        )}
+                                        {visibleColumns.has('52wRange') && (
+                                            <td className="p-4 hidden xl:table-cell">
+                                                {item.fiftyTwoWeekLow && item.fiftyTwoWeekHigh && item.currentPrice ? (
+                                                    <div className="w-16 mx-auto">
+                                                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                                                            <div
+                                                                className="h-full bg-primary rounded-full"
+                                                                style={{
+                                                                    width: `${Math.min(100, Math.max(0, ((item.currentPrice - item.fiftyTwoWeekLow) / (item.fiftyTwoWeekHigh - item.fiftyTwoWeekLow)) * 100))}%`
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                ) : '—'}
+                                            </td>
+                                        )}
+                                        <td className="p-4 hidden lg:table-cell">
+                                            <div className="relative group/stage">
                                                 <button
-                                                    onClick={() => toggleCompareItem(item.symbol)}
-                                                    className={`p-2 rounded-lg transition-all ${compareItems.includes(item.symbol) ? 'bg-amber-500 text-white' : 'text-muted-foreground hover:bg-amber-500/10 hover:text-amber-500'}`}
+                                                    className="px-2.5 py-1 rounded-full text-[9px] font-bold uppercase mx-auto block"
+                                                    style={{
+                                                        backgroundColor: `${KANBAN_STAGES.find(s => s.id === (item.stage || 'researching'))?.color || '#3b82f6'}20`,
+                                                        color: KANBAN_STAGES.find(s => s.id === (item.stage || 'researching'))?.color || '#3b82f6'
+                                                    }}
                                                 >
-                                                    <BarChart3 size={16} />
+                                                    {KANBAN_STAGES.find(s => s.id === (item.stage || 'researching'))?.label.split(' ')[0] || 'Research'}
                                                 </button>
-                                            )}
-                                            <button
-                                                onClick={() => handleRemove(item.symbol)}
-                                                className="p-2 rounded-lg text-muted-foreground hover:bg-rose-500/10 hover:text-rose-500 transition-all"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
+                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-card border border-border rounded-xl shadow-xl opacity-0 invisible group-hover/stage:opacity-100 group-hover/stage:visible transition-all z-50 min-w-[120px]">
+                                                    {KANBAN_STAGES.map(s => (
+                                                        <button
+                                                            key={s.id}
+                                                            onClick={() => handleStageChange(item.symbol, s.id)}
+                                                            className={`w-full px-3 py-2 text-left text-xs font-bold hover:bg-muted transition-colors first:rounded-t-xl last:rounded-b-xl flex items-center gap-2 ${item.stage === s.id ? 'bg-muted' : ''}`}
+                                                        >
+                                                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
+                                                            {s.label}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="p-4 hidden md:table-cell">
+                                            <div className="w-20 h-8 mx-auto">
+                                                {item.sparklineData && item.sparklineData.length > 0 && (
+                                                    <ResponsiveContainer width="100%" height="100%">
+                                                        <AreaChart data={item.sparklineData}>
+                                                            <Area
+                                                                type="monotone"
+                                                                dataKey="value"
+                                                                stroke={(item.changePercent ?? 0) >= 0 ? '#10b981' : '#f43f5e'}
+                                                                strokeWidth={2}
+                                                                fill="transparent"
+                                                                isAnimationActive={false}
+                                                            />
+                                                        </AreaChart>
+                                                    </ResponsiveContainer>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="p-4">
+                                            <div className="flex items-center justify-end gap-1">
+                                                <button
+                                                    onClick={() => setMoveItem(item)}
+                                                    className="p-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
+                                                >
+                                                    <Folder size={16} />
+                                                </button>
+                                                {isCompareMode && (
+                                                    <button
+                                                        onClick={() => toggleCompareItem(item.symbol)}
+                                                        className={`p-2 rounded-lg transition-all ${compareItems.includes(item.symbol) ? 'bg-amber-500 text-white' : 'text-muted-foreground hover:bg-amber-500/10 hover:text-amber-500'}`}
+                                                    >
+                                                        <BarChart3 size={16} />
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={() => setExpandedItem(expandedItem === item.symbol ? null : item.symbol)}
+                                                    className={`p-2 rounded-lg transition-all ${expandedItem === item.symbol ? 'bg-primary text-white' : 'text-muted-foreground hover:bg-primary/10 hover:text-primary'}`}
+                                                    title="Quick View"
+                                                >
+                                                    <Eye size={16} />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleRemove(item.symbol)}
+                                                    className="p-2 rounded-lg text-muted-foreground hover:bg-rose-500/10 hover:text-rose-500 transition-all"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {/* Expandable Quick View Row */}
+                                    {expandedItem === item.symbol && (
+                                        <tr className="bg-muted/20">
+                                            <td colSpan={20} className="p-0">
+                                                <motion.div
+                                                    initial={{ height: 0, opacity: 0 }}
+                                                    animate={{ height: 'auto', opacity: 1 }}
+                                                    exit={{ height: 0, opacity: 0 }}
+                                                    className="overflow-hidden"
+                                                >
+                                                    <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                        {/* Chart */}
+                                                        <div className="md:col-span-2 bg-card rounded-2xl p-4 border border-border">
+                                                            <h4 className="text-sm font-bold text-muted-foreground mb-3">7-Day Performance</h4>
+                                                            <div className="h-40">
+                                                                {item.sparklineData && item.sparklineData.length > 0 && (
+                                                                    <ResponsiveContainer width="100%" height="100%">
+                                                                        <AreaChart data={item.sparklineData}>
+                                                                            <defs>
+                                                                                <linearGradient id={`gradient-${item.symbol}`} x1="0" y1="0" x2="0" y2="1">
+                                                                                    <stop offset="0%" stopColor={(item.changePercent ?? 0) >= 0 ? '#10b981' : '#f43f5e'} stopOpacity={0.3} />
+                                                                                    <stop offset="100%" stopColor={(item.changePercent ?? 0) >= 0 ? '#10b981' : '#f43f5e'} stopOpacity={0} />
+                                                                                </linearGradient>
+                                                                            </defs>
+                                                                            <Area
+                                                                                type="monotone"
+                                                                                dataKey="value"
+                                                                                stroke={(item.changePercent ?? 0) >= 0 ? '#10b981' : '#f43f5e'}
+                                                                                strokeWidth={2}
+                                                                                fill={`url(#gradient-${item.symbol})`}
+                                                                                isAnimationActive={false}
+                                                                            />
+                                                                        </AreaChart>
+                                                                    </ResponsiveContainer>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        {/* Quick Stats */}
+                                                        <div className="bg-card rounded-2xl p-4 border border-border">
+                                                            <h4 className="text-sm font-bold text-muted-foreground mb-3">Quick Stats</h4>
+                                                            <div className="space-y-3">
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-sm text-muted-foreground">P/E Ratio</span>
+                                                                    <span className="text-sm font-bold">{item.peRatio?.toFixed(1) || '—'}</span>
+                                                                </div>
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-sm text-muted-foreground">Market Cap</span>
+                                                                    <span className="text-sm font-bold">
+                                                                        {item.marketCap
+                                                                            ? item.marketCap >= 1e12
+                                                                                ? `$${(item.marketCap / 1e12).toFixed(1)}T`
+                                                                                : item.marketCap >= 1e9
+                                                                                    ? `$${(item.marketCap / 1e9).toFixed(1)}B`
+                                                                                    : `$${(item.marketCap / 1e6).toFixed(0)}M`
+                                                                            : '—'}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-sm text-muted-foreground">Dividend</span>
+                                                                    <span className="text-sm font-bold">{item.dividendYield ? `${(item.dividendYield * 100).toFixed(2)}%` : '—'}</span>
+                                                                </div>
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-sm text-muted-foreground">Beta</span>
+                                                                    <span className="text-sm font-bold">{item.beta?.toFixed(2) || '—'}</span>
+                                                                </div>
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-sm text-muted-foreground">Sector</span>
+                                                                    <span className="text-sm font-bold truncate max-w-[100px]">{item.sector || 'Unknown'}</span>
+                                                                </div>
+                                                                {item.fiftyTwoWeekLow && item.fiftyTwoWeekHigh && (
+                                                                    <div className="pt-2 border-t border-border">
+                                                                        <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
+                                                                            <span>${item.fiftyTwoWeekLow.toFixed(0)}</span>
+                                                                            <span className="font-bold">52W Range</span>
+                                                                            <span>${item.fiftyTwoWeekHigh.toFixed(0)}</span>
+                                                                        </div>
+                                                                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                                                                            <div
+                                                                                className="h-full bg-primary rounded-full"
+                                                                                style={{
+                                                                                    width: `${Math.min(100, Math.max(0, item.currentPrice ? ((item.currentPrice - item.fiftyTwoWeekLow) / (item.fiftyTwoWeekHigh - item.fiftyTwoWeekLow)) * 100 : 0))}%`
+                                                                                }}
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            <Link
+                                                                href={`/dashboard/ticker/${item.symbol}`}
+                                                                className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl font-bold text-sm hover:opacity-90 transition-opacity"
+                                                            >
+                                                                Full Analysis <ExternalLink size={14} />
+                                                            </Link>
+                                                        </div>
+                                                    </div>
+                                                </motion.div>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </React.Fragment>
                             ))}
                         </tbody>
                     </table>
@@ -1396,7 +1506,8 @@ export default function WatchlistPage() {
                         ))}
                     </AnimatePresence>
                 </div>
-            )}
+            )
+            }
 
             {/* Comparison Mode Panel */}
             <AnimatePresence>
@@ -1637,6 +1748,6 @@ export default function WatchlistPage() {
                     </>
                 )}
             </AnimatePresence>
-        </div>
+        </div >
     );
 }
