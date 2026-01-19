@@ -77,10 +77,12 @@ export default function AlertsPage() {
                     data.data.map(async (alert: PriceAlert) => {
                         try {
                             const priceRes = await fetch(`/api/stock/${alert.symbol}`);
-                            const priceData = await priceRes.json();
+                            const priceResponse = await priceRes.json();
+                            // Handle new API format: { success: true, data: { ... } }
+                            const priceData = priceResponse.success ? priceResponse.data : priceResponse;
                             return {
                                 ...alert,
-                                currentPrice: priceData.price,
+                                currentPrice: priceData?.price,
                             };
                         } catch {
                             return alert;

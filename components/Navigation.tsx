@@ -57,11 +57,13 @@ export default function Navigation() {
                         data.data.map(async (alert: any) => {
                             try {
                                 const priceRes = await fetch(`/api/stock/${alert.symbol}`);
-                                const priceData = await priceRes.json();
-                                const currentPrice = priceData.price;
-                                const isTriggered = alert.condition === 'above'
+                                const priceResponse = await priceRes.json();
+                                // Handle new API format: { success: true, data: { ... } }
+                                const priceData = priceResponse.success ? priceResponse.data : priceResponse;
+                                const currentPrice = priceData?.price;
+                                const isTriggered = currentPrice && (alert.condition === 'above'
                                     ? currentPrice >= alert.target_price
-                                    : currentPrice <= alert.target_price;
+                                    : currentPrice <= alert.target_price);
                                 return { ...alert, currentPrice, isTriggered };
                             } catch {
                                 return { ...alert, isTriggered: false };

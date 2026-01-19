@@ -108,15 +108,18 @@ export default function WatchlistPage() {
                                 fetch(`/api/stock/${item.symbol}/chart?range=1mo&interval=1d`)
                             ]);
 
-                            const priceData = await priceRes.json();
+                            const priceResponse = await priceRes.json();
                             const chartData = await chartRes.json();
+
+                            // Handle new API format: { success: true, data: { ... } }
+                            const priceData = priceResponse.success ? priceResponse.data : priceResponse;
 
                             return {
                                 ...item,
-                                currentPrice: priceData.price,
-                                change: priceData.change,
-                                changePercent: priceData.changePercent,
-                                name: priceData.name || item.name,
+                                currentPrice: priceData?.price,
+                                change: priceData?.change,
+                                changePercent: priceData?.changePercent,
+                                name: priceData?.name || item.name,
                                 sparklineData: chartData.data?.slice(-7).map((d: any) => ({ value: d.close })) || []
                             };
                         } catch {
@@ -151,9 +154,12 @@ export default function WatchlistPage() {
         try {
             // First fetch the stock to get name and current price
             const stockRes = await fetch(`/api/stock/${addSymbol.toUpperCase()}`);
-            const stockData = await stockRes.json();
+            const stockResponse = await stockRes.json();
 
-            if (stockData.error) {
+            // Handle new API format: { success: true, data: { ... } }
+            const stockData = stockResponse.success ? stockResponse.data : stockResponse;
+
+            if (!stockData || stockResponse.error || !stockResponse.success) {
                 setError('Stock not found');
                 setIsAdding(false);
                 return;

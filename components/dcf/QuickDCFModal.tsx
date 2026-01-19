@@ -35,18 +35,34 @@ export default function QuickDCFModal({
         setIsLoading(true);
         try {
             const res = await fetch(`/api/stock/${symbol}`);
-            const data = await res.json();
-            setFcf(data.freeCashflow || 0);
+            const response = await res.json();
 
-            // Try to get shares outstanding from a different endpoint if not in main
-            const fundamentalsRes = await fetch(`/api/stock/${symbol}/fundamentals`);
-            const fundamentalsData = await fundamentalsRes.json();
+            // Handle new API format: { success: true, data: { ... } }
+            const data = response.success ? response.data : response;
 
-            // This is a bit of a guess on where shares outstanding lives in your API
-            // Usually it's in the stock data or fundamentals
-            setShares(data.sharesOutstanding || fundamentalsData.sharesOutstanding || 0);
+            // Get FCF from cash flow statement if available, otherwise use financialData field
+            const latestCashFlow = data.cashFlow && data.cashFlow.length > 0
+                ? data.cashFlow[data.cashFlow.length - 1]
+                : null;
+            const freeCashFlow = latestCashFlow?.freeCashflow || data.freeCashflow || 0;
+            setFcf(freeCashFlow);
 
-            if (!data.freeCashflow) {
+            // Get shares outstanding
+            setShares(data.sharesOutstanding || (data.marketCap && data.price ? data.marketCap / data.price : 0));
+
+            // Estimate growth rate from historical revenue
+            if (data.incomeStatement && data.incomeStatement.length >= 2) {
+                const statements = data.incomeStatement;
+                const oldestRevenue = statements[0]?.totalRevenue;
+                const latestRevenue = statements[statements.length - 1]?.totalRevenue;
+                if (oldestRevenue && latestRevenue && oldestRevenue > 0) {
+                    const years = statements.length - 1;
+                    const cagr = (Math.pow(latestRevenue / oldestRevenue, 1 / years) - 1) * 100;
+                    setGrowth(Math.min(Math.max(cagr, 5), 30)); // Clamp between 5-30%
+                }
+            }
+
+            if (!freeCashFlow) {
                 toast.error("Low data for DCF", { description: "We couldn't find Free Cash Flow for this stock." });
             }
         } catch (err) {

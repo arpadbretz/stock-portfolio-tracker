@@ -37,12 +37,13 @@ export async function GET(
                 return null;
             }),
             // Use fundamentalsTimeSeries for annual financial data (past 10 years)
+            // validateResult: false is required because Yahoo's data often fails schema validation
             yf.fundamentalsTimeSeries(ticker, {
                 period1: new Date(new Date().getFullYear() - 10, 0, 1),
                 period2: new Date(),
                 type: 'annual',
                 module: 'all'
-            }).catch((e: any) => {
+            }, { validateResult: false }).catch((e: any) => {
                 console.warn('fundamentalsTimeSeries annual failure:', e.message);
                 return [];
             })
