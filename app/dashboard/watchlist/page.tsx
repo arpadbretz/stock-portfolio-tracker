@@ -162,6 +162,10 @@ export default function WatchlistPage() {
     // Inline Quick View
     const [expandedItem, setExpandedItem] = useState<string | null>(null);
 
+    // Heatmap timeframe
+    type HeatmapTimeframe = 'today' | '7day' | 'sinceAdded';
+    const [heatmapTimeframe, setHeatmapTimeframe] = useState<HeatmapTimeframe>('today');
+
     useEffect(() => {
         if (!authLoading && !user) {
             router.push('/login');
@@ -953,7 +957,7 @@ export default function WatchlistPage() {
                                                 <Link href={`/dashboard/ticker/${item.symbol}`} className="font-black text-lg hover:text-primary transition-colors">
                                                     {item.symbol}
                                                 </Link>
-                                                {item.recentNewsCount && item.recentNewsCount > 0 && (
+                                                {(item.recentNewsCount ?? 0) > 0 && (
                                                     <span className="flex items-center gap-0.5 px-1.5 py-0.5 bg-blue-500/20 text-blue-500 rounded-full text-[8px] font-bold" title={`${item.recentNewsCount} recent news`}>
                                                         <Newspaper size={9} />
                                                         {item.recentNewsCount}
@@ -1124,8 +1128,32 @@ export default function WatchlistPage() {
                                                     <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
                                                         {/* Chart */}
                                                         <div className="md:col-span-2 bg-card rounded-2xl p-4 border border-border">
-                                                            <h4 className="text-sm font-bold text-muted-foreground mb-3">7-Day Performance</h4>
-                                                            <div className="h-40">
+                                                            <div className="flex items-center justify-between mb-3">
+                                                                <h4 className="text-sm font-bold text-muted-foreground">7-Day Performance</h4>
+                                                                {item.sparklineData && item.sparklineData.length > 0 && (() => {
+                                                                    const firstPrice = item.sparklineData[0]?.value;
+                                                                    const lastPrice = item.sparklineData[item.sparklineData.length - 1]?.value;
+                                                                    const weekChange = firstPrice && lastPrice ? ((lastPrice - firstPrice) / firstPrice) * 100 : 0;
+                                                                    return (
+                                                                        <div className="flex items-center gap-4">
+                                                                            <div className="text-right">
+                                                                                <p className="text-[10px] text-muted-foreground uppercase tracking-widest">7 Days Ago</p>
+                                                                                <p className="text-sm font-bold">${firstPrice?.toFixed(2)}</p>
+                                                                            </div>
+                                                                            <div className="text-center">
+                                                                                <p className={`text-lg font-black ${weekChange >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                                                    {weekChange >= 0 ? '↑' : '↓'} {Math.abs(weekChange).toFixed(2)}%
+                                                                                </p>
+                                                                            </div>
+                                                                            <div className="text-right">
+                                                                                <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Now</p>
+                                                                                <p className="text-sm font-bold">${lastPrice?.toFixed(2)}</p>
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                })()}
+                                                            </div>
+                                                            <div className="h-32">
                                                                 {item.sparklineData && item.sparklineData.length > 0 && (
                                                                     <ResponsiveContainer width="100%" height="100%">
                                                                         <AreaChart data={item.sparklineData}>
@@ -1299,6 +1327,23 @@ export default function WatchlistPage() {
             ) : viewMode === 'heatmap' ? (
                 /* SECTOR HEATMAP VIEW */
                 (() => {
+                    // Get change value based on timeframe
+                    const getChange = (stock: WatchlistItem) => {
+                        switch (heatmapTimeframe) {
+                            case '7day':
+                                if (stock.sparklineData && stock.sparklineData.length > 1) {
+                                    const first = stock.sparklineData[0]?.value;
+                                    const last = stock.sparklineData[stock.sparklineData.length - 1]?.value;
+                                    return first && last ? ((last - first) / first) * 100 : 0;
+                                }
+                                return 0;
+                            case 'sinceAdded':
+                                return stock.sinceAddedPercent ?? 0;
+                            default:
+                                return stock.changePercent ?? 0;
+                        }
+                    };
+
                     // Group stocks by sector
                     const sectorData = sortedWatchlist.reduce((acc, item) => {
                         const sector = item.sector || 'Unknown';
@@ -1306,7 +1351,7 @@ export default function WatchlistPage() {
                             acc[sector] = { stocks: [], totalChange: 0, count: 0 };
                         }
                         acc[sector].stocks.push(item);
-                        acc[sector].totalChange += item.changePercent || 0;
+                        acc[sector].totalChange += getChange(item);
                         acc[sector].count += 1;
                         return acc;
                     }, {} as Record<string, { stocks: WatchlistItem[]; totalChange: number; count: number }>);
@@ -1336,9 +1381,27 @@ export default function WatchlistPage() {
 
                     return (
                         <div className="space-y-6">
-                            {/* Legend */}
-                            <div className="flex items-center justify-between">
-                                <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground">Sector Performance</h3>
+                            {/* Header with Legend and Timeframe Selector */}
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div className="flex items-center gap-4">
+                                    <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground">Sector Performance</h3>
+                                    {/* Timeframe Selector */}
+                                    <div className="flex items-center bg-muted rounded-xl p-1">
+                                        {[
+                                            { id: 'today' as const, label: 'Today' },
+                                            { id: '7day' as const, label: '7 Day' },
+                                            { id: 'sinceAdded' as const, label: 'Since Added' },
+                                        ].map(tf => (
+                                            <button
+                                                key={tf.id}
+                                                onClick={() => setHeatmapTimeframe(tf.id)}
+                                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${heatmapTimeframe === tf.id ? 'bg-card shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                                            >
+                                                {tf.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
                                 <div className="flex items-center gap-2 text-[10px] font-bold">
                                     <div className="flex items-center gap-1">
                                         <div className="w-3 h-3 rounded bg-rose-500" />
@@ -1377,18 +1440,21 @@ export default function WatchlistPage() {
                                             </div>
                                         </div>
                                         <div className="p-2 grid grid-cols-2 gap-1">
-                                            {sector.stocks.map(stock => (
-                                                <Link
-                                                    key={stock.symbol}
-                                                    href={`/dashboard/ticker/${stock.symbol}`}
-                                                    className={`p-3 rounded-xl ${getColor(stock.changePercent || 0)} ${getTextColor(stock.changePercent || 0)} hover:opacity-80 transition-opacity`}
-                                                >
-                                                    <div className="font-black text-sm">{stock.symbol}</div>
-                                                    <div className="text-[10px] font-bold opacity-80">
-                                                        {(stock.changePercent || 0) >= 0 ? '+' : ''}{(stock.changePercent || 0).toFixed(2)}%
-                                                    </div>
-                                                </Link>
-                                            ))}
+                                            {sector.stocks.map(stock => {
+                                                const change = getChange(stock);
+                                                return (
+                                                    <Link
+                                                        key={stock.symbol}
+                                                        href={`/dashboard/ticker/${stock.symbol}`}
+                                                        className={`p-3 rounded-xl ${getColor(change)} ${getTextColor(change)} hover:opacity-80 transition-opacity`}
+                                                    >
+                                                        <div className="font-black text-sm">{stock.symbol}</div>
+                                                        <div className="text-[10px] font-bold opacity-80">
+                                                            {change >= 0 ? '+' : ''}{change.toFixed(2)}%
+                                                        </div>
+                                                    </Link>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 ))}
@@ -1440,7 +1506,7 @@ export default function WatchlistPage() {
                                                             {KANBAN_STAGES.find(s => s.id === item.stage)?.label || item.stage}
                                                         </span>
                                                     )}
-                                                    {item.recentNewsCount && item.recentNewsCount > 0 && (
+                                                    {(item.recentNewsCount ?? 0) > 0 && (
                                                         <span className="flex items-center gap-1 px-2 py-0.5 bg-blue-500/20 text-blue-500 rounded-full text-[9px] font-bold" title={`${item.recentNewsCount} recent news`}>
                                                             <Newspaper size={10} />
                                                             {item.recentNewsCount}
