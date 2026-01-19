@@ -25,12 +25,18 @@ export default function Breadcrumbs() {
         'account': 'Account',
     };
 
+    // Custom href overrides for paths that need different destinations
+    const hrefOverrides: Record<string, string> = {
+        'ticker': '/dashboard/stocks', // ticker without symbol should go to stock search
+    };
+
     const breadcrumbs = paths
         // Skip the first 'dashboard' segment since we show it as Home
         .filter((path, index) => !(index === 0 && path.toLowerCase() === 'dashboard'))
         .map((path, index, filteredPaths) => {
-            // Reconstruct href considering we always start with /dashboard
-            const href = `/dashboard/${filteredPaths.slice(0, index + 1).join('/')}`;
+            // Check for href override first
+            const defaultHref = `/dashboard/${filteredPaths.slice(0, index + 1).join('/')}`;
+            const href = hrefOverrides[path.toLowerCase()] || defaultHref;
             // Use label map or capitalize
             const label = labelMap[path.toLowerCase()] ||
                 (path.charAt(0).toUpperCase() + path.slice(1).replace(/-/g, ' '));

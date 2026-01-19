@@ -259,9 +259,25 @@ export default function AccountPage() {
             return;
         }
 
-        if (newPassword.length < 6) {
-            setError('Password must be at least 6 characters');
-            toast.error('Password too short');
+        // Password requirements: min 8 chars, upper, lower, digit, symbol
+        const hasMinLength = newPassword.length >= 8;
+        const hasUppercase = /[A-Z]/.test(newPassword);
+        const hasLowercase = /[a-z]/.test(newPassword);
+        const hasDigit = /[0-9]/.test(newPassword);
+        const hasSymbol = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(newPassword);
+
+        if (!hasMinLength || !hasUppercase || !hasLowercase || !hasDigit || !hasSymbol) {
+            const missing = [];
+            if (!hasMinLength) missing.push('at least 8 characters');
+            if (!hasUppercase) missing.push('an uppercase letter');
+            if (!hasLowercase) missing.push('a lowercase letter');
+            if (!hasDigit) missing.push('a number');
+            if (!hasSymbol) missing.push('a symbol (!@#$%^&*...)');
+
+            setError(`Password must have: ${missing.join(', ')}`);
+            toast.error('Password does not meet requirements', {
+                description: `Missing: ${missing.join(', ')}`
+            });
             return;
         }
 
@@ -646,10 +662,10 @@ export default function AccountPage() {
                                         type={showPasswords ? 'text' : 'password'}
                                         value={newPassword}
                                         onChange={(e) => setNewPassword(e.target.value)}
-                                        placeholder="New Password"
+                                        placeholder="New Password (8+ chars, upper, lower, digit, symbol)"
                                         className="w-full pl-12 pr-12 py-4 bg-muted border border-border rounded-2xl font-bold focus:outline-none focus:ring-2 focus:ring-primary/20"
                                         required
-                                        minLength={6}
+                                        minLength={8}
                                     />
                                     <button
                                         type="button"
@@ -669,7 +685,7 @@ export default function AccountPage() {
                                         placeholder="Confirm New Password"
                                         className="w-full pl-12 pr-4 py-4 bg-muted border border-border rounded-2xl font-bold focus:outline-none focus:ring-2 focus:ring-primary/20"
                                         required
-                                        minLength={6}
+                                        minLength={8}
                                     />
                                 </div>
 

@@ -62,7 +62,8 @@
 | ACCT-014 | Timezone Synchronization | ⬜ | 2h | Correct market status/timestamps (Low Priority) |
 | ACCT-016 | Security & Identity Manager | ⬜ | 4h | Multi-factor auth / session mgmt (Low Priority) |
 | ACCT-017 | System Theme Persistence | ⬜ | 1h | Save theme pref to DB (Low Priority) |
-| ACCT-018 | Language & Localization | ⬜ | 8h | i18n support EN/HU (Low Priority) |
+| ACCT-018 | Language & Localization | ⬜ | 8h | 🔴 i18n support EN/HU - PROMOTED TO HIGH |
+| ACCT-020 | Password Security Check | ✅ | 1h | Implemented Jan 19: 8+ chars, upper/lower/digits/symbols |
 
 ## Price Alerts
 
@@ -76,24 +77,24 @@
 | ID | Task | Status | Effort | Notes |
 |----|------|--------|--------|-------|
 | UX-001 | Loading Skeletons | ✅ | 3h | Implemented Jan 11, 2026 |
-| UX-002 | Toast Notifications | ✅ | 1h | Implemented Jan 11, 2026 |
+| UX-002 | Toast Notifications | 🔄 | 2h | Needs fix: not visible on dark background |
 | UX-003 | Keyboard Shortcuts | ✅ | 2h | Cmd+K Command Palette |
 | UX-004 | Command Palette | ✅ | 3h | Implemented Jan 11, 2026 |
 
-## Landing Page (First Impression)
+## Landing Page (Deferred)
 
-> **Priority: CRITICAL** - This is the first interface users see. Must be polished.
+> **Note:** Landing page revamp deferred until core features are complete.
 
 | ID | Task | Status | Effort | Notes |
 |----|------|--------|--------|-------|
 | LAND-001 | Hero Section Polish | ✅ | 3h | Implemented Jan 12, 2026 |
-| LAND-002 | Feature Showcase Cards | ⬜ | 2h | Interactive feature highlights |
-| LAND-003 | Live Data Preview | ⬜ | 3h | Real stock tickers / mock portfolio |
+| LAND-002 | Feature Showcase Cards | ⏸️ | 2h | Deferred - complete app features first |
+| LAND-003 | Live Data Preview | ⏸️ | 3h | Deferred |
 | LAND-004 | Social Proof Stats | ✅ | 1h | Implemented Jan 12, 2026 |
 | LAND-005 | Pricing/Free Tier Section | ✅ | 2h | EU Trust section enhanced |
 | LAND-006 | CTA Optimization | ✅ | 1h | Implemented Jan 12, 2026 |
-| LAND-007 | Mobile Landing Optimization | ⬜ | 2h | Mobile-first responsive design |
-| LAND-008 | Performance Lighthouse Score | ⬜ | 2h | Target 90+ on all metrics |
+| LAND-007 | Mobile Landing Optimization | ⏸️ | 2h | Deferred |
+| LAND-008 | Performance Lighthouse Score | ⏸️ | 2h | Deferred |
 
 ## Mobile Experience
 
@@ -187,7 +188,8 @@
 | EMAIL-005 | Weekly Portfolio Summary | ✅ | 4h | Edge Function + cron implemented Jan 15 |
 | EMAIL-006 | Price Alert Notifications | ✅ | 3h | Vercel Cron + Resend flow Jan 14 |
 | EMAIL-007 | Inactivity Re-engagement | ⬜ | 2h | Users inactive 30+ days |
-| EMAIL-008 | Email Templates | ✅ | 3h | Professional HTML templates Jan 14 |
+| EMAIL-008 | Email Templates | 🔄 | 3h | Needs fix: text not visible on dark backgrounds |
+| EMAIL-009 | Email Template Contrast Fix | ⬜ | 2h | Fix text visibility in email templates |
 
 ## DevOps & CI/CD
 
@@ -215,18 +217,6 @@
 | UXP-007 | Accessibility Audit | ⬜ | 3h | WCAG 2.1 AA compliance |
 | UXP-008 | i18n Prep | ⬜ | 4h | Internationalization setup |
 
-## Beta Program Specific
-
-| ID | Task | Status | Effort | Notes |
-|----|------|--------|--------|-------|
-| BETA-001 | Beta Invite System | ⬜ | 3h | Waitlist + invite codes |
-| BETA-002 | Feature Flags | ⬜ | 2h | Toggle features per user |
-| BETA-003 | Beta Feedback Modal | ⬜ | 2h | Persistent feedback button |
-| BETA-004 | Usage Limits | ⬜ | 2h | API calls, portfolios, etc |
-| BETA-005 | Beta Banner | ⬜ | 1h | "Beta" badge in UI |
-| BETA-006 | Known Issues Page | ⬜ | 1h | Public bug list |
-| BETA-007 | Changelog Page | ⬜ | 2h | What's new updates |
-| BETA-008 | Beta User Dashboard | ⬜ | 3h | Admin view of beta users |
 
 ## Legal & Compliance
 
@@ -530,8 +520,8 @@
 | **Vercel** | Hosting/Edge Runtime | ✅ Active |
 | **GitHub Actions**| Backup/Advanced Crons | ✅ Ready |
 | **Upstash** | Rate Limiting (Redis) | ⬜ Setup Needed |
-| **Sentry** | Error Tracking | ⬜ Setup Needed |
-| **PostHog** | Product Analytics | ⬜ Setup Needed |
+| **Sentry** | Error Tracking | ✅ Active |
+| **PostHog** | Product Analytics | ✅ Active |
 
 > 📋 **Major Update (Jan 19, 2026):** Added 45+ new features across DCF, Watchlist, and Portfolio pages.
 > Focus areas: DCF revamp (urgent), Watchlist power features (urgent), Portfolio analytics (high).
