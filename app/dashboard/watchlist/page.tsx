@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { useAuth } from '@/components/auth/AuthProvider';
 import {
     Eye,
@@ -20,11 +20,25 @@ import {
     FolderPlus,
     Settings,
     ChevronRight,
+    ChevronDown,
+    ChevronUp,
     Folder,
     MoreVertical,
     Clock,
     X,
     LayoutGrid,
+    List,
+    Columns,
+    ArrowUpDown,
+    ArrowUp,
+    ArrowDown,
+    CheckSquare,
+    Square,
+    Percent,
+    DollarSign,
+    BarChart3,
+    Filter,
+    GripVertical,
 } from 'lucide-react';
 import { SkeletonWatchlist } from '@/components/Skeleton';
 import { toast } from 'sonner';
@@ -44,6 +58,10 @@ interface WatchlistItem {
     changePercent?: number;
     group_id: string | null;
     sparklineData?: any[];
+    // Additional metrics for sorting/filtering
+    peRatio?: number;
+    marketCap?: number;
+    sinceAddedPercent?: number;
 }
 
 interface WatchlistGroup {
@@ -52,6 +70,19 @@ interface WatchlistGroup {
     color: string;
     icon: string | null;
 }
+
+type ViewMode = 'grid' | 'table' | 'kanban';
+type SortField = 'symbol' | 'name' | 'currentPrice' | 'changePercent' | 'sinceAddedPercent' | 'created_at';
+type SortDirection = 'asc' | 'desc';
+
+// Kanban stages
+type KanbanStage = 'researching' | 'ready' | 'holding' | 'sold';
+const KANBAN_STAGES: { id: KanbanStage; label: string; color: string }[] = [
+    { id: 'researching', label: 'Researching', color: '#3b82f6' },
+    { id: 'ready', label: 'Ready to Buy', color: '#10b981' },
+    { id: 'holding', label: 'Holding', color: '#8b5cf6' },
+    { id: 'sold', label: 'Sold', color: '#6b7280' },
+];
 
 export default function WatchlistPage() {
     const { user, isLoading: authLoading } = useAuth();
@@ -70,11 +101,46 @@ export default function WatchlistPage() {
     const [isCreatingGroup, setIsCreatingGroup] = useState(false);
     const [moveItem, setMoveItem] = useState<WatchlistItem | null>(null);
 
+    // New state for enhanced features
+    const [viewMode, setViewMode] = useState<ViewMode>('grid');
+    const [sortField, setSortField] = useState<SortField>('created_at');
+    const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+    const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+    const [isSelectMode, setIsSelectMode] = useState(false);
+    const [kanbanData, setKanbanData] = useState<Record<KanbanStage, string[]>>({
+        researching: [],
+        ready: [],
+        holding: [],
+        sold: [],
+    });
+
     useEffect(() => {
         if (!authLoading && !user) {
             router.push('/login');
         }
     }, [user, authLoading, router]);
+
+    // Load view preferences from localStorage
+    useEffect(() => {
+        const savedView = localStorage.getItem('watchlist-view');
+        const savedSort = localStorage.getItem('watchlist-sort');
+        if (savedView && ['grid', 'table', 'kanban'].includes(savedView)) {
+            setViewMode(savedView as ViewMode);
+        }
+        if (savedSort) {
+            try {
+                const { field, direction } = JSON.parse(savedSort);
+                setSortField(field);
+                setSortDirection(direction);
+            } catch { }
+        }
+    }, []);
+
+    // Save preferences
+    useEffect(() => {
+        localStorage.setItem('watchlist-view', viewMode);
+        localStorage.setItem('watchlist-sort', JSON.stringify({ field: sortField, direction: sortDirection }));
+    }, [viewMode, sortField, sortDirection]);
 
     const fetchGroups = useCallback(async () => {
         try {
@@ -114,13 +180,21 @@ export default function WatchlistPage() {
                             // Handle new API format: { success: true, data: { ... } }
                             const priceData = priceResponse.success ? priceResponse.data : priceResponse;
 
+                            const currentPrice = priceData?.price;
+                            const sinceAddedPercent = item.added_price && currentPrice
+                                ? ((currentPrice - item.added_price) / item.added_price) * 100
+                                : null;
+
                             return {
                                 ...item,
-                                currentPrice: priceData?.price,
+                                currentPrice,
                                 change: priceData?.change,
                                 changePercent: priceData?.changePercent,
                                 name: priceData?.name || item.name,
-                                sparklineData: chartData.data?.slice(-7).map((d: any) => ({ value: d.close })) || []
+                                peRatio: priceData?.pe,
+                                marketCap: priceData?.marketCap,
+                                sparklineData: chartData.data?.slice(-7).map((d: any) => ({ value: d.close })) || [],
+                                sinceAddedPercent,
                             };
                         } catch {
                             return item;
@@ -128,6 +202,20 @@ export default function WatchlistPage() {
                     })
                 );
                 setWatchlist(itemsWithData);
+
+                // Initialize Kanban data based on groups or create default
+                const newKanbanData: Record<KanbanStage, string[]> = {
+                    researching: [],
+                    ready: [],
+                    holding: [],
+                    sold: [],
+                };
+                // For now, put all items in "researching" by default
+                // TODO: Add stage field to watchlist items in DB
+                itemsWithData.forEach((item: WatchlistItem) => {
+                    newKanbanData.researching.push(item.symbol);
+                });
+                setKanbanData(newKanbanData);
             }
         } catch (err) {
             console.error('Failed to fetch watchlist:', err);
@@ -143,6 +231,106 @@ export default function WatchlistPage() {
             fetchWatchlist();
         }
     }, [user, fetchGroups, fetchWatchlist]);
+
+    // Sorted watchlist
+    const sortedWatchlist = useMemo(() => {
+        return [...watchlist].sort((a, b) => {
+            let aVal: any = a[sortField];
+            let bVal: any = b[sortField];
+
+            // Handle nulls
+            if (aVal == null) aVal = sortDirection === 'asc' ? Infinity : -Infinity;
+            if (bVal == null) bVal = sortDirection === 'asc' ? Infinity : -Infinity;
+
+            // String comparison for symbol/name
+            if (sortField === 'symbol' || sortField === 'name') {
+                aVal = String(aVal).toLowerCase();
+                bVal = String(bVal).toLowerCase();
+                return sortDirection === 'asc'
+                    ? aVal.localeCompare(bVal)
+                    : bVal.localeCompare(aVal);
+            }
+
+            // Date comparison
+            if (sortField === 'created_at') {
+                aVal = new Date(aVal).getTime();
+                bVal = new Date(bVal).getTime();
+            }
+
+            // Numeric comparison
+            return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+        });
+    }, [watchlist, sortField, sortDirection]);
+
+    const handleSort = (field: SortField) => {
+        if (sortField === field) {
+            setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortField(field);
+            setSortDirection('desc');
+        }
+    };
+
+    const toggleSelectItem = (symbol: string) => {
+        setSelectedItems(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(symbol)) {
+                newSet.delete(symbol);
+            } else {
+                newSet.add(symbol);
+            }
+            return newSet;
+        });
+    };
+
+    const toggleSelectAll = () => {
+        if (selectedItems.size === watchlist.length) {
+            setSelectedItems(new Set());
+        } else {
+            setSelectedItems(new Set(watchlist.map(w => w.symbol)));
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedItems.size === 0) return;
+        if (!confirm(`Delete ${selectedItems.size} items from watchlist?`)) return;
+
+        try {
+            await Promise.all(
+                Array.from(selectedItems).map(symbol =>
+                    fetch(`/api/watchlist?symbol=${symbol}`, { method: 'DELETE' })
+                )
+            );
+            setWatchlist(prev => prev.filter(item => !selectedItems.has(item.symbol)));
+            setSelectedItems(new Set());
+            setIsSelectMode(false);
+            toast.success(`Removed ${selectedItems.size} items`);
+        } catch {
+            toast.error('Failed to remove some items');
+        }
+    };
+
+    const handleBulkMoveToGroup = async (groupId: string | null) => {
+        if (selectedItems.size === 0) return;
+
+        try {
+            await Promise.all(
+                Array.from(selectedItems).map(symbol =>
+                    fetch('/api/watchlist', {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ symbol, group_id: groupId }),
+                    })
+                )
+            );
+            toast.success(`Moved ${selectedItems.size} items`);
+            setSelectedItems(new Set());
+            setIsSelectMode(false);
+            fetchWatchlist();
+        } catch {
+            toast.error('Failed to move some items');
+        }
+    };
 
     const handleAddToWatchlist = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -263,6 +451,12 @@ export default function WatchlistPage() {
         }
     };
 
+    // Sort icon helper
+    const SortIcon = ({ field }: { field: SortField }) => {
+        if (sortField !== field) return <ArrowUpDown size={14} className="opacity-30" />;
+        return sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />;
+    };
+
     if (authLoading || isLoading) {
         return <SkeletonWatchlist />;
     }
@@ -284,6 +478,43 @@ export default function WatchlistPage() {
                 </div>
 
                 <div className="flex items-center gap-3">
+                    {/* View Mode Toggle */}
+                    <div className="flex items-center bg-muted rounded-xl p-1">
+                        <button
+                            onClick={() => setViewMode('grid')}
+                            className={`p-2.5 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-card shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                            title="Grid View"
+                        >
+                            <LayoutGrid size={18} />
+                        </button>
+                        <button
+                            onClick={() => setViewMode('table')}
+                            className={`p-2.5 rounded-lg transition-all ${viewMode === 'table' ? 'bg-card shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                            title="Table View"
+                        >
+                            <List size={18} />
+                        </button>
+                        <button
+                            onClick={() => setViewMode('kanban')}
+                            className={`p-2.5 rounded-lg transition-all ${viewMode === 'kanban' ? 'bg-card shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                            title="Kanban View"
+                        >
+                            <Columns size={18} />
+                        </button>
+                    </div>
+
+                    {/* Select Mode Toggle */}
+                    <button
+                        onClick={() => {
+                            setIsSelectMode(!isSelectMode);
+                            if (isSelectMode) setSelectedItems(new Set());
+                        }}
+                        className={`p-3 rounded-xl transition-all ${isSelectMode ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+                        title="Bulk Select"
+                    >
+                        <CheckSquare size={18} />
+                    </button>
+
                     <button
                         onClick={() => setIsGroupModalOpen(true)}
                         className="flex items-center gap-2 px-6 py-3 bg-muted border border-border rounded-xl font-bold text-sm hover:bg-muted/80 transition-all active:scale-95"
@@ -300,6 +531,59 @@ export default function WatchlistPage() {
                     </button>
                 </div>
             </div>
+
+            {/* Bulk Actions Bar */}
+            <AnimatePresence>
+                {isSelectMode && selectedItems.size > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="bg-card border border-primary/20 rounded-2xl p-4 mb-6 flex items-center justify-between"
+                    >
+                        <div className="flex items-center gap-4">
+                            <button onClick={toggleSelectAll} className="flex items-center gap-2 text-sm font-bold text-muted-foreground hover:text-foreground">
+                                {selectedItems.size === watchlist.length ? <CheckSquare size={18} className="text-primary" /> : <Square size={18} />}
+                                {selectedItems.size} selected
+                            </button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="relative group">
+                                <button className="px-4 py-2 bg-muted rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-muted/80">
+                                    <Folder size={16} />
+                                    Move to
+                                    <ChevronDown size={14} />
+                                </button>
+                                <div className="absolute top-full right-0 mt-2 bg-card border border-border rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 min-w-[200px]">
+                                    <button
+                                        onClick={() => handleBulkMoveToGroup(null)}
+                                        className="w-full px-4 py-3 text-left text-sm font-bold hover:bg-muted transition-colors rounded-t-xl"
+                                    >
+                                        Ungrouped
+                                    </button>
+                                    {groups.map(g => (
+                                        <button
+                                            key={g.id}
+                                            onClick={() => handleBulkMoveToGroup(g.id)}
+                                            className="w-full px-4 py-3 text-left text-sm font-bold hover:bg-muted transition-colors flex items-center gap-2"
+                                        >
+                                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: g.color }} />
+                                            {g.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <button
+                                onClick={handleBulkDelete}
+                                className="px-4 py-2 bg-rose-500/10 text-rose-500 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-rose-500/20"
+                            >
+                                <Trash2 size={16} />
+                                Delete
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Group Selector */}
             <div className="flex items-center gap-4 mb-10 overflow-x-auto pb-4 pt-4 px-4 -mx-4 scrollbar-none">
@@ -382,7 +666,7 @@ export default function WatchlistPage() {
                 )}
             </div>
 
-            {/* Watchlist Grid */}
+            {/* Watchlist Content */}
             {watchlist.length === 0 ? (
                 <div className="text-center py-40 bg-card/10 border border-dashed border-border/50 rounded-[50px]">
                     <Star className="mx-auto text-muted-foreground/20 mb-8" size={80} />
@@ -393,10 +677,181 @@ export default function WatchlistPage() {
                             : "Your research pipeline is waiting for high-growth tickers."}
                     </p>
                 </div>
+            ) : viewMode === 'table' ? (
+                /* TABLE VIEW */
+                <div className="bg-card border border-border rounded-[32px] overflow-hidden">
+                    <table className="w-full">
+                        <thead>
+                            <tr className="border-b border-border bg-muted/30">
+                                {isSelectMode && (
+                                    <th className="p-4 w-12">
+                                        <button onClick={toggleSelectAll} className="text-muted-foreground hover:text-foreground">
+                                            {selectedItems.size === watchlist.length ? <CheckSquare size={18} className="text-primary" /> : <Square size={18} />}
+                                        </button>
+                                    </th>
+                                )}
+                                <th className="p-4 text-left">
+                                    <button onClick={() => handleSort('symbol')} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground">
+                                        Symbol <SortIcon field="symbol" />
+                                    </button>
+                                </th>
+                                <th className="p-4 text-left hidden md:table-cell">
+                                    <button onClick={() => handleSort('name')} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground">
+                                        Name <SortIcon field="name" />
+                                    </button>
+                                </th>
+                                <th className="p-4 text-right">
+                                    <button onClick={() => handleSort('currentPrice')} className="flex items-center gap-2 justify-end text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground w-full">
+                                        Price <SortIcon field="currentPrice" />
+                                    </button>
+                                </th>
+                                <th className="p-4 text-right">
+                                    <button onClick={() => handleSort('changePercent')} className="flex items-center gap-2 justify-end text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground w-full">
+                                        Change <SortIcon field="changePercent" />
+                                    </button>
+                                </th>
+                                <th className="p-4 text-right hidden lg:table-cell">
+                                    <button onClick={() => handleSort('sinceAddedPercent')} className="flex items-center gap-2 justify-end text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground w-full">
+                                        Since Added <SortIcon field="sinceAddedPercent" />
+                                    </button>
+                                </th>
+                                <th className="p-4 text-center w-28 hidden md:table-cell">Chart</th>
+                                <th className="p-4 w-20"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {sortedWatchlist.map((item, idx) => (
+                                <tr
+                                    key={item.id}
+                                    className={`border-b border-border/50 hover:bg-muted/30 transition-colors ${selectedItems.has(item.symbol) ? 'bg-primary/5' : ''}`}
+                                >
+                                    {isSelectMode && (
+                                        <td className="p-4">
+                                            <button onClick={() => toggleSelectItem(item.symbol)} className="text-muted-foreground hover:text-foreground">
+                                                {selectedItems.has(item.symbol) ? <CheckSquare size={18} className="text-primary" /> : <Square size={18} />}
+                                            </button>
+                                        </td>
+                                    )}
+                                    <td className="p-4">
+                                        <Link href={`/dashboard/ticker/${item.symbol}`} className="font-black text-lg hover:text-primary transition-colors">
+                                            {item.symbol}
+                                        </Link>
+                                    </td>
+                                    <td className="p-4 text-muted-foreground text-sm truncate max-w-[200px] hidden md:table-cell">
+                                        {item.name || '—'}
+                                    </td>
+                                    <td className="p-4 text-right font-black">
+                                        {item.currentPrice ? `$${item.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '—'}
+                                    </td>
+                                    <td className="p-4 text-right">
+                                        <span className={`font-black ${(item.changePercent ?? 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                            {(item.changePercent ?? 0) >= 0 ? '+' : ''}{(item.changePercent ?? 0).toFixed(2)}%
+                                        </span>
+                                    </td>
+                                    <td className="p-4 text-right hidden lg:table-cell">
+                                        {item.sinceAddedPercent != null ? (
+                                            <span className={`font-black ${item.sinceAddedPercent >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                {item.sinceAddedPercent >= 0 ? '+' : ''}{item.sinceAddedPercent.toFixed(1)}%
+                                            </span>
+                                        ) : '—'}
+                                    </td>
+                                    <td className="p-4 hidden md:table-cell">
+                                        <div className="w-20 h-8 mx-auto">
+                                            {item.sparklineData && item.sparklineData.length > 0 && (
+                                                <ResponsiveContainer width="100%" height="100%">
+                                                    <AreaChart data={item.sparklineData}>
+                                                        <Area
+                                                            type="monotone"
+                                                            dataKey="value"
+                                                            stroke={(item.changePercent ?? 0) >= 0 ? '#10b981' : '#f43f5e'}
+                                                            strokeWidth={2}
+                                                            fill="transparent"
+                                                            isAnimationActive={false}
+                                                        />
+                                                    </AreaChart>
+                                                </ResponsiveContainer>
+                                            )}
+                                        </div>
+                                    </td>
+                                    <td className="p-4">
+                                        <div className="flex items-center justify-end gap-1">
+                                            <button
+                                                onClick={() => setMoveItem(item)}
+                                                className="p-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
+                                            >
+                                                <Folder size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => handleRemove(item.symbol)}
+                                                className="p-2 rounded-lg text-muted-foreground hover:bg-rose-500/10 hover:text-rose-500 transition-all"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            ) : viewMode === 'kanban' ? (
+                /* KANBAN VIEW */
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {KANBAN_STAGES.map((stage) => (
+                        <div key={stage.id} className="bg-card/50 border border-border rounded-[32px] p-6 min-h-[400px]">
+                            <div className="flex items-center gap-3 mb-6">
+                                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: stage.color }} />
+                                <h3 className="font-black text-sm uppercase tracking-widest">{stage.label}</h3>
+                                <span className="ml-auto bg-muted px-2.5 py-1 rounded-full text-xs font-bold text-muted-foreground">
+                                    {kanbanData[stage.id].length}
+                                </span>
+                            </div>
+                            <div className="space-y-3">
+                                {kanbanData[stage.id].map((symbol) => {
+                                    const item = watchlist.find(w => w.symbol === symbol);
+                                    if (!item) return null;
+                                    return (
+                                        <motion.div
+                                            key={item.id}
+                                            layout
+                                            className="bg-card border border-border rounded-2xl p-4 cursor-grab active:cursor-grabbing hover:shadow-lg hover:border-primary/20 transition-all group"
+                                        >
+                                            <div className="flex items-start justify-between mb-3">
+                                                <div>
+                                                    <Link href={`/dashboard/ticker/${item.symbol}`} className="font-black text-lg hover:text-primary transition-colors">
+                                                        {item.symbol}
+                                                    </Link>
+                                                    <p className="text-[10px] text-muted-foreground truncate uppercase">
+                                                        {item.name || 'Loading...'}
+                                                    </p>
+                                                </div>
+                                                <GripVertical size={16} className="text-muted-foreground/50 group-hover:text-muted-foreground transition-colors" />
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="font-black">
+                                                    ${item.currentPrice?.toLocaleString(undefined, { minimumFractionDigits: 2 }) || '—'}
+                                                </span>
+                                                <span className={`text-sm font-bold ${(item.changePercent ?? 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                    {(item.changePercent ?? 0) >= 0 ? '+' : ''}{(item.changePercent ?? 0).toFixed(2)}%
+                                                </span>
+                                            </div>
+                                        </motion.div>
+                                    );
+                                })}
+                                {kanbanData[stage.id].length === 0 && (
+                                    <div className="text-center py-10 text-muted-foreground/50">
+                                        <p className="text-sm font-bold">Drop stocks here</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
             ) : (
+                /* GRID VIEW (default) */
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
                     <AnimatePresence mode='popLayout'>
-                        {watchlist.map((item, idx) => (
+                        {sortedWatchlist.map((item, idx) => (
                             <motion.div
                                 key={item.id}
                                 layout
@@ -404,17 +859,24 @@ export default function WatchlistPage() {
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.9 }}
                                 transition={{ delay: idx * 0.05 }}
-                                className="bg-card border border-border rounded-[40px] p-1 shadow-sm hover:shadow-2xl hover:shadow-primary/5 group"
+                                className={`bg-card border rounded-[40px] p-1 shadow-sm hover:shadow-2xl hover:shadow-primary/5 group ${selectedItems.has(item.symbol) ? 'border-primary bg-primary/5' : 'border-border'}`}
                             >
                                 <div className="p-8">
                                     <div className="flex items-start justify-between mb-8">
-                                        <Link href={`/dashboard/ticker/${item.symbol}`} className="flex-1">
-                                            <div className="flex items-center gap-3 mb-2">
-                                                <h3 className="text-3xl font-black tracking-tighter group-hover:text-primary transition-colors">{item.symbol}</h3>
-                                                <ChevronRight size={18} className="text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-                                            </div>
-                                            <p className="text-[10px] font-black text-muted-foreground truncate uppercase tracking-[0.2em]">{item.name || 'Resolving...'}</p>
-                                        </Link>
+                                        <div className="flex items-start gap-3">
+                                            {isSelectMode && (
+                                                <button onClick={() => toggleSelectItem(item.symbol)} className="mt-1">
+                                                    {selectedItems.has(item.symbol) ? <CheckSquare size={20} className="text-primary" /> : <Square size={20} className="text-muted-foreground" />}
+                                                </button>
+                                            )}
+                                            <Link href={`/dashboard/ticker/${item.symbol}`} className="flex-1">
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <h3 className="text-3xl font-black tracking-tighter group-hover:text-primary transition-colors">{item.symbol}</h3>
+                                                    <ChevronRight size={18} className="text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                                                </div>
+                                                <p className="text-[10px] font-black text-muted-foreground truncate uppercase tracking-[0.2em]">{item.name || 'Resolving...'}</p>
+                                            </Link>
+                                        </div>
 
                                         <div className="flex items-center gap-2">
                                             <button

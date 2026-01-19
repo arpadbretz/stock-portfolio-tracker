@@ -15,6 +15,10 @@
 | AUTH-003 | Change Password Feature | ✅ | 2h | Implemented Jan 11, 2026 |
 | AUTH-004 | Linked Accounts Display | ⬜ | 2h | Show connected OAuth providers |
 | AUTH-005 | Resend Verification Email | ✅ | 1h | Implemented Jan 12, 2026 |
+| AUTH-010 | Magic Link Login | ⬜ | 2h | 🔴 PROMOTED - Passwordless authentication |
+| AUTH-011 | 2FA/TOTP Support | ⬜ | 8h | 🔴 PROMOTED - Two-factor authentication |
+| AUTH-012 | Session Management | ⬜ | 4h | 🔴 PROMOTED - View/revoke active sessions |
+| AUTH-013 | Login History | ⬜ | 4h | 🔴 PROMOTED - Recent sign-ins with device/location |
 
 ## Dashboard
 
@@ -304,16 +308,17 @@
 |----|------|--------|--------|-------|
 | WATCH-001 | Watchlist Groups | ✅ | 4h | Category folders implemented Jan 15 |
 | WATCH-002 | Custom Columns | ⬜ | 4h | 🔴 Add/remove columns: P/E, dividends, etc. |
-| WATCH-003 | Sorting & Filtering | ⬜ | 3h | 🔴 Sort by any metric, filter by criteria |
-| WATCH-004 | Bulk Actions | ⬜ | 2h | 🔴 Multi-select, move, delete, add alerts |
+| WATCH-003 | Sorting & Filtering | ✅ | 3h | Implemented Jan 19: sort by symbol/name/price/change/since added |
+| WATCH-004 | Bulk Actions | ✅ | 2h | Implemented Jan 19: multi-select, move, delete |
 | WATCH-005 | Auto-Refresh | ⬜ | 2h | 🔴 Real-time or configurable interval |
-| WATCH-006 | Kanban Board View | ⬜ | 6h | 🔴 Drag: Researching → Ready → Holding → Sold |
-| WATCH-007 | Grid/Card View | ⬜ | 4h | 🔴 Card layout with mini charts |
+| WATCH-006 | Kanban Board View | ✅ | 6h | Implemented Jan 19: Researching → Ready → Holding → Sold |
+| WATCH-007 | Table View | ✅ | 4h | Implemented Jan 19: List view with sortable columns |
 | WATCH-008 | Comparison Mode | ⬜ | 4h | 🔴 Side-by-side stock comparison |
 | WATCH-009 | Sector Heatmap | ⬜ | 3h | 🔴 Visual of performance by sector |
 | WATCH-010 | Inline Quick View | ⬜ | 3h | Expand row for mini-chart + stats |
 | WATCH-011 | News Badges | ⬜ | 2h | Indicator for recent news |
 | WATCH-012 | Earnings Calendar Highlights | ⬜ | 2h | Show upcoming earnings |
+| WATCH-013 | View Mode Persistence | ✅ | 1h | Implemented Jan 19: localStorage preferences |
 
 ## Landing Page
 
