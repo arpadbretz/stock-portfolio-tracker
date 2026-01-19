@@ -39,6 +39,7 @@ import {
     BarChart3,
     Filter,
     GripVertical,
+    Flame,
 } from 'lucide-react';
 import { SkeletonWatchlist } from '@/components/Skeleton';
 import { toast } from 'sonner';
@@ -67,6 +68,7 @@ interface WatchlistItem {
     fiftyTwoWeekLow?: number;
     beta?: number;
     sinceAddedPercent?: number;
+    sector?: string;
 }
 
 interface WatchlistGroup {
@@ -76,7 +78,7 @@ interface WatchlistGroup {
     icon: string | null;
 }
 
-type ViewMode = 'grid' | 'table' | 'kanban';
+type ViewMode = 'grid' | 'table' | 'kanban' | 'heatmap';
 type SortField = 'symbol' | 'name' | 'currentPrice' | 'changePercent' | 'sinceAddedPercent' | 'created_at';
 type SortDirection = 'asc' | 'desc';
 
@@ -163,7 +165,7 @@ export default function WatchlistPage() {
         const savedView = localStorage.getItem('watchlist-view');
         const savedSort = localStorage.getItem('watchlist-sort');
         const savedColumns = localStorage.getItem('watchlist-columns');
-        if (savedView && ['grid', 'table', 'kanban'].includes(savedView)) {
+        if (savedView && ['grid', 'table', 'kanban', 'heatmap'].includes(savedView)) {
             setViewMode(savedView as ViewMode);
         }
         if (savedSort) {
@@ -242,6 +244,7 @@ export default function WatchlistPage() {
                                 fiftyTwoWeekHigh: priceData?.fiftyTwoWeekHigh,
                                 fiftyTwoWeekLow: priceData?.fiftyTwoWeekLow,
                                 beta: priceData?.beta,
+                                sector: priceData?.sector || 'Unknown',
                                 sparklineData: chartData.data?.slice(-7).map((d: any) => ({ value: d.close })) || [],
                                 sinceAddedPercent,
                             };
@@ -601,6 +604,13 @@ export default function WatchlistPage() {
                             title="Kanban View"
                         >
                             <Columns size={18} />
+                        </button>
+                        <button
+                            onClick={() => setViewMode('heatmap')}
+                            className={`p-2.5 rounded-lg transition-all ${viewMode === 'heatmap' ? 'bg-card shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                            title="Sector Heatmap"
+                        >
+                            <Flame size={18} />
                         </button>
                     </div>
 
@@ -1147,6 +1157,114 @@ export default function WatchlistPage() {
                         </div>
                     ))}
                 </div>
+            ) : viewMode === 'heatmap' ? (
+                /* SECTOR HEATMAP VIEW */
+                (() => {
+                    // Group stocks by sector
+                    const sectorData = sortedWatchlist.reduce((acc, item) => {
+                        const sector = item.sector || 'Unknown';
+                        if (!acc[sector]) {
+                            acc[sector] = { stocks: [], totalChange: 0, count: 0 };
+                        }
+                        acc[sector].stocks.push(item);
+                        acc[sector].totalChange += item.changePercent || 0;
+                        acc[sector].count += 1;
+                        return acc;
+                    }, {} as Record<string, { stocks: WatchlistItem[]; totalChange: number; count: number }>);
+
+                    const sectors = Object.entries(sectorData)
+                        .map(([name, data]) => ({
+                            name,
+                            stocks: data.stocks,
+                            avgChange: data.totalChange / data.count,
+                            count: data.count,
+                        }))
+                        .sort((a, b) => b.count - a.count);
+
+                    const getColor = (change: number) => {
+                        if (change >= 3) return 'bg-emerald-500';
+                        if (change >= 1) return 'bg-emerald-400';
+                        if (change >= 0) return 'bg-emerald-300/50';
+                        if (change >= -1) return 'bg-rose-300/50';
+                        if (change >= -3) return 'bg-rose-400';
+                        return 'bg-rose-500';
+                    };
+
+                    const getTextColor = (change: number) => {
+                        if (Math.abs(change) >= 1) return 'text-white';
+                        return 'text-foreground';
+                    };
+
+                    return (
+                        <div className="space-y-6">
+                            {/* Legend */}
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground">Sector Performance</h3>
+                                <div className="flex items-center gap-2 text-[10px] font-bold">
+                                    <div className="flex items-center gap-1">
+                                        <div className="w-3 h-3 rounded bg-rose-500" />
+                                        <span>-3%</span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <div className="w-3 h-3 rounded bg-rose-300/50" />
+                                        <span>-1%</span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <div className="w-3 h-3 rounded bg-emerald-300/50" />
+                                        <span>0%</span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <div className="w-3 h-3 rounded bg-emerald-400" />
+                                        <span>+1%</span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <div className="w-3 h-3 rounded bg-emerald-500" />
+                                        <span>+3%</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Sector Heatmap Grid */}
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                {sectors.map(sector => (
+                                    <div key={sector.name} className="bg-card border border-border rounded-2xl overflow-hidden">
+                                        <div className="p-4 border-b border-border">
+                                            <h4 className="font-black text-sm truncate">{sector.name}</h4>
+                                            <div className="flex items-center justify-between mt-1">
+                                                <span className="text-xs text-muted-foreground">{sector.count} stock{sector.count !== 1 ? 's' : ''}</span>
+                                                <span className={`text-xs font-bold ${sector.avgChange >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                    {sector.avgChange >= 0 ? '+' : ''}{sector.avgChange.toFixed(2)}%
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="p-2 grid grid-cols-2 gap-1">
+                                            {sector.stocks.map(stock => (
+                                                <Link
+                                                    key={stock.symbol}
+                                                    href={`/dashboard/ticker/${stock.symbol}`}
+                                                    className={`p-3 rounded-xl ${getColor(stock.changePercent || 0)} ${getTextColor(stock.changePercent || 0)} hover:opacity-80 transition-opacity`}
+                                                >
+                                                    <div className="font-black text-sm">{stock.symbol}</div>
+                                                    <div className="text-[10px] font-bold opacity-80">
+                                                        {(stock.changePercent || 0) >= 0 ? '+' : ''}{(stock.changePercent || 0).toFixed(2)}%
+                                                    </div>
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {sectors.length === 0 && (
+                                <div className="text-center py-20 text-muted-foreground">
+                                    <Flame size={48} className="mx-auto mb-4 opacity-20" />
+                                    <p className="font-bold">No sector data available</p>
+                                    <p className="text-sm">Add stocks to see sector heatmap</p>
+                                </div>
+                            )}
+                        </div>
+                    );
+                })()
             ) : (
                 /* GRID VIEW (default) */
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">

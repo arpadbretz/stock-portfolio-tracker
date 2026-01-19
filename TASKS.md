@@ -314,7 +314,7 @@
 | WATCH-006 | Kanban Board View | ✅ | 6h | Implemented Jan 19: Stage buttons + DB persistence |
 | WATCH-007 | Table View | ✅ | 4h | Implemented Jan 19: List view with sortable columns |
 | WATCH-008 | Comparison Mode | ✅ | 4h | Implemented Jan 19: Compare up to 3 stocks side-by-side |
-| WATCH-009 | Sector Heatmap | ⬜ | 3h | 🔴 Visual of performance by sector |
+| WATCH-009 | Sector Heatmap | ✅ | 3h | Implemented Jan 20: Grouped by sector with performance colors |
 | WATCH-010 | Inline Quick View | ⬜ | 3h | Expand row for mini-chart + stats |
 | WATCH-011 | News Badges | ⬜ | 2h | Indicator for recent news |
 | WATCH-012 | Earnings Calendar Highlights | ⬜ | 2h | Show upcoming earnings |
