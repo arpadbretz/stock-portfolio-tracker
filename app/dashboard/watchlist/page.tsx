@@ -868,7 +868,7 @@ export default function WatchlistPage() {
                                             >
                                                 {KANBAN_STAGES.find(s => s.id === (item.stage || 'researching'))?.label.split(' ')[0] || 'Research'}
                                             </button>
-                                            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-card border border-border rounded-xl shadow-xl opacity-0 invisible group-hover/stage:opacity-100 group-hover/stage:visible transition-all z-50 min-w-[120px]">
+                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-card border border-border rounded-xl shadow-xl opacity-0 invisible group-hover/stage:opacity-100 group-hover/stage:visible transition-all z-50 min-w-[120px]">
                                                 {KANBAN_STAGES.map(s => (
                                                     <button
                                                         key={s.id}
