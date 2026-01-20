@@ -81,7 +81,7 @@
 | ID | Task | Status | Effort | Notes |
 |----|------|--------|--------|-------|
 | UX-001 | Loading Skeletons | ✅ | 3h | Implemented Jan 11, 2026 |
-| UX-002 | Toast Notifications | 🔄 | 2h | Needs fix: not visible on dark background |
+| UX-002 | Toast Notifications | ✅ | 2h | Fixed Jan 20: richColors + dark theme styling |
 | UX-003 | Keyboard Shortcuts | ✅ | 2h | Cmd+K Command Palette |
 | UX-004 | Command Palette | ✅ | 3h | Implemented Jan 11, 2026 |
 
@@ -156,7 +156,7 @@
 | ID | Task | Status | Effort | Notes |
 |----|------|--------|--------|-------|
 | SEC-001 | Rate Limiting | ⬜ | 2h | API rate limits (Upstash/Redis) |
-| SEC-002 | Security Headers | ⬜ | 1h | CSP, HSTS, X-Frame-Options |
+| SEC-002 | Security Headers | ✅ | 1h | Implemented Jan 20: CSP, HSTS, X-Frame-Options |
 | SEC-003 | Input Validation | ⬜ | 3h | Zod schemas for all endpoints |
 | SEC-004 | SQL Injection Prevention | ✅ | - | Using Supabase parameterized queries |
 | SEC-005 | XSS Prevention | ✅ | - | React auto-escapes |
@@ -204,7 +204,7 @@
 | DEVOPS-003 | Staging Environment | ⬜ | 2h | Vercel preview deploys |
 | DEVOPS-004 | Database Backups | ⬜ | 1h | Supabase PITR |
 | DEVOPS-005 | Environment Config | ⬜ | 1h | .env validation |
-| DEVOPS-006 | Health Check Endpoint | ⬜ | 1h | /api/health |
+| DEVOPS-006 | Health Check Endpoint | ✅ | 1h | Implemented Jan 20: /api/health with DB check |
 | DEVOPS-007 | Uptime Monitoring | ⬜ | 1h | Better Uptime/UptimeRobot |
 | DEVOPS-008 | Error Alerting | ⬜ | 1h | Slack/Discord webhooks |
 

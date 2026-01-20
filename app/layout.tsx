@@ -57,11 +57,19 @@ export default function RootLayout({
                 <CommandPalette />
                 <Toaster
                   position="bottom-right"
+                  theme="dark"
+                  richColors
                   toastOptions={{
                     style: {
-                      background: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      color: 'hsl(var(--foreground))',
+                      background: 'hsl(222 47% 11%)',
+                      border: '1px solid hsl(217 33% 17%)',
+                      color: 'hsl(210 40% 98%)',
+                    },
+                    classNames: {
+                      success: 'bg-emerald-900/90 border-emerald-700 text-emerald-100',
+                      error: 'bg-rose-900/90 border-rose-700 text-rose-100',
+                      warning: 'bg-amber-900/90 border-amber-700 text-amber-100',
+                      info: 'bg-blue-900/90 border-blue-700 text-blue-100',
                     },
                   }}
                 />
