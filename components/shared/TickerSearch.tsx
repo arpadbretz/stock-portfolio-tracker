@@ -34,6 +34,7 @@ export default function TickerSearch({
     const [isSearching, setIsSearching] = useState(false);
     const [showResults, setShowResults] = useState(false);
     const searchRef = useRef<HTMLDivElement>(null);
+    const hasSelectedRef = useRef(false);
 
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
@@ -46,6 +47,12 @@ export default function TickerSearch({
     }, []);
 
     useEffect(() => {
+        // Skip search if user just selected a result
+        if (hasSelectedRef.current) {
+            hasSelectedRef.current = false;
+            return;
+        }
+
         const searchStocks = async () => {
             if (query.length < 1) {
                 setResults([]);
@@ -76,7 +83,9 @@ export default function TickerSearch({
     }, [query, user?.id]);
 
     const handleSelect = (result: SearchResult) => {
+        hasSelectedRef.current = true;
         setQuery(result.symbol);
+        setResults([]);
         setShowResults(false);
         onSelect(result);
     };
