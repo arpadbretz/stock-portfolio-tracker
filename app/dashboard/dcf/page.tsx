@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense, useCallback } from 'react';
+import { useState, useEffect, Suspense, useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -24,6 +24,12 @@ import {
     ChevronUp,
     X,
     Loader2,
+    Shuffle,
+    BarChart3,
+    Play,
+    Layers,
+    Activity,
+    PieChart,
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -126,6 +132,39 @@ function DCFCalculatorContent() {
     // Historical FCF data for chart
     const [historicalFCF, setHistoricalFCF] = useState<{ year: string; fcf: number }[]>([]);
 
+    // Monte Carlo Simulation state
+    const [monteCarloResults, setMonteCarloResults] = useState<{
+        simulations: number[];
+        mean: number;
+        median: number;
+        stdDev: number;
+        percentile5: number;
+        percentile25: number;
+        percentile75: number;
+        percentile95: number;
+        probabilityAbovePrice: number;
+        histogram: { bin: string; count: number; range: [number, number] }[];
+    } | null>(null);
+    const [isRunningSimulation, setIsRunningSimulation] = useState(false);
+
+    // Alternative Valuation Models data
+    const [valuationData, setValuationData] = useState<{
+        // DDM (Dividend Discount Model)
+        dividendPerShare: number;
+        dividendGrowthRate: number;
+        payoutRatio: number;
+        // P/E Comparables
+        eps: number;
+        peRatio: number;
+        forwardPE: number;
+        sectorPE: number;
+        // EV/EBITDA
+        ebitda: number;
+        evToEbitda: number;
+        sectorEvEbitda: number;
+        enterpriseValue: number;
+    } | null>(null);
+
     useEffect(() => {
         if (!authLoading && !user) {
             router.push('/login');
@@ -220,6 +259,43 @@ function DCFCalculatorContent() {
                         .sort((a: { year: string }, b: { year: string }) => parseInt(a.year) - parseInt(b.year));
                     setHistoricalFCF(fcfData);
                 }
+
+                // Extract valuation data for alternative models
+                // Calculate dividend growth rate if historical dividends available
+                let dividendGrowthRate = 5; // default
+                if (data.dividendsPerShare && data.dividendsPerShare.length >= 2) {
+                    const oldestDiv = data.dividendsPerShare[0]?.dividend;
+                    const latestDiv = data.dividendsPerShare[data.dividendsPerShare.length - 1]?.dividend;
+                    if (oldestDiv && latestDiv && oldestDiv > 0) {
+                        const years = data.dividendsPerShare.length - 1;
+                        dividendGrowthRate = (Math.pow(latestDiv / oldestDiv, 1 / years) - 1) * 100;
+                    }
+                }
+
+                // Get latest income statement for EBITDA calculation
+                const latestIncome = data.incomeStatement && data.incomeStatement.length > 0
+                    ? data.incomeStatement[data.incomeStatement.length - 1]
+                    : null;
+                const operatingIncome = latestIncome?.operatingIncome || 0;
+                const depreciation = latestCashFlow?.depreciationAndAmortization || 0;
+                const ebitdaCalc = operatingIncome > 0 ? (operatingIncome + depreciation) / 1e9 : (data.ebitda || 0) / 1e9;
+
+                setValuationData({
+                    // DDM data
+                    dividendPerShare: data.dividendRate || data.dividendPerShare || 0,
+                    dividendGrowthRate: dividendGrowthRate,
+                    payoutRatio: data.payoutRatio ? data.payoutRatio * 100 : 0,
+                    // P/E data
+                    eps: data.trailingEps || data.eps || 0,
+                    peRatio: data.trailingPE || data.peRatio || 0,
+                    forwardPE: data.forwardPE || 0,
+                    sectorPE: data.sectorPE || 20, // Default sector P/E
+                    // EV/EBITDA data
+                    ebitda: ebitdaCalc,
+                    evToEbitda: data.enterpriseToEbitda || (data.enterpriseValue && ebitdaCalc ? data.enterpriseValue / 1e9 / ebitdaCalc : 0),
+                    sectorEvEbitda: data.sectorEvEbitda || 12, // Default sector EV/EBITDA
+                    enterpriseValue: data.enterpriseValue ? data.enterpriseValue / 1e9 : 0,
+                });
             }
         } catch (err) {
             console.error('Failed to fetch stock data:', err);
@@ -366,6 +442,209 @@ function DCFCalculatorContent() {
 
         return { score: Math.min(score, 100), label, color, details };
     };
+
+    // Monte Carlo Simulation - Run 10,000 scenarios with randomized inputs
+    const runMonteCarloSimulation = useCallback(() => {
+        if (!inputs.freeCashFlow || !inputs.sharesOutstanding) {
+            toast.error('Missing data', { description: 'Need FCF and shares outstanding for simulation' });
+            return;
+        }
+
+        setIsRunningSimulation(true);
+        setMonteCarloResults(null);
+
+        // Use setTimeout to allow UI to update before heavy computation
+        setTimeout(() => {
+            const NUM_SIMULATIONS = 10000;
+            const simulations: number[] = [];
+
+            // Base parameters
+            const baseGrowth = inputs.growthRateYear1to5;
+            const baseDiscount = calculateWACC();
+            const baseFCF = inputs.freeCashFlow;
+
+            // Volatility assumptions (standard deviations)
+            const growthVolatility = Math.max(3, baseGrowth * 0.3); // 30% of base or min 3%
+            const discountVolatility = 1.5; // ±1.5% around WACC
+            const fcfVolatility = baseFCF * 0.15; // ±15% FCF variance
+
+            // Box-Muller transform for normal distribution
+            const normalRandom = () => {
+                let u = 0, v = 0;
+                while (u === 0) u = Math.random();
+                while (v === 0) v = Math.random();
+                return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+            };
+
+            // Run simulations
+            for (let i = 0; i < NUM_SIMULATIONS; i++) {
+                // Randomize inputs with normal distribution
+                const randomGrowth = baseGrowth + normalRandom() * growthVolatility;
+                const randomDiscount = Math.max(5, baseDiscount + normalRandom() * discountVolatility);
+                const randomFCF = Math.max(0.1, baseFCF + normalRandom() * fcfVolatility);
+
+                // Calculate intrinsic value for this scenario
+                let currentCF = randomFCF;
+                let totalPV = 0;
+
+                for (let year = 1; year <= 10; year++) {
+                    // Fade growth rate over time
+                    const fadeRate = year <= 5 ? randomGrowth : randomGrowth * 0.5;
+                    currentCF = currentCF * (1 + fadeRate / 100);
+                    const pv = currentCF / Math.pow(1 + randomDiscount / 100, year);
+                    totalPV += pv;
+                }
+
+                // Terminal Value
+                const terminalGrowth = Math.min(inputs.terminalGrowthRate, randomDiscount - 1);
+                const terminalCF = currentCF * (1 + terminalGrowth / 100);
+                const terminalValue = terminalCF / (randomDiscount / 100 - terminalGrowth / 100);
+                const terminalPV = terminalValue / Math.pow(1 + randomDiscount / 100, 10);
+                totalPV += terminalPV;
+
+                // Equity value adjustments in advanced mode
+                let equityValue = totalPV;
+                if (isAdvancedMode) {
+                    equityValue = totalPV + inputs.cashAndEquivalents - inputs.totalDebt;
+                }
+
+                // Per-share intrinsic value (with margin of safety)
+                const intrinsicValue = (equityValue * 1000) / inputs.sharesOutstanding;
+                const fairValue = intrinsicValue * (1 - inputs.marginOfSafety / 100);
+                simulations.push(fairValue);
+            }
+
+            // Sort simulations for percentile calculations
+            simulations.sort((a, b) => a - b);
+
+            // Calculate statistics
+            const mean = simulations.reduce((a, b) => a + b, 0) / NUM_SIMULATIONS;
+            const median = simulations[Math.floor(NUM_SIMULATIONS / 2)];
+
+            // Standard deviation
+            const squaredDiffs = simulations.map(x => Math.pow(x - mean, 2));
+            const stdDev = Math.sqrt(squaredDiffs.reduce((a, b) => a + b, 0) / NUM_SIMULATIONS);
+
+            // Percentiles
+            const percentile5 = simulations[Math.floor(NUM_SIMULATIONS * 0.05)];
+            const percentile25 = simulations[Math.floor(NUM_SIMULATIONS * 0.25)];
+            const percentile75 = simulations[Math.floor(NUM_SIMULATIONS * 0.75)];
+            const percentile95 = simulations[Math.floor(NUM_SIMULATIONS * 0.95)];
+
+            // Probability of being above current price
+            const abovePrice = simulations.filter(s => s > inputs.currentPrice).length;
+            const probabilityAbovePrice = (abovePrice / NUM_SIMULATIONS) * 100;
+
+            // Create histogram bins (20 bins)
+            const minVal = Math.floor(simulations[0] * 0.9);
+            const maxVal = Math.ceil(simulations[NUM_SIMULATIONS - 1] * 1.1);
+            const binSize = (maxVal - minVal) / 20;
+            const histogram: { bin: string; count: number; range: [number, number] }[] = [];
+
+            for (let i = 0; i < 20; i++) {
+                const binStart = minVal + i * binSize;
+                const binEnd = binStart + binSize;
+                const count = simulations.filter(s => s >= binStart && s < binEnd).length;
+                histogram.push({
+                    bin: `$${Math.round(binStart)}`,
+                    count,
+                    range: [binStart, binEnd],
+                });
+            }
+
+            setMonteCarloResults({
+                simulations,
+                mean,
+                median,
+                stdDev,
+                percentile5,
+                percentile25,
+                percentile75,
+                percentile95,
+                probabilityAbovePrice,
+                histogram,
+            });
+
+            setIsRunningSimulation(false);
+            toast.success('Simulation complete', { description: '10,000 scenarios analyzed' });
+        }, 50);
+    }, [inputs, isAdvancedMode, calculateWACC]);
+
+    // Alternative Valuation Models Calculations
+    const calculateAlternativeValuations = useMemo(() => {
+        if (!valuationData) return null;
+
+        const results: {
+            ddm: { fairValue: number; upside: number; isValid: boolean; reason?: string } | null;
+            pe: { fairValue: number; upside: number; sectorFairValue: number; sectorUpside: number } | null;
+            evEbitda: { fairValue: number; upside: number; sectorFairValue: number; sectorUpside: number } | null;
+        } = {
+            ddm: null,
+            pe: null,
+            evEbitda: null,
+        };
+
+        const currentPrice = inputs.currentPrice;
+        const marginOfSafety = inputs.marginOfSafety / 100;
+        const requiredReturn = calculateWACC();
+
+        // 1. DDM - Gordon Growth Model: P = D1 / (r - g)
+        if (valuationData.dividendPerShare > 0) {
+            const d0 = valuationData.dividendPerShare;
+            const g = valuationData.dividendGrowthRate / 100;
+            const r = requiredReturn / 100;
+
+            if (r > g && g < r - 0.01) {
+                const d1 = d0 * (1 + g); // Next year's dividend
+                const ddmValue = d1 / (r - g);
+                const fairValue = ddmValue * (1 - marginOfSafety);
+                const upside = ((fairValue - currentPrice) / currentPrice) * 100;
+                results.ddm = { fairValue, upside, isValid: true };
+            } else {
+                results.ddm = { fairValue: 0, upside: 0, isValid: false, reason: 'Growth rate exceeds required return' };
+            }
+        } else {
+            results.ddm = { fairValue: 0, upside: 0, isValid: false, reason: 'No dividend data' };
+        }
+
+        // 2. P/E Valuation
+        if (valuationData.eps > 0 && valuationData.peRatio > 0) {
+            // Fair value based on forward P/E or historical average
+            const targetPE = valuationData.forwardPE > 0 ? valuationData.forwardPE : valuationData.peRatio * 0.9;
+            const fairValue = (valuationData.eps * targetPE) * (1 - marginOfSafety);
+            const upside = ((fairValue - currentPrice) / currentPrice) * 100;
+
+            // Sector fair value
+            const sectorFairValue = (valuationData.eps * valuationData.sectorPE) * (1 - marginOfSafety);
+            const sectorUpside = ((sectorFairValue - currentPrice) / currentPrice) * 100;
+
+            results.pe = { fairValue, upside, sectorFairValue, sectorUpside };
+        }
+
+        // 3. EV/EBITDA Valuation
+        if (valuationData.ebitda > 0 && valuationData.evToEbitda > 0 && inputs.sharesOutstanding > 0) {
+            // Target EV/EBITDA (use sector average or historical with small discount)
+            const targetEvEbitda = valuationData.sectorEvEbitda > 0 ? valuationData.sectorEvEbitda : valuationData.evToEbitda * 0.9;
+            const impliedEV = valuationData.ebitda * targetEvEbitda;
+
+            // EV = Market Cap + Total Debt - Cash
+            // Market Cap = EV - Total Debt + Cash
+            const impliedMarketCap = impliedEV - inputs.totalDebt + inputs.cashAndEquivalents;
+            const fairValuePerShare = (impliedMarketCap * 1000) / inputs.sharesOutstanding; // Convert to per share
+            const fairValue = fairValuePerShare * (1 - marginOfSafety);
+            const upside = ((fairValue - currentPrice) / currentPrice) * 100;
+
+            // Sector fair value
+            const sectorImpliedEV = valuationData.ebitda * valuationData.sectorEvEbitda;
+            const sectorImpliedMarketCap = sectorImpliedEV - inputs.totalDebt + inputs.cashAndEquivalents;
+            const sectorFairValue = ((sectorImpliedMarketCap * 1000) / inputs.sharesOutstanding) * (1 - marginOfSafety);
+            const sectorUpside = ((sectorFairValue - currentPrice) / currentPrice) * 100;
+
+            results.evEbitda = { fairValue, upside, sectorFairValue, sectorUpside };
+        }
+
+        return results;
+    }, [valuationData, inputs.currentPrice, inputs.marginOfSafety, inputs.sharesOutstanding, inputs.totalDebt, inputs.cashAndEquivalents, calculateWACC]);
 
     const calculateDCF = () => {
         const {
@@ -1032,8 +1311,8 @@ function DCFCalculatorContent() {
                                             <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
                                                 <div
                                                     className={`h-full rounded-full transition-all ${quality.score >= 80 ? 'bg-emerald-500' :
-                                                            quality.score >= 60 ? 'bg-blue-500' :
-                                                                quality.score >= 40 ? 'bg-amber-500' : 'bg-rose-500'
+                                                        quality.score >= 60 ? 'bg-blue-500' :
+                                                            quality.score >= 40 ? 'bg-amber-500' : 'bg-rose-500'
                                                         }`}
                                                     style={{ width: `${quality.score}%` }}
                                                 />
@@ -1310,6 +1589,288 @@ function DCFCalculatorContent() {
                                         the stock may be overvalued. If it&apos;s <em>lower</em>, the stock may be undervalued based on your expectations.
                                     </p>
                                 </div>
+                            </motion.div>
+
+                            {/* Monte Carlo Simulation */}
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.25 }}
+                                className="bg-gradient-to-br from-cyan-500/10 to-pink-500/10 border border-cyan-500/30 rounded-3xl p-6"
+                            >
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-cyan-500/20 rounded-xl">
+                                            <Shuffle className="text-cyan-400" size={20} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-bold">Monte Carlo Simulation</h3>
+                                            <p className="text-xs text-muted-foreground">10,000 randomized scenarios</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={runMonteCarloSimulation}
+                                        disabled={isRunningSimulation || !inputs.freeCashFlow || !inputs.sharesOutstanding}
+                                        className="px-4 py-2 bg-cyan-500 text-white rounded-xl font-bold text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-cyan-600 transition-colors"
+                                    >
+                                        {isRunningSimulation ? (
+                                            <>
+                                                <Loader2 className="animate-spin" size={16} />
+                                                Running...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Play size={16} />
+                                                Run Simulation
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+
+                                {monteCarloResults ? (
+                                    <>
+                                        {/* Statistics Grid */}
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                                            <div className="bg-card/50 rounded-xl p-3 text-center">
+                                                <p className="text-2xl font-black text-cyan-400">
+                                                    ${monteCarloResults.mean.toFixed(0)}
+                                                </p>
+                                                <p className="text-[10px] text-muted-foreground font-bold uppercase">Mean</p>
+                                            </div>
+                                            <div className="bg-card/50 rounded-xl p-3 text-center">
+                                                <p className="text-2xl font-black text-primary">
+                                                    ${monteCarloResults.median.toFixed(0)}
+                                                </p>
+                                                <p className="text-[10px] text-muted-foreground font-bold uppercase">Median</p>
+                                            </div>
+                                            <div className="bg-card/50 rounded-xl p-3 text-center">
+                                                <p className="text-2xl font-black text-amber-400">
+                                                    ±${monteCarloResults.stdDev.toFixed(0)}
+                                                </p>
+                                                <p className="text-[10px] text-muted-foreground font-bold uppercase">Std Dev</p>
+                                            </div>
+                                            <div className="bg-card/50 rounded-xl p-3 text-center">
+                                                <p className={`text-2xl font-black ${monteCarloResults.probabilityAbovePrice >= 50 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                    {monteCarloResults.probabilityAbovePrice.toFixed(0)}%
+                                                </p>
+                                                <p className="text-[10px] text-muted-foreground font-bold uppercase">Prob. Undervalued</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Percentile Range */}
+                                        <div className="bg-card/30 rounded-xl p-4 mb-4">
+                                            <div className="flex items-center justify-between text-sm mb-2">
+                                                <span className="text-muted-foreground">5th Percentile</span>
+                                                <span className="font-bold text-rose-400">${monteCarloResults.percentile5.toFixed(0)}</span>
+                                            </div>
+                                            <div className="relative h-3 bg-muted rounded-full overflow-hidden mb-2">
+                                                {/* Price marker */}
+                                                <div
+                                                    className="absolute top-0 bottom-0 w-0.5 bg-foreground z-10"
+                                                    style={{
+                                                        left: `${Math.min(100, Math.max(0, ((inputs.currentPrice - monteCarloResults.percentile5) / (monteCarloResults.percentile95 - monteCarloResults.percentile5)) * 100))}%`,
+                                                    }}
+                                                />
+                                                {/* Interquartile range */}
+                                                <div
+                                                    className="absolute top-0 bottom-0 bg-primary/40"
+                                                    style={{
+                                                        left: `${((monteCarloResults.percentile25 - monteCarloResults.percentile5) / (monteCarloResults.percentile95 - monteCarloResults.percentile5)) * 100}%`,
+                                                        width: `${((monteCarloResults.percentile75 - monteCarloResults.percentile25) / (monteCarloResults.percentile95 - monteCarloResults.percentile5)) * 100}%`,
+                                                    }}
+                                                />
+                                                {/* Median marker */}
+                                                <div
+                                                    className="absolute top-0 bottom-0 w-1 bg-primary"
+                                                    style={{
+                                                        left: `${((monteCarloResults.median - monteCarloResults.percentile5) / (monteCarloResults.percentile95 - monteCarloResults.percentile5)) * 100}%`,
+                                                    }}
+                                                />
+                                            </div>
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-muted-foreground">95th Percentile</span>
+                                                <span className="font-bold text-emerald-400">${monteCarloResults.percentile95.toFixed(0)}</span>
+                                            </div>
+                                            <p className="text-[10px] text-muted-foreground text-center mt-2">
+                                                Current price ${inputs.currentPrice.toFixed(0)} shown as vertical line · Shaded area = 25th-75th percentile
+                                            </p>
+                                        </div>
+
+                                        {/* Histogram */}
+                                        <div className="h-48">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <BarChart data={monteCarloResults.histogram}>
+                                                    <XAxis
+                                                        dataKey="bin"
+                                                        axisLine={false}
+                                                        tickLine={false}
+                                                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 9 }}
+                                                        interval="preserveStartEnd"
+                                                    />
+                                                    <YAxis
+                                                        axisLine={false}
+                                                        tickLine={false}
+                                                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
+                                                    />
+                                                    <Tooltip
+                                                        contentStyle={{
+                                                            backgroundColor: 'hsl(var(--card))',
+                                                            border: '1px solid hsl(var(--border))',
+                                                            borderRadius: '12px',
+                                                            color: 'hsl(var(--foreground))',
+                                                        }}
+                                                        formatter={(value, name, props) => [
+                                                            `${value} scenarios (${((Number(value) / 10000) * 100).toFixed(1)}%)`,
+                                                            `Range: $${props.payload.range[0].toFixed(0)}-$${props.payload.range[1].toFixed(0)}`,
+                                                        ]}
+                                                    />
+                                                    <Bar dataKey="count" radius={[2, 2, 0, 0]}>
+                                                        {monteCarloResults.histogram.map((entry, index) => {
+                                                            const midpoint = (entry.range[0] + entry.range[1]) / 2;
+                                                            const isAbovePrice = midpoint > inputs.currentPrice;
+                                                            return (
+                                                                <Cell
+                                                                    key={`cell-${index}`}
+                                                                    fill={isAbovePrice ? 'hsl(142 71% 45%)' : 'hsl(0 84% 60%)'}
+                                                                    opacity={0.7}
+                                                                />
+                                                            );
+                                                        })}
+                                                    </Bar>
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        </div>
+
+                                        <p className="text-[10px] text-muted-foreground mt-3">
+                                            Green bars = scenarios where fair value exceeds current price · Red bars = scenarios below current price
+                                        </p>
+                                    </>
+                                ) : (
+                                    <div className="text-center py-8 text-muted-foreground">
+                                        <BarChart3 className="mx-auto mb-3 opacity-50" size={40} />
+                                        <p className="text-sm">Click &quot;Run Simulation&quot; to analyze 10,000 randomized DCF scenarios</p>
+                                        <p className="text-xs mt-1">Varies growth rate, discount rate, and FCF within realistic ranges</p>
+                                    </div>
+                                )}
+                            </motion.div>
+
+                            {/* Alternative Valuation Models */}
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.3 }}
+                                className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/30 rounded-3xl p-6"
+                            >
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="p-2 bg-amber-500/20 rounded-xl">
+                                        <Layers className="text-amber-400" size={20} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-bold">Alternative Valuation Models</h3>
+                                        <p className="text-xs text-muted-foreground">DDM, P/E, and EV/EBITDA analysis</p>
+                                    </div>
+                                </div>
+
+                                {calculateAlternativeValuations ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        {/* DDM Model */}
+                                        <div className="bg-card/50 rounded-xl p-4">
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <DollarSign className="text-emerald-400" size={16} />
+                                                <h4 className="font-bold text-sm">DDM (Gordon Growth)</h4>
+                                            </div>
+                                            {calculateAlternativeValuations.ddm?.isValid ? (
+                                                <>
+                                                    <p className="text-2xl font-black text-emerald-400 mb-1">
+                                                        ${calculateAlternativeValuations.ddm.fairValue.toFixed(2)}
+                                                    </p>
+                                                    <p className={`text-sm font-bold ${calculateAlternativeValuations.ddm.upside >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                        {calculateAlternativeValuations.ddm.upside >= 0 ? '+' : ''}{calculateAlternativeValuations.ddm.upside.toFixed(1)}% upside
+                                                    </p>
+                                                    <div className="mt-2 pt-2 border-t border-border/30 text-xs text-muted-foreground">
+                                                        <p>Div: ${valuationData?.dividendPerShare.toFixed(2)}/share</p>
+                                                        <p>Growth: {valuationData?.dividendGrowthRate.toFixed(1)}%</p>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <div className="text-muted-foreground text-sm">
+                                                    <p className="opacity-50">Not applicable</p>
+                                                    <p className="text-xs mt-1">{calculateAlternativeValuations.ddm?.reason}</p>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* P/E Model */}
+                                        <div className="bg-card/50 rounded-xl p-4">
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <Activity className="text-blue-400" size={16} />
+                                                <h4 className="font-bold text-sm">P/E Valuation</h4>
+                                            </div>
+                                            {calculateAlternativeValuations.pe ? (
+                                                <>
+                                                    <p className="text-2xl font-black text-blue-400 mb-1">
+                                                        ${calculateAlternativeValuations.pe.fairValue.toFixed(2)}
+                                                    </p>
+                                                    <p className={`text-sm font-bold ${calculateAlternativeValuations.pe.upside >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                        {calculateAlternativeValuations.pe.upside >= 0 ? '+' : ''}{calculateAlternativeValuations.pe.upside.toFixed(1)}% upside
+                                                    </p>
+                                                    <div className="mt-2 pt-2 border-t border-border/30 text-xs text-muted-foreground">
+                                                        <p>EPS: ${valuationData?.eps.toFixed(2)}</p>
+                                                        <p>P/E: {valuationData?.peRatio.toFixed(1)}x (Fwd: {valuationData?.forwardPE.toFixed(1)}x)</p>
+                                                        <p className="mt-1 text-primary/80">
+                                                            Sector ({valuationData?.sectorPE}x): ${calculateAlternativeValuations.pe.sectorFairValue.toFixed(2)}
+                                                        </p>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <div className="text-muted-foreground text-sm">
+                                                    <p className="opacity-50">Not available</p>
+                                                    <p className="text-xs mt-1">Missing EPS or P/E data</p>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* EV/EBITDA Model */}
+                                        <div className="bg-card/50 rounded-xl p-4">
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <PieChart className="text-purple-400" size={16} />
+                                                <h4 className="font-bold text-sm">EV/EBITDA</h4>
+                                            </div>
+                                            {calculateAlternativeValuations.evEbitda ? (
+                                                <>
+                                                    <p className="text-2xl font-black text-purple-400 mb-1">
+                                                        ${calculateAlternativeValuations.evEbitda.fairValue.toFixed(2)}
+                                                    </p>
+                                                    <p className={`text-sm font-bold ${calculateAlternativeValuations.evEbitda.upside >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                        {calculateAlternativeValuations.evEbitda.upside >= 0 ? '+' : ''}{calculateAlternativeValuations.evEbitda.upside.toFixed(1)}% upside
+                                                    </p>
+                                                    <div className="mt-2 pt-2 border-t border-border/30 text-xs text-muted-foreground">
+                                                        <p>EBITDA: ${valuationData?.ebitda.toFixed(2)}B</p>
+                                                        <p>EV/EBITDA: {valuationData?.evToEbitda.toFixed(1)}x</p>
+                                                        <p className="mt-1 text-primary/80">
+                                                            Sector ({valuationData?.sectorEvEbitda}x): ${calculateAlternativeValuations.evEbitda.sectorFairValue.toFixed(2)}
+                                                        </p>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <div className="text-muted-foreground text-sm">
+                                                    <p className="opacity-50">Not available</p>
+                                                    <p className="text-xs mt-1">Missing EBITDA data</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-6 text-muted-foreground">
+                                        <Layers className="mx-auto mb-3 opacity-50" size={40} />
+                                        <p className="text-sm">Fetch stock data to view alternative valuation models</p>
+                                        <p className="text-xs mt-1">DDM requires dividend data. P/E requires EPS. EV/EBITDA requires financial data.</p>
+                                    </div>
+                                )}
+
+                                <p className="text-[10px] text-muted-foreground mt-4">
+                                    All valuations include {inputs.marginOfSafety}% margin of safety. Sector multiples are estimates and may vary.
+                                </p>
                             </motion.div>
 
                             {/* Disclaimer */}
