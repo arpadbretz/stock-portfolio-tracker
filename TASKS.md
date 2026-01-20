@@ -291,11 +291,11 @@
 
 | ID | Task | Status | Effort | Notes |
 |----|------|--------|--------|-------|
-| DCF-001 | Sensitivity Tables | ⬜ | 4h | 2D grid: growth rate vs discount rate |
-| DCF-002 | Reverse DCF | ⬜ | 3h | "What growth is priced in?" |
+| DCF-001 | Sensitivity Tables | ✅ | 4h | Implemented Jan 20: 5x5 grid with color-coded upside/downside |
+| DCF-002 | Reverse DCF | ✅ | 3h | Implemented Jan 20: Market implied growth rate calculation |
 | DCF-003 | Monte Carlo Simulation | ⬜ | 8h | 10k scenarios, probability distribution |
 | DCF-004 | Multiple Valuation Models | ⬜ | 6h | Add DDM, P/E comps, EV/EBITDA |
-| DCF-005 | Historical FCF Chart | ⬜ | 3h | Show 10yr FCF trend |
+| DCF-005 | Historical FCF Chart | ✅ | 3h | Implemented Jan 20: Bar chart with CAGR calculation |
 | DCF-006 | Analyst Estimates Integration | ⬜ | 4h | Pull consensus estimates |
 | DCF-007 | Quality Score Indicator | ⬜ | 2h | Data confidence/completeness |
 | DCF-008 | Share Analysis Link | ⬜ | 3h | Shareable read-only DCF |

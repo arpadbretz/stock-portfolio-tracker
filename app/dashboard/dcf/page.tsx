@@ -28,6 +28,7 @@ import {
 import Link from 'next/link';
 import { toast } from 'sonner';
 import TickerSearch from '@/components/shared/TickerSearch';
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell } from 'recharts';
 
 interface DCFInputs {
     symbol: string;
@@ -122,6 +123,9 @@ function DCFCalculatorContent() {
     const [saveName, setSaveName] = useState('');
     const [showSaveDialog, setShowSaveDialog] = useState(false);
 
+    // Historical FCF data for chart
+    const [historicalFCF, setHistoricalFCF] = useState<{ year: string; fcf: number }[]>([]);
+
     useEffect(() => {
         if (!authLoading && !user) {
             router.push('/login');
@@ -204,6 +208,18 @@ function DCFCalculatorContent() {
                     growthRateYear1to5: estimatedGrowthRate,
                     growthRateYear6to10: Math.max(estimatedGrowthRate * 0.5, 4), // Fade to half in years 6-10
                 }));
+
+                // Extract historical FCF data for chart
+                if (data.cashFlow && data.cashFlow.length > 0) {
+                    const fcfData = data.cashFlow
+                        .filter((cf: any) => cf.freeCashflow !== undefined && cf.fiscalDateEnding)
+                        .map((cf: any) => ({
+                            year: new Date(cf.fiscalDateEnding).getFullYear().toString(),
+                            fcf: cf.freeCashflow / 1e9, // In billions
+                        }))
+                        .sort((a: { year: string }, b: { year: string }) => parseInt(a.year) - parseInt(b.year));
+                    setHistoricalFCF(fcfData);
+                }
             }
         } catch (err) {
             console.error('Failed to fetch stock data:', err);
@@ -218,6 +234,93 @@ function DCFCalculatorContent() {
             return (equityRatio / 100 * costOfEquity) + (debtRatio / 100 * costOfDebt * (1 - taxRate / 100));
         }
         return inputs.discountRate;
+    };
+
+    // Sensitivity Analysis: Calculate intrinsic value for a given growth rate and discount rate
+    const calculateIntrinsicForSensitivity = (growthRate: number, discountRate: number): number => {
+        const { freeCashFlow, sharesOutstanding, marginOfSafety, cashAndEquivalents, totalDebt } = inputs;
+        if (!freeCashFlow || !sharesOutstanding) return 0;
+
+        let currentCF = freeCashFlow;
+        let totalPV = 0;
+
+        // 10-year projection using single growth rate
+        for (let year = 1; year <= 10; year++) {
+            currentCF = currentCF * (1 + growthRate / 100);
+            const pv = currentCF / Math.pow(1 + discountRate / 100, year);
+            totalPV += pv;
+        }
+
+        // Terminal Value
+        const terminalCF = currentCF * (1 + inputs.terminalGrowthRate / 100);
+        const terminalValue = terminalCF / (discountRate / 100 - inputs.terminalGrowthRate / 100);
+        const terminalPV = terminalValue / Math.pow(1 + discountRate / 100, 10);
+        totalPV += terminalPV;
+
+        // Equity Value
+        let equityValue = totalPV;
+        if (isAdvancedMode) {
+            equityValue = totalPV + cashAndEquivalents - totalDebt;
+        }
+
+        // Per-share value with margin of safety
+        const intrinsicValue = (equityValue * 1000) / sharesOutstanding;
+        return intrinsicValue * (1 - marginOfSafety / 100);
+    };
+
+    // Reverse DCF: Calculate what growth rate is implied by the current stock price
+    const calculateImpliedGrowthRate = (): number | null => {
+        const { currentPrice, freeCashFlow, sharesOutstanding, marginOfSafety } = inputs;
+        if (!currentPrice || !freeCashFlow || !sharesOutstanding) return null;
+
+        // Binary search for the implied growth rate
+        const wacc = calculateWACC();
+        const targetIntrinsic = currentPrice / (1 - marginOfSafety / 100); // Reverse the margin of safety
+
+        let low = -10; // -10% growth
+        let high = 50; // 50% growth
+        let iterations = 0;
+        const maxIterations = 50;
+
+        while (iterations < maxIterations && high - low > 0.1) {
+            const mid = (low + high) / 2;
+            const calculated = calculateIntrinsicForSensitivity(mid, wacc) / (1 - marginOfSafety / 100);
+
+            if (calculated < targetIntrinsic) {
+                low = mid;
+            } else {
+                high = mid;
+            }
+            iterations++;
+        }
+
+        return (low + high) / 2;
+    };
+
+    // Generate sensitivity matrix
+    const generateSensitivityMatrix = () => {
+        const wacc = calculateWACC();
+        const baseGrowth = inputs.growthRateYear1to5;
+
+        // Growth rates: baseGrowth ± variations
+        const growthRates = [
+            baseGrowth - 6,
+            baseGrowth - 3,
+            baseGrowth,
+            baseGrowth + 3,
+            baseGrowth + 6,
+        ];
+
+        // Discount rates: wacc ± variations
+        const discountRates = [
+            wacc - 2,
+            wacc - 1,
+            wacc,
+            wacc + 1,
+            wacc + 2,
+        ];
+
+        return { growthRates, discountRates, wacc, baseGrowth };
     };
 
     const calculateDCF = () => {
@@ -912,6 +1015,217 @@ function DCFCalculatorContent() {
                                             </tr>
                                         </tbody>
                                     </table>
+                                </div>
+                            </motion.div>
+
+                            {/* Historical Free Cash Flow */}
+                            {historicalFCF.length > 0 && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.12 }}
+                                    className="bg-card border border-border rounded-3xl p-6"
+                                >
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div>
+                                            <h3 className="text-lg font-bold">Historical Free Cash Flow</h3>
+                                            <p className="text-xs text-muted-foreground">{historicalFCF.length} years of FCF data</p>
+                                        </div>
+                                        {(() => {
+                                            if (historicalFCF.length >= 2) {
+                                                const first = historicalFCF[0].fcf;
+                                                const last = historicalFCF[historicalFCF.length - 1].fcf;
+                                                const years = historicalFCF.length - 1;
+                                                if (first > 0 && last > 0) {
+                                                    const cagr = (Math.pow(last / first, 1 / years) - 1) * 100;
+                                                    return (
+                                                        <div className="text-right">
+                                                            <p className={`text-lg font-black ${cagr >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                                {cagr >= 0 ? '+' : ''}{cagr.toFixed(1)}%
+                                                            </p>
+                                                            <p className="text-[10px] text-muted-foreground uppercase font-bold">FCF CAGR</p>
+                                                        </div>
+                                                    );
+                                                }
+                                            }
+                                            return null;
+                                        })()}
+                                    </div>
+                                    <div className="h-48">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart data={historicalFCF}>
+                                                <XAxis
+                                                    dataKey="year"
+                                                    axisLine={false}
+                                                    tickLine={false}
+                                                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                                                />
+                                                <YAxis
+                                                    axisLine={false}
+                                                    tickLine={false}
+                                                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                                                    tickFormatter={(val) => `$${val.toFixed(0)}B`}
+                                                />
+                                                <Tooltip
+                                                    contentStyle={{
+                                                        backgroundColor: 'hsl(var(--card))',
+                                                        border: '1px solid hsl(var(--border))',
+                                                        borderRadius: '12px',
+                                                        color: 'hsl(var(--foreground))',
+                                                    }}
+                                                    formatter={(value) => [`$${(typeof value === 'number' ? value : 0).toFixed(2)}B`, 'Free Cash Flow']}
+                                                />
+                                                <Bar dataKey="fcf" radius={[4, 4, 0, 0]}>
+                                                    {historicalFCF.map((entry, index) => (
+                                                        <Cell
+                                                            key={`cell-${index}`}
+                                                            fill={entry.fcf >= 0 ? 'hsl(142 71% 45%)' : 'hsl(0 84% 60%)'}
+                                                            opacity={0.8}
+                                                        />
+                                                    ))}
+                                                </Bar>
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                    <p className="text-[10px] text-muted-foreground mt-3">
+                                        Historical FCF helps validate your growth assumptions. Consider using CAGR as a baseline for Year 1-5 projections.
+                                    </p>
+                                </motion.div>
+                            )}
+
+                            {/* Sensitivity Analysis Table */}
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.15 }}
+                                className="bg-card border border-border rounded-3xl p-6"
+                            >
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-lg font-bold">Sensitivity Analysis</h3>
+                                    <p className="text-xs text-muted-foreground">Growth Rate vs Discount Rate</p>
+                                </div>
+                                {(() => {
+                                    const { growthRates, discountRates, wacc, baseGrowth } = generateSensitivityMatrix();
+                                    return (
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-sm">
+                                                <thead>
+                                                    <tr className="border-b border-border">
+                                                        <th className="py-2 px-2 text-left font-bold text-muted-foreground text-xs">
+                                                            Growth ↓ / WACC →
+                                                        </th>
+                                                        {discountRates.map(dr => (
+                                                            <th key={dr} className={`py-2 px-3 text-center font-bold text-xs ${Math.abs(dr - wacc) < 0.1 ? 'text-primary' : 'text-muted-foreground'}`}>
+                                                                {dr.toFixed(1)}%
+                                                            </th>
+                                                        ))}
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {growthRates.map(gr => (
+                                                        <tr key={gr} className="border-b border-border/50">
+                                                            <td className={`py-2 px-2 font-bold text-xs ${Math.abs(gr - baseGrowth) < 0.1 ? 'text-primary' : 'text-muted-foreground'}`}>
+                                                                {gr.toFixed(0)}%
+                                                            </td>
+                                                            {discountRates.map(dr => {
+                                                                const value = calculateIntrinsicForSensitivity(gr, dr);
+                                                                const isBase = Math.abs(gr - baseGrowth) < 0.1 && Math.abs(dr - wacc) < 0.1;
+                                                                const upside = ((value - inputs.currentPrice) / inputs.currentPrice) * 100;
+                                                                let bgColor = 'bg-transparent';
+                                                                if (upside > 30) bgColor = 'bg-emerald-500/30';
+                                                                else if (upside > 10) bgColor = 'bg-emerald-500/15';
+                                                                else if (upside > 0) bgColor = 'bg-emerald-500/5';
+                                                                else if (upside > -10) bgColor = 'bg-rose-500/5';
+                                                                else if (upside > -30) bgColor = 'bg-rose-500/15';
+                                                                else bgColor = 'bg-rose-500/30';
+
+                                                                return (
+                                                                    <td
+                                                                        key={`${gr}-${dr}`}
+                                                                        className={`py-2 px-3 text-center ${bgColor} ${isBase ? 'ring-2 ring-primary ring-inset font-black' : ''}`}
+                                                                    >
+                                                                        <div className="font-bold">${value.toFixed(0)}</div>
+                                                                        <div className={`text-[10px] ${upside >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                                            {upside >= 0 ? '+' : ''}{upside.toFixed(0)}%
+                                                                        </div>
+                                                                    </td>
+                                                                );
+                                                            })}
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    );
+                                })()}
+                                <p className="text-[10px] text-muted-foreground mt-3">
+                                    Highlighted cell shows current inputs. Colors indicate upside potential (green) or downside risk (red).
+                                </p>
+                            </motion.div>
+
+                            {/* Reverse DCF - Implied Growth Rate */}
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.2 }}
+                                className="bg-gradient-to-br from-violet-500/10 to-blue-500/10 border border-violet-500/30 rounded-3xl p-6"
+                            >
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="p-2 bg-violet-500/20 rounded-xl">
+                                        <TrendingUp className="text-violet-400" size={20} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-bold">Reverse DCF</h3>
+                                        <p className="text-xs text-muted-foreground">What growth rate is the market pricing in?</p>
+                                    </div>
+                                </div>
+
+                                {(() => {
+                                    const impliedGrowth = calculateImpliedGrowthRate();
+                                    const yourGrowth = inputs.growthRateYear1to5;
+
+                                    if (impliedGrowth === null) {
+                                        return <p className="text-muted-foreground">Enter stock data to calculate implied growth.</p>;
+                                    }
+
+                                    const isOptimistic = impliedGrowth > yourGrowth;
+                                    const diff = impliedGrowth - yourGrowth;
+
+                                    return (
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                            <div className="bg-card/50 rounded-2xl p-4 text-center">
+                                                <p className="text-3xl font-black text-violet-400">
+                                                    {impliedGrowth.toFixed(1)}%
+                                                </p>
+                                                <p className="text-xs text-muted-foreground font-bold uppercase mt-1">
+                                                    Market Implied Growth
+                                                </p>
+                                            </div>
+                                            <div className="bg-card/50 rounded-2xl p-4 text-center">
+                                                <p className="text-3xl font-black text-primary">
+                                                    {yourGrowth.toFixed(1)}%
+                                                </p>
+                                                <p className="text-xs text-muted-foreground font-bold uppercase mt-1">
+                                                    Your Growth Estimate
+                                                </p>
+                                            </div>
+                                            <div className="bg-card/50 rounded-2xl p-4 text-center">
+                                                <p className={`text-3xl font-black ${isOptimistic ? 'text-rose-400' : 'text-emerald-400'}`}>
+                                                    {diff >= 0 ? '+' : ''}{diff.toFixed(1)}%
+                                                </p>
+                                                <p className="text-xs text-muted-foreground font-bold uppercase mt-1">
+                                                    {isOptimistic ? 'Market More Optimistic' : 'Market Less Optimistic'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+
+                                <div className="mt-4 p-3 bg-card/30 rounded-xl">
+                                    <p className="text-xs text-muted-foreground">
+                                        <strong>Interpretation:</strong> If the market implied growth is <em>higher</em> than your estimate,
+                                        the stock may be overvalued. If it&apos;s <em>lower</em>, the stock may be undervalued based on your expectations.
+                                    </p>
                                 </div>
                             </motion.div>
 
