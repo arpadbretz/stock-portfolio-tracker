@@ -297,7 +297,7 @@
 | DCF-004 | Multiple Valuation Models | ⬜ | 6h | Add DDM, P/E comps, EV/EBITDA |
 | DCF-005 | Historical FCF Chart | ✅ | 3h | Implemented Jan 20: Bar chart with CAGR calculation |
 | DCF-006 | Analyst Estimates Integration | ⬜ | 4h | Pull consensus estimates |
-| DCF-007 | Quality Score Indicator | ⬜ | 2h | Data confidence/completeness |
+| DCF-007 | Quality Score Indicator | ✅ | 2h | Implemented Jan 20: Progress bar with expandable breakdown |
 | DCF-008 | Share Analysis Link | ⬜ | 3h | Shareable read-only DCF |
 | DCF-009 | PDF Export | ⬜ | 4h | Professional investment memo |
 | DCF-010 | Sector Templates | ⬜ | 4h | Pre-built models (SaaS, bank, REIT) |

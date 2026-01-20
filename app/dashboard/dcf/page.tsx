@@ -323,6 +323,50 @@ function DCFCalculatorContent() {
         return { growthRates, discountRates, wacc, baseGrowth };
     };
 
+    // Calculate data quality score (0-100)
+    const calculateDataQuality = (): { score: number; label: string; color: string; details: string[] } => {
+        let score = 0;
+        const details: string[] = [];
+
+        // Essential data (40 points)
+        if (inputs.freeCashFlow > 0) { score += 15; details.push('✓ Free Cash Flow available'); }
+        else { details.push('✗ Missing Free Cash Flow'); }
+
+        if (inputs.sharesOutstanding > 0) { score += 10; details.push('✓ Shares outstanding available'); }
+        else { details.push('✗ Missing Shares Outstanding'); }
+
+        if (inputs.currentPrice > 0) { score += 10; details.push('✓ Current price available'); }
+        else { details.push('✗ Missing Current Price'); }
+
+        if (inputs.beta !== 1.0) { score += 5; details.push('✓ Beta available'); }
+        else { details.push('○ Using default beta'); }
+
+        // Historical data (30 points)
+        if (historicalFCF.length >= 5) { score += 20; details.push(`✓ ${historicalFCF.length} years FCF history`); }
+        else if (historicalFCF.length >= 3) { score += 10; details.push(`○ Limited FCF history (${historicalFCF.length} years)`); }
+        else { details.push('✗ Insufficient FCF history'); }
+
+        if (inputs.growthRateYear1to5 !== 15) { score += 10; details.push('✓ Custom growth rate set'); }
+        else { details.push('○ Using default growth estimate'); }
+
+        // Advanced mode data (30 points for advanced mode)
+        if (isAdvancedMode) {
+            if (inputs.cashAndEquivalents > 0) { score += 10; details.push('✓ Cash position available'); }
+            if (inputs.totalDebt > 0) { score += 10; details.push('✓ Debt data available'); }
+            if (inputs.costOfEquity !== 10) { score += 5; details.push('✓ Custom cost of equity'); }
+            if (inputs.costOfDebt !== 5) { score += 5; details.push('✓ Custom cost of debt'); }
+        }
+
+        // Determine label and color
+        let label = 'Low';
+        let color = 'text-rose-500';
+        if (score >= 80) { label = 'Excellent'; color = 'text-emerald-500'; }
+        else if (score >= 60) { label = 'Good'; color = 'text-blue-500'; }
+        else if (score >= 40) { label = 'Moderate'; color = 'text-amber-500'; }
+
+        return { score: Math.min(score, 100), label, color, details };
+    };
+
     const calculateDCF = () => {
         const {
             currentPrice,
@@ -973,6 +1017,45 @@ function DCFCalculatorContent() {
                                         </div>
                                     </div>
                                 )}
+
+                                {/* Data Quality Indicator */}
+                                {(() => {
+                                    const quality = calculateDataQuality();
+                                    return (
+                                        <div className="mt-6 pt-6 border-t border-border/50">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className="text-xs font-bold text-muted-foreground uppercase">Data Quality</span>
+                                                <span className={`text-sm font-black ${quality.color}`}>
+                                                    {quality.label} ({quality.score}%)
+                                                </span>
+                                            </div>
+                                            <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                                                <div
+                                                    className={`h-full rounded-full transition-all ${quality.score >= 80 ? 'bg-emerald-500' :
+                                                            quality.score >= 60 ? 'bg-blue-500' :
+                                                                quality.score >= 40 ? 'bg-amber-500' : 'bg-rose-500'
+                                                        }`}
+                                                    style={{ width: `${quality.score}%` }}
+                                                />
+                                            </div>
+                                            <details className="mt-2">
+                                                <summary className="text-[10px] text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
+                                                    View quality breakdown →
+                                                </summary>
+                                                <ul className="mt-2 space-y-0.5 text-[10px] text-muted-foreground">
+                                                    {quality.details.map((detail, i) => (
+                                                        <li key={i} className={
+                                                            detail.startsWith('✓') ? 'text-emerald-500' :
+                                                                detail.startsWith('✗') ? 'text-rose-500' : ''
+                                                        }>
+                                                            {detail}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </details>
+                                        </div>
+                                    );
+                                })()}
                             </motion.div>
 
                             {/* Cash Flow Projections */}
