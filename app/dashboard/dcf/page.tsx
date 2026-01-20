@@ -189,17 +189,23 @@ function DCFCalculatorContent() {
         }
     }, [user, fetchSavedAnalyses]);
 
-    const fetchStockData = async () => {
-        if (!inputs.symbol) return;
+    const fetchStockData = async (symbolOverride?: string) => {
+        const symbolToFetch = symbolOverride || inputs.symbol;
+        if (!symbolToFetch) return;
+
+        // Update the symbol in state if override provided
+        if (symbolOverride) {
+            setInputs(prev => ({ ...prev, symbol: symbolOverride }));
+        }
 
         setIsLoading(true);
         try {
-            const res = await fetch(`/api/stock/${inputs.symbol.toUpperCase()}`);
+            const res = await fetch(`/api/stock/${symbolToFetch.toUpperCase()}`);
             const response = await res.json();
 
             if (response.success && response.data) {
                 const data = response.data;
-                setStockName(data.name || inputs.symbol);
+                setStockName(data.name || symbolToFetch);
 
                 // Get the most recent free cash flow from cash flow statement if available
                 const latestCashFlow = data.cashFlow && data.cashFlow.length > 0
@@ -896,18 +902,18 @@ function DCFCalculatorContent() {
                         </h3>
                         <div className="flex gap-3">
                             <TickerSearch
-                                onSelect={(result) => handleInputChange('symbol', result.symbol)}
+                                onSelect={(result) => fetchStockData(result.symbol)}
                                 placeholder="Enter ticker (e.g., AAPL)"
                                 className="flex-1"
                                 inputClassName="w-full px-4 py-3 bg-muted border border-border rounded-xl font-bold focus:ring-primary/30"
                             />
                             <button
-                                onClick={fetchStockData}
+                                onClick={() => fetchStockData()}
                                 disabled={isLoading || !inputs.symbol}
                                 className="px-6 py-3 bg-primary text-primary-foreground rounded-xl font-bold flex items-center gap-2 disabled:opacity-50"
                             >
-                                {isLoading ? <RefreshCw className="animate-spin" size={16} /> : <Search size={16} />}
-                                Fetch
+                                {isLoading ? <RefreshCw className="animate-spin" size={16} /> : <RefreshCw size={16} />}
+                                {isLoading ? 'Loading...' : 'Refresh'}
                             </button>
                         </div>
                         {stockName && (
@@ -1236,6 +1242,76 @@ function DCFCalculatorContent() {
                         <Calculator size={18} />
                         Calculate Intrinsic Value
                     </button>
+
+                    {/* Historical FCF - Show after fetching stock data */}
+                    {historicalFCF.length > 0 && (
+                        <div className="bg-card border border-border rounded-3xl p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <div>
+                                    <h3 className="text-lg font-bold">Historical Free Cash Flow</h3>
+                                    <p className="text-xs text-muted-foreground">{historicalFCF.length} years of FCF data</p>
+                                </div>
+                                {(() => {
+                                    if (historicalFCF.length >= 2) {
+                                        const first = historicalFCF[0].fcf;
+                                        const last = historicalFCF[historicalFCF.length - 1].fcf;
+                                        const years = historicalFCF.length - 1;
+                                        if (first > 0 && last > 0) {
+                                            const cagr = (Math.pow(last / first, 1 / years) - 1) * 100;
+                                            return (
+                                                <div className="text-right">
+                                                    <p className={`text-lg font-black ${cagr >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                        {cagr >= 0 ? '+' : ''}{cagr.toFixed(1)}%
+                                                    </p>
+                                                    <p className="text-[10px] text-muted-foreground uppercase font-bold">FCF CAGR</p>
+                                                </div>
+                                            );
+                                        }
+                                    }
+                                    return null;
+                                })()}
+                            </div>
+                            <div className="h-48">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={historicalFCF}>
+                                        <XAxis
+                                            dataKey="year"
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                                        />
+                                        <YAxis
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                                            tickFormatter={(val) => `$${val.toFixed(0)}B`}
+                                        />
+                                        <Tooltip
+                                            contentStyle={{
+                                                backgroundColor: 'hsl(var(--card))',
+                                                border: '1px solid hsl(var(--border))',
+                                                borderRadius: '12px',
+                                                color: 'hsl(var(--foreground))',
+                                            }}
+                                            formatter={(value) => [`$${(typeof value === 'number' ? value : 0).toFixed(2)}B`, 'Free Cash Flow']}
+                                        />
+                                        <Bar dataKey="fcf" radius={[4, 4, 0, 0]}>
+                                            {historicalFCF.map((entry, index) => (
+                                                <Cell
+                                                    key={`cell-${index}`}
+                                                    fill={entry.fcf >= 0 ? 'hsl(142 71% 45%)' : 'hsl(0 84% 60%)'}
+                                                    opacity={0.8}
+                                                />
+                                            ))}
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground mt-3">
+                                Historical FCF helps validate your growth assumptions. Consider using CAGR as a baseline for Year 1-5 projections.
+                            </p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Results Section */}
@@ -1379,81 +1455,6 @@ function DCFCalculatorContent() {
                                     </table>
                                 </div>
                             </motion.div>
-
-                            {/* Historical Free Cash Flow */}
-                            {historicalFCF.length > 0 && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.12 }}
-                                    className="bg-card border border-border rounded-3xl p-6"
-                                >
-                                    <div className="flex items-center justify-between mb-4">
-                                        <div>
-                                            <h3 className="text-lg font-bold">Historical Free Cash Flow</h3>
-                                            <p className="text-xs text-muted-foreground">{historicalFCF.length} years of FCF data</p>
-                                        </div>
-                                        {(() => {
-                                            if (historicalFCF.length >= 2) {
-                                                const first = historicalFCF[0].fcf;
-                                                const last = historicalFCF[historicalFCF.length - 1].fcf;
-                                                const years = historicalFCF.length - 1;
-                                                if (first > 0 && last > 0) {
-                                                    const cagr = (Math.pow(last / first, 1 / years) - 1) * 100;
-                                                    return (
-                                                        <div className="text-right">
-                                                            <p className={`text-lg font-black ${cagr >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                                                {cagr >= 0 ? '+' : ''}{cagr.toFixed(1)}%
-                                                            </p>
-                                                            <p className="text-[10px] text-muted-foreground uppercase font-bold">FCF CAGR</p>
-                                                        </div>
-                                                    );
-                                                }
-                                            }
-                                            return null;
-                                        })()}
-                                    </div>
-                                    <div className="h-48">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <BarChart data={historicalFCF}>
-                                                <XAxis
-                                                    dataKey="year"
-                                                    axisLine={false}
-                                                    tickLine={false}
-                                                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
-                                                />
-                                                <YAxis
-                                                    axisLine={false}
-                                                    tickLine={false}
-                                                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
-                                                    tickFormatter={(val) => `$${val.toFixed(0)}B`}
-                                                />
-                                                <Tooltip
-                                                    contentStyle={{
-                                                        backgroundColor: 'hsl(var(--card))',
-                                                        border: '1px solid hsl(var(--border))',
-                                                        borderRadius: '12px',
-                                                        color: 'hsl(var(--foreground))',
-                                                    }}
-                                                    formatter={(value) => [`$${(typeof value === 'number' ? value : 0).toFixed(2)}B`, 'Free Cash Flow']}
-                                                />
-                                                <Bar dataKey="fcf" radius={[4, 4, 0, 0]}>
-                                                    {historicalFCF.map((entry, index) => (
-                                                        <Cell
-                                                            key={`cell-${index}`}
-                                                            fill={entry.fcf >= 0 ? 'hsl(142 71% 45%)' : 'hsl(0 84% 60%)'}
-                                                            opacity={0.8}
-                                                        />
-                                                    ))}
-                                                </Bar>
-                                            </BarChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                    <p className="text-[10px] text-muted-foreground mt-3">
-                                        Historical FCF helps validate your growth assumptions. Consider using CAGR as a baseline for Year 1-5 projections.
-                                    </p>
-                                </motion.div>
-                            )}
 
                             {/* Sensitivity Analysis Table */}
                             <motion.div
@@ -1627,6 +1628,16 @@ function DCFCalculatorContent() {
                                     </button>
                                 </div>
 
+                                {/* Explanation */}
+                                <div className="bg-card/30 rounded-xl p-4 mb-4">
+                                    <p className="text-xs text-muted-foreground leading-relaxed">
+                                        <strong className="text-foreground">What is Monte Carlo?</strong> This simulation runs 10,000 different valuation scenarios
+                                        by randomly varying your inputs (growth rate ±30%, discount rate ±1.5%, FCF ±15%)
+                                        using a normal distribution. This helps you understand the <em>range of possible outcomes</em>
+                                        and the probability that the stock is undervalued given uncertainty in your assumptions.
+                                    </p>
+                                </div>
+
                                 {monteCarloResults ? (
                                     <>
                                         {/* Statistics Grid */}
@@ -1752,125 +1763,6 @@ function DCFCalculatorContent() {
                                         <p className="text-xs mt-1">Varies growth rate, discount rate, and FCF within realistic ranges</p>
                                     </div>
                                 )}
-                            </motion.div>
-
-                            {/* Alternative Valuation Models */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.3 }}
-                                className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/30 rounded-3xl p-6"
-                            >
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="p-2 bg-amber-500/20 rounded-xl">
-                                        <Layers className="text-amber-400" size={20} />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-lg font-bold">Alternative Valuation Models</h3>
-                                        <p className="text-xs text-muted-foreground">DDM, P/E, and EV/EBITDA analysis</p>
-                                    </div>
-                                </div>
-
-                                {calculateAlternativeValuations ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        {/* DDM Model */}
-                                        <div className="bg-card/50 rounded-xl p-4">
-                                            <div className="flex items-center gap-2 mb-3">
-                                                <DollarSign className="text-emerald-400" size={16} />
-                                                <h4 className="font-bold text-sm">DDM (Gordon Growth)</h4>
-                                            </div>
-                                            {calculateAlternativeValuations.ddm?.isValid ? (
-                                                <>
-                                                    <p className="text-2xl font-black text-emerald-400 mb-1">
-                                                        ${calculateAlternativeValuations.ddm.fairValue.toFixed(2)}
-                                                    </p>
-                                                    <p className={`text-sm font-bold ${calculateAlternativeValuations.ddm.upside >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                                        {calculateAlternativeValuations.ddm.upside >= 0 ? '+' : ''}{calculateAlternativeValuations.ddm.upside.toFixed(1)}% upside
-                                                    </p>
-                                                    <div className="mt-2 pt-2 border-t border-border/30 text-xs text-muted-foreground">
-                                                        <p>Div: ${valuationData?.dividendPerShare.toFixed(2)}/share</p>
-                                                        <p>Growth: {valuationData?.dividendGrowthRate.toFixed(1)}%</p>
-                                                    </div>
-                                                </>
-                                            ) : (
-                                                <div className="text-muted-foreground text-sm">
-                                                    <p className="opacity-50">Not applicable</p>
-                                                    <p className="text-xs mt-1">{calculateAlternativeValuations.ddm?.reason}</p>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* P/E Model */}
-                                        <div className="bg-card/50 rounded-xl p-4">
-                                            <div className="flex items-center gap-2 mb-3">
-                                                <Activity className="text-blue-400" size={16} />
-                                                <h4 className="font-bold text-sm">P/E Valuation</h4>
-                                            </div>
-                                            {calculateAlternativeValuations.pe ? (
-                                                <>
-                                                    <p className="text-2xl font-black text-blue-400 mb-1">
-                                                        ${calculateAlternativeValuations.pe.fairValue.toFixed(2)}
-                                                    </p>
-                                                    <p className={`text-sm font-bold ${calculateAlternativeValuations.pe.upside >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                                        {calculateAlternativeValuations.pe.upside >= 0 ? '+' : ''}{calculateAlternativeValuations.pe.upside.toFixed(1)}% upside
-                                                    </p>
-                                                    <div className="mt-2 pt-2 border-t border-border/30 text-xs text-muted-foreground">
-                                                        <p>EPS: ${valuationData?.eps.toFixed(2)}</p>
-                                                        <p>P/E: {valuationData?.peRatio.toFixed(1)}x (Fwd: {valuationData?.forwardPE.toFixed(1)}x)</p>
-                                                        <p className="mt-1 text-primary/80">
-                                                            Sector ({valuationData?.sectorPE}x): ${calculateAlternativeValuations.pe.sectorFairValue.toFixed(2)}
-                                                        </p>
-                                                    </div>
-                                                </>
-                                            ) : (
-                                                <div className="text-muted-foreground text-sm">
-                                                    <p className="opacity-50">Not available</p>
-                                                    <p className="text-xs mt-1">Missing EPS or P/E data</p>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* EV/EBITDA Model */}
-                                        <div className="bg-card/50 rounded-xl p-4">
-                                            <div className="flex items-center gap-2 mb-3">
-                                                <PieChart className="text-purple-400" size={16} />
-                                                <h4 className="font-bold text-sm">EV/EBITDA</h4>
-                                            </div>
-                                            {calculateAlternativeValuations.evEbitda ? (
-                                                <>
-                                                    <p className="text-2xl font-black text-purple-400 mb-1">
-                                                        ${calculateAlternativeValuations.evEbitda.fairValue.toFixed(2)}
-                                                    </p>
-                                                    <p className={`text-sm font-bold ${calculateAlternativeValuations.evEbitda.upside >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                                        {calculateAlternativeValuations.evEbitda.upside >= 0 ? '+' : ''}{calculateAlternativeValuations.evEbitda.upside.toFixed(1)}% upside
-                                                    </p>
-                                                    <div className="mt-2 pt-2 border-t border-border/30 text-xs text-muted-foreground">
-                                                        <p>EBITDA: ${valuationData?.ebitda.toFixed(2)}B</p>
-                                                        <p>EV/EBITDA: {valuationData?.evToEbitda.toFixed(1)}x</p>
-                                                        <p className="mt-1 text-primary/80">
-                                                            Sector ({valuationData?.sectorEvEbitda}x): ${calculateAlternativeValuations.evEbitda.sectorFairValue.toFixed(2)}
-                                                        </p>
-                                                    </div>
-                                                </>
-                                            ) : (
-                                                <div className="text-muted-foreground text-sm">
-                                                    <p className="opacity-50">Not available</p>
-                                                    <p className="text-xs mt-1">Missing EBITDA data</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="text-center py-6 text-muted-foreground">
-                                        <Layers className="mx-auto mb-3 opacity-50" size={40} />
-                                        <p className="text-sm">Fetch stock data to view alternative valuation models</p>
-                                        <p className="text-xs mt-1">DDM requires dividend data. P/E requires EPS. EV/EBITDA requires financial data.</p>
-                                    </div>
-                                )}
-
-                                <p className="text-[10px] text-muted-foreground mt-4">
-                                    All valuations include {inputs.marginOfSafety}% margin of safety. Sector multiples are estimates and may vary.
-                                </p>
                             </motion.div>
 
                             {/* Disclaimer */}
