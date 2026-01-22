@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useTheme } from 'next-themes';
+import { supabase } from '@/lib/supabase';
 
 interface SearchResult {
     symbol: string;
@@ -65,10 +66,20 @@ export default function CommandPalette() {
 
             setIsSearching(true);
             try {
-                const res = await fetch(`/api/search?q=${encodeURIComponent(search)}`);
-                const data = await res.json();
-                if (data.results) {
-                    setSearchResults(data.results.slice(0, 5));
+                if (supabase) {
+                    const { data, error } = await supabase.functions.invoke(`stock-search?q=${encodeURIComponent(search)}`, {
+                        method: 'GET'
+                    });
+                    if (error) throw error;
+                    if (data?.results) {
+                        setSearchResults(data.results.slice(0, 5));
+                    }
+                } else {
+                    const res = await fetch(`/api/search?q=${encodeURIComponent(search)}`);
+                    const data = await res.json();
+                    if (data.results) {
+                        setSearchResults(data.results.slice(0, 5));
+                    }
                 }
             } catch (err) {
                 console.error('Search failed:', err);

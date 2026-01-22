@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Loader2, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { trackTickerSearch } from '@/lib/analytics';
+import { supabase } from '@/lib/supabase';
 
 interface SearchResult {
     symbol: string;
@@ -67,9 +68,20 @@ export default function TickerSearch({
             trackTickerSearch(query, user?.id || null);
 
             try {
-                const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-                const data = await response.json();
-                setResults(data.results || []);
+                // Use Supabase Edge Function for search (lower latency, no cold start)
+                if (supabase) {
+                    const { data, error } = await supabase.functions.invoke(`stock-search?q=${encodeURIComponent(query)}`, {
+                        method: 'GET'
+                    });
+
+                    if (error) throw error;
+                    setResults(data.results || []);
+                } else {
+                    // Fallback to local API
+                    const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+                    const data = await response.json();
+                    setResults(data.results || []);
+                }
             } catch (error) {
                 console.error('Search error:', error);
                 setResults([]);

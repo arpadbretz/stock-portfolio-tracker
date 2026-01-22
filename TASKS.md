@@ -121,7 +121,7 @@
 
 | ID | Task | Status | Effort | Notes |
 |----|------|--------|--------|-------|
-| INFRA-001 | Supabase Edge Functions for Search | ⬜ | 4h | Offload search for zero cold-start & global low latency |
+| INFRA-001 | Supabase Edge Functions for Search | ✅ | 4h | Offloaded search to V8 Isolates for zero cold-start Jan 22 |
 | INFRA-002 | Global Historical Price Cache | ✅ | 6h | Implemented Jan 22: DB-level cache for historical tickers |
 | INFRA-003 | Sentry Integration Audit | ✅ | 2h | Verified config & wrapper Jan 22. DSN required in ENV. |
 
