@@ -67,14 +67,50 @@ export async function getBatchPrices(tickers: string[]): Promise<Map<string, Pri
     return priceMap;
 }
 
+import { createAdminClient } from './supabase/admin';
+
 /**
- * Get historical prices for a ticker
+ * Get historical prices for a ticker, checking the global database cache first.
  */
 export async function getHistoricalPrices(ticker: string, from: Date, to: Date = new Date()) {
     if (!ticker) return [];
 
     try {
         const symbol = ticker.trim().toUpperCase();
+        const fromStr = from.toISOString().split('T')[0];
+        const toStr = to.toISOString().split('T')[0];
+
+        // 1. Try to fetch from Supabase cache first
+        const adminClient = createAdminClient();
+        const { data: cachedData, error: cacheError } = await adminClient
+            .from('daily_stock_prices')
+            .select('date, price')
+            .eq('symbol', symbol)
+            .gte('date', fromStr)
+            .lte('date', toStr)
+            .order('date', { ascending: true });
+
+        if (!cacheError && cachedData && cachedData.length > 0) {
+            // Check if we have most of the requested range (rough heuristic)
+            // If the start date in cache is close to requested from date, use it
+            const firstCachedDate = new Date(cachedData[0].date);
+            const daysDiff = Math.abs((firstCachedDate.getTime() - from.getTime()) / (1000 * 60 * 60 * 24));
+
+            // Also check if we have the latest data (yesterday or today)
+            const lastCachedDate = new Date(cachedData[cachedData.length - 1].date);
+            const isUpToDate = lastCachedDate.getTime() >= new Date().setHours(0, 0, 0, 0) - (24 * 60 * 60 * 1000);
+
+            if (daysDiff < 5 && isUpToDate) {
+                console.log(`Using DB cache for ${symbol} history (${cachedData.length} days)`);
+                return cachedData.map(item => ({
+                    date: new Date(item.date),
+                    close: Number(item.price)
+                }));
+            }
+        }
+
+        // 2. Fetch from Yahoo Finance if cache is missing or stale
+        console.log(`Fetching ${symbol} history from Yahoo Finance...`);
         const queryOptions = {
             period1: from,
             period2: to,
@@ -82,10 +118,29 @@ export async function getHistoricalPrices(ticker: string, from: Date, to: Date =
         };
 
         const result = await yf.historical(symbol, queryOptions);
-        return result.map((item: any) => ({
+        const prices = result.map((item: any) => ({
             date: item.date,
             close: item.close || item.adjClose || 0,
         }));
+
+        // 3. Save to cache asynchronously (fire and forget)
+        if (prices.length > 0) {
+            const cacheEntries = prices.map((p: any) => ({
+                symbol,
+                date: p.date.toISOString().split('T')[0],
+                price: p.close
+            }));
+
+            adminClient
+                .from('daily_stock_prices')
+                .upsert(cacheEntries, { onConflict: 'symbol,date' })
+                .then(({ error }) => {
+                    if (error) console.error(`Failed to cache prices for ${symbol}:`, error);
+                    else console.log(`Cached ${cacheEntries.length} prices for ${symbol}`);
+                });
+        }
+
+        return prices;
     } catch (error) {
         console.error(`Error fetching historical prices for ${ticker}:`, error);
         return [];

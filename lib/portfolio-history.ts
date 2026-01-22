@@ -1,11 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
-import { getHistoricalPrices } from '@/lib/yahoo-finance';
+import { getHistoricalPrices, getHistoricalBenchmark } from '@/lib/yahoo-finance';
 import { Trade } from '@/types/portfolio';
-
-interface DailyHolding {
-    ticker: string;
-    quantity: number;
-}
 
 export async function syncPortfolioHistory(portfolioId: string, userId: string) {
     const supabase = await createClient();
@@ -22,55 +17,64 @@ export async function syncPortfolioHistory(portfolioId: string, userId: string) 
 
     // 2. Identify timeframe
     let startTradeDate = trades[0].date_traded ? new Date(trades[0].date_traded) : new Date();
-
-    // Safety check for invalid dates
     if (isNaN(startTradeDate.getTime())) {
-        console.warn('Invalid trade date found, defaulting to trade createdAt or now');
         startTradeDate = trades[0].created_at ? new Date(trades[0].created_at) : new Date();
     }
 
     const startDate = startTradeDate;
     const endDate = new Date();
 
-    console.log(`Syncing from ${startDate.toISOString()} to ${endDate.toISOString()}`);
-
-    // 3. Get all unique tickers
+    // 3. Get all unique tickers + Benchmark
     const uniqueTickers = [...new Set(trades.map(t => t.ticker))];
 
-    // 4. Fetch historical prices for all involved tickers in parallel
-    console.log(`Syncing ${uniqueTickers.length} tickers for portfolio ${portfolioId}...`);
+    // 4. Fetch historical prices for all involved tickers + Benchmark in parallel
     const priceCache = new Map<string, Map<string, number>>();
+    const benchCache = new Map<string, number>();
 
-    await Promise.all(uniqueTickers.map(async (ticker) => {
-        try {
-            const prices = await getHistoricalPrices(ticker, startDate, endDate);
-            const tickerPriceMap = new Map<string, number>();
-            prices.forEach((p: any) => {
-                const dateStr = new Date(p.date).toISOString().split('T')[0];
-                tickerPriceMap.set(dateStr, p.close);
-            });
-            priceCache.set(ticker, tickerPriceMap);
-            console.log(`Fetched ${prices.length} days of data for ${ticker}`);
-        } catch (err) {
-            console.error(`Failed to fetch history for ${ticker}:`, err);
-        }
-    }));
+    await Promise.all([
+        ...uniqueTickers.map(async (ticker) => {
+            try {
+                const prices = await getHistoricalPrices(ticker, startDate, endDate);
+                const tickerPriceMap = new Map<string, number>();
+                prices.forEach((p: any) => {
+                    const dateStr = new Date(p.date).toISOString().split('T')[0];
+                    tickerPriceMap.set(dateStr, p.close);
+                });
+                priceCache.set(ticker, tickerPriceMap);
+            } catch (err) {
+                console.error(`Failed to fetch history for ${ticker}:`, err);
+            }
+        }),
+        (async () => {
+            try {
+                const benchData = await getHistoricalBenchmark(startDate, endDate);
+                benchData.forEach((p: any) => {
+                    const dateStr = new Date(p.date).toISOString().split('T')[0];
+                    benchCache.set(dateStr, p.value);
+                });
+            } catch (err) {
+                console.error(`Failed to fetch benchmark history:`, err);
+            }
+        })()
+    ]);
 
-    // 5. Iterate day by day and calculate portfolio value
+    // 5. Iterate day by day and calculate portfolio value + TWR
     const historyEntries = [];
     let currentHoldings = new Map<string, number>();
     let realizedPnl = 0;
-    let totalSpent = 0; // Cumulative cost basis
+    let totalSpent = 0;
+    let prevTotalValue = 0;
+    let cumulativeTwr = 1;
+    let initialBenchValue = benchmarkValueAtDate(startDate, benchCache);
+    let cumulativeBench = 1;
 
     const iterDate = new Date(startDate);
-    const todayStr = new Date().toISOString().split('T')[0];
 
     while (iterDate <= endDate) {
         const dateStr = iterDate.toISOString().split('T')[0];
-
-        // Update holdings based on trades that happened ON this day
         const dayTrades = trades.filter(t => new Date(t.date_traded).toISOString().split('T')[0] === dateStr);
 
+        let dailyCashFlow = 0;
         for (const trade of dayTrades) {
             const qty = Number(trade.quantity);
             const price = Number(trade.price_per_share);
@@ -80,40 +84,36 @@ export async function syncPortfolioHistory(portfolioId: string, userId: string) 
                 const existingQty = currentHoldings.get(trade.ticker) || 0;
                 currentHoldings.set(trade.ticker, existingQty + qty);
                 totalSpent += (qty * price) + fees;
+                dailyCashFlow += (qty * price) + fees;
             } else {
                 const existingQty = currentHoldings.get(trade.ticker) || 0;
                 currentHoldings.set(trade.ticker, Math.max(0, existingQty - qty));
-                // Simplified realized P&L: (sale price - average cost)
-                // For now, we'll just track total portfolio value effectively
                 realizedPnl += (qty * price) - fees;
+                dailyCashFlow -= (qty * price) - fees;
             }
         }
 
-        // Calculate total market value of all holdings on this day
+        // Calculate total market value
         let dailyMarketValue = 0;
-        let dailyCostBasis = 0;
-
         for (const [ticker, quantity] of currentHoldings.entries()) {
             if (quantity <= 0) continue;
+            const price = getPriceAtDate(ticker, iterDate, priceCache);
+            if (price !== undefined) dailyMarketValue += quantity * price;
+        }
 
-            const tickerPrices = priceCache.get(ticker);
-            // If it's a weekend/holiday, try to find the last available price
-            let price = tickerPrices?.get(dateStr);
+        // TWR Calculation
+        // R = (EV - (BV + CF)) / (BV + CF)
+        let dailyReturn = 0;
+        const denominator = prevTotalValue + dailyCashFlow;
+        if (denominator > 0) {
+            dailyReturn = (dailyMarketValue - denominator) / denominator;
+            cumulativeTwr *= (1 + dailyReturn);
+        }
 
-            // Lookback for missing prices (weekends) up to 5 days
-            if (price === undefined) {
-                for (let i = 1; i <= 5; i++) {
-                    const prevDate = new Date(iterDate);
-                    prevDate.setDate(prevDate.getDate() - i);
-                    const prevDateStr = prevDate.toISOString().split('T')[0];
-                    price = tickerPrices?.get(prevDateStr);
-                    if (price !== undefined) break;
-                }
-            }
-
-            if (price !== undefined) {
-                dailyMarketValue += quantity * price;
-            }
+        // Benchmark Calculation
+        const currentBenchValue = benchmarkValueAtDate(iterDate, benchCache);
+        if (initialBenchValue && currentBenchValue) {
+            cumulativeBench = currentBenchValue / initialBenchValue;
         }
 
         historyEntries.push({
@@ -121,34 +121,65 @@ export async function syncPortfolioHistory(portfolioId: string, userId: string) 
             user_id: userId,
             date: dateStr,
             total_value: dailyMarketValue,
-            cost_basis: totalSpent, // This is a bit simplified, but works for basic tracking
-            realized_pnl: realizedPnl
+            cost_basis: totalSpent,
+            realized_pnl: realizedPnl,
+            daily_return: dailyReturn,
+            cumulative_twr: cumulativeTwr - 1,
+            bench_return: 0, // Not strictly needed if we have cumulative
+            bench_cumulative: cumulativeBench - 1
         });
 
-        // Increment day
+        prevTotalValue = dailyMarketValue;
         iterDate.setDate(iterDate.getDate() + 1);
     }
 
     // 6. Upsert into database
-    console.log(`Upserting ${historyEntries.length} entries for ${portfolioId}...`);
-    if (historyEntries.length === 0) {
-        console.warn('No history entries generated. Check trade dates.');
-        return { success: true, message: 'No history entries to sync', daysSynced: 0 };
-    }
+    if (historyEntries.length === 0) return { success: true, message: 'No history to sync' };
 
     const { error: upsertError } = await supabase
         .from('portfolio_history')
         .upsert(historyEntries, { onConflict: 'portfolio_id,date' });
 
-    if (upsertError) {
-        console.error('Upsert failed:', upsertError);
-        throw upsertError;
-    }
+    if (upsertError) throw upsertError;
 
-    console.log(`Successfully synced ${historyEntries.length} entries for ${portfolioId}`);
     return {
         success: true,
         message: `Synced ${historyEntries.length} days of history`,
         daysSynced: historyEntries.length
     };
+}
+
+function getPriceAtDate(ticker: string, date: Date, cache: Map<string, Map<string, number>>): number | undefined {
+    const tickerPrices = cache.get(ticker);
+    if (!tickerPrices) return undefined;
+
+    const dateStr = date.toISOString().split('T')[0];
+    let price = tickerPrices.get(dateStr);
+
+    if (price === undefined) {
+        for (let i = 1; i <= 7; i++) {
+            const prevDate = new Date(date);
+            prevDate.setDate(prevDate.getDate() - i);
+            const prevDateStr = prevDate.toISOString().split('T')[0];
+            price = tickerPrices.get(prevDateStr);
+            if (price !== undefined) break;
+        }
+    }
+    return price;
+}
+
+function benchmarkValueAtDate(date: Date, cache: Map<string, number>): number | undefined {
+    const dateStr = date.toISOString().split('T')[0];
+    let price = cache.get(dateStr);
+
+    if (price === undefined) {
+        for (let i = 1; i <= 7; i++) {
+            const prevDate = new Date(date);
+            prevDate.setDate(prevDate.getDate() - i);
+            const prevDateStr = prevDate.toISOString().split('T')[0];
+            price = cache.get(prevDateStr);
+            if (price !== undefined) break;
+        }
+    }
+    return price;
 }

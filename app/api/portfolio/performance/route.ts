@@ -55,33 +55,32 @@ export async function GET(request: Request) {
             });
         }
 
-        // 2. Fetch Benchmark data (S&P 500) for the SAME timeframe
-        const firstEntryDate = new Date(history[0].date);
-        const benchmarkData = await getHistoricalBenchmark(firstEntryDate);
-
-        // 3. Normalize and combine data
-        // Normalization: First entry of portfolio value is 0% change
-        const startValue = history[0].total_value || 1; // Avoid div by zero
-
+        // 2. Map history data using TWR columns
         const combinedData = history.map(entry => {
-            const dateStr = new Date(entry.date).toISOString().split('T')[0];
-            const benchEntry = benchmarkData.find((b: any) => {
-                const bDate = new Date(b.date).toISOString().split('T')[0];
-                return bDate === dateStr;
-            });
-
             return {
                 date: entry.date,
-                portfolio: ((entry.total_value / startValue) - 1) * 100,
-                benchmark: benchEntry ? benchEntry.performance * 100 : null,
+                portfolio: (entry.cumulative_twr || 0) * 100,
+                benchmark: (entry.bench_cumulative || 0) * 100,
                 value: entry.total_value,
-                benchValue: benchEntry ? benchEntry.value : null
+                costBasis: entry.cost_basis
             };
         });
 
+        // If the first entry is not exactly 0 (due to calculation start), we might want to normalize
+        // But TWR should already be 0 at the start of the series relative to inception.
+        // For the chosen period (e.g. 1M), we should re-normalize relative to the start of that period.
+        const startTwr = history[0].cumulative_twr || 0;
+        const startBench = history[0].bench_cumulative || 0;
+
+        const periodNormalizedData = combinedData.map(d => ({
+            ...d,
+            portfolio: (((1 + d.portfolio / 100) / (1 + startTwr)) - 1) * 100,
+            benchmark: (((1 + d.benchmark / 100) / (1 + startBench)) - 1) * 100,
+        }));
+
         return NextResponse.json({
             success: true,
-            data: combinedData
+            data: periodNormalizedData
         });
 
     } catch (error: any) {

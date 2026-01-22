@@ -122,7 +122,7 @@
 | ID | Task | Status | Effort | Notes |
 |----|------|--------|--------|-------|
 | INFRA-001 | Supabase Edge Functions for Search | ⬜ | 4h | Offload search for zero cold-start & global low latency |
-| INFRA-002 | Intelligent Rate Limiting & Queueing | ⬜ | 6h | Spaced API requests to avoid Yahoo Finance IP bans |
+| INFRA-002 | Global Historical Price Cache | ✅ | 6h | Implemented Jan 22: DB-level cache for historical tickers |
 | INFRA-003 | Sentry Integration Audit | ✅ | 2h | Verified config & wrapper Jan 22. DSN required in ENV. |
 
 
@@ -130,8 +130,8 @@
 
 | ID | Task | Status | Effort | Notes |
 |----|------|--------|--------|-------|
-| PORT-010 | Time-Weighted Returns (TWR) | ⬜ | 6h | 🔴 Measure skill vs market |
-| PORT-011 | Benchmark Comparison (Enhanced) | ⬜ | 4h | 🔴 vs S&P 500, sector ETF, custom |
+| PORT-010 | Time-Weighted Returns (TWR) | ✅ | 6h | Implemented Jan 22: Accurate performance tracking adjusted for cash flows |
+| PORT-011 | Benchmark Comparison (Enhanced) | ✅ | 4h | Implemented Jan 22: Live S&P 500 comparison synced to DB |
 | PORT-012 | Sector Exposure Heatmap | ⬜ | 4h | 🔴 Over/under-weight visualization |
 | PORT-013 | Risk Metrics Dashboard | ⬜ | 6h | 🔴 Sharpe, Sortino, Max Drawdown, Beta |
 | PORT-014 | Trade Tagging System | ⬜ | 4h | 🔴 Tag: momentum, value, earnings |
