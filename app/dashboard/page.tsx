@@ -65,6 +65,7 @@ export default function DashboardPage() {
     lastUpdated: string;
   } | null>(null);
 
+  const [lastSyncedAt, setLastSyncedAt] = useState<string>(new Date().toISOString());
   const [currency, setCurrency] = useState<CurrencyCode>('USD');
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -142,13 +143,47 @@ export default function DashboardPage() {
     }
   }, [portfolio?.id]);
 
+  /**
+   * Triggers the history sync engine to generate snapshots for the chart
+   */
+  const syncHistory = useCallback(async (force = false) => {
+    if (!portfolio?.id) return;
+    if (!force) setIsRefreshing(true);
+
+    try {
+      console.log('🔄 Triggering background history sync for current portfolio...');
+      const res = await fetch(`/api/cron/sync-history?portfolioId=${portfolio.id}`);
+      const data = await res.json();
+      if (data.success) {
+        console.log('✅ History sync complete:', data.synced, 'days synced');
+        setLastSyncedAt(new Date().toISOString());
+        // If we force sync (from button), we should refetch everything to update the UI
+        if (force) {
+          fetchPortfolio(true);
+        }
+      }
+    } catch (err) {
+      console.error('❌ History sync failed:', err);
+    } finally {
+      if (!force) setIsRefreshing(false);
+    }
+  }, [portfolio?.id, fetchPortfolio]);
+
   useEffect(() => {
     if (user) {
       fetchPortfolio();
     }
+    // Refresh prices every 5 minutes
     const interval = setInterval(() => fetchPortfolio(true), 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [fetchPortfolio, user]);
+
+    // Refresh history snapshots every hour while app is open
+    const historyInterval = setInterval(() => syncHistory(), 60 * 60 * 1000);
+
+    return () => {
+      clearInterval(interval);
+      clearInterval(historyInterval);
+    };
+  }, [fetchPortfolio, syncHistory, user]);
 
   const handlePortfolioChange = (newPortfolioId: string) => {
     fetchPortfolio(false, newPortfolioId);
@@ -454,6 +489,7 @@ export default function DashboardPage() {
         return (
           <PerformanceChartWidget
             portfolioId={portfolio?.id}
+            refreshKey={lastSyncedAt}
           />
         );
 
@@ -516,7 +552,7 @@ export default function DashboardPage() {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => fetchPortfolio(true)}
+              onClick={() => syncHistory(true)}
               disabled={isRefreshing}
               className="p-3.5 rounded-2xl bg-card border border-border shadow-md hover:bg-muted transition-all disabled:opacity-50"
               title="Refresh data"
@@ -562,12 +598,12 @@ export default function DashboardPage() {
       {/* Quick Actions Bar */}
       <div className="flex flex-wrap gap-3 mb-8 p-4 bg-card/30 backdrop-blur-md border border-border/30 rounded-2xl">
         <button
-          onClick={() => fetchPortfolio(true)}
+          onClick={() => syncHistory(true)}
           disabled={isRefreshing}
           className="flex items-center gap-2 px-4 py-2.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl font-bold text-sm transition-all disabled:opacity-50"
         >
           <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
-          Refresh Prices
+          Sync & Refresh
         </button>
 
         <button
@@ -671,6 +707,7 @@ export default function DashboardPage() {
                 }}
                 onTradeAdded={() => {
                   fetchPortfolio(true);
+                  syncHistory(); // Background history update after trade
                   setIsFormOpen(false);
                   setEditingTrade(null);
                 }}

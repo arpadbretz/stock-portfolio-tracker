@@ -114,11 +114,17 @@
 | ID | Task | Status | Effort | Notes |
 |----|------|--------|--------|-------|
 | DASH-004 | Market Overview Widget | ✅ | 4h | Implemented Jan 13, 2026 - Shows S&P, NASDAQ, DOW, VIX with error states |
-| DASH-008 | Performance Timeframes | ✅ | 3h | 1W, 1M, 3M, YTD, 1Y, All implemented Jan 15 |
-| UX-005 | Onboarding Tour | ⬜ | 4h | Critical for new users |
-| UX-006 | Empty State Designs | ✅ | 3h | Implemented Jan 12, 2026 |
-| DASH-010 | Benchmark Comparison | 🔄 | 6h | Implemented Jan 14, needs fix - not updating |
+| DASH-010 | Benchmark Comparison | ✅ | 6h | Fixed Jan 22: Implemented hourly background sync & manual force-sync persistence |
 | DASH-014 | Portfolio Allocation Chart | ✅ | 2h | Implemented Jan 13, 2026 - Stocks by % weight |
+
+## Infrastructure & Scaling (🔴 HIGH PRIORITY)
+
+| ID | Task | Status | Effort | Notes |
+|----|------|--------|--------|-------|
+| INFRA-001 | Supabase Edge Functions for Search | ⬜ | 4h | Offload search for zero cold-start & global low latency |
+| INFRA-002 | Intelligent Rate Limiting & Queueing | ⬜ | 6h | Spaced API requests to avoid Yahoo Finance IP bans |
+| INFRA-003 | Sentry Integration Audit | ✅ | 2h | Verified config & wrapper Jan 22. DSN required in ENV. |
+
 
 ## Portfolio Analytics (🔴 HIGH PRIORITY)
 

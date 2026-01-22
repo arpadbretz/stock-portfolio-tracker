@@ -555,7 +555,7 @@ export function UpcomingEarningsWidget({ limit = 5 }: { limit?: number }) {
 // ============ PERFORMANCE CHART WIDGET ============
 import { LineChart as ReLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
-export function PerformanceChartWidget({ portfolioId }: { portfolioId?: string }) {
+export function PerformanceChartWidget({ portfolioId, refreshKey }: { portfolioId?: string, refreshKey?: string }) {
     const [data, setData] = useState<any[]>([]);
     const [period, setPeriod] = useState('1Y');
     const [isLoading, setIsLoading] = useState(true);
@@ -579,7 +579,7 @@ export function PerformanceChartWidget({ portfolioId }: { portfolioId?: string }
         };
 
         fetchPerformance();
-    }, [portfolioId, period]);
+    }, [portfolioId, period, refreshKey]);
 
     if (isLoading) {
         return (
