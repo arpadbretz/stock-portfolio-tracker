@@ -127,7 +127,7 @@ export default function DashboardPage() {
 
     try {
       const queryId = specificPortfolioId || (portfolio?.id ? portfolio.id : '');
-      const url = `/api/portfolio${queryId ? `?id=${queryId}` : ''}`;
+      const url = `/api/portfolio${queryId ? `?id=${queryId}` : ''}${queryId ? '&' : '?'}refresh=${background}`;
 
       const response = await fetch(url);
       const result = await response.json();
@@ -148,10 +148,12 @@ export default function DashboardPage() {
    */
   const syncHistory = useCallback(async (force = false) => {
     if (!portfolio?.id) return;
-    if (!force) setIsRefreshing(true);
+
+    // Manual sync (force=true) should show loading state
+    if (force) setIsRefreshing(true);
 
     try {
-      console.log('🔄 Triggering background history sync for current portfolio...');
+      console.log('🔄 Triggering history sync for current portfolio...');
       const res = await fetch(`/api/cron/sync-history?portfolioId=${portfolio.id}`);
       const data = await res.json();
       if (data.success) {
@@ -159,13 +161,13 @@ export default function DashboardPage() {
         setLastSyncedAt(new Date().toISOString());
         // If we force sync (from button), we should refetch everything to update the UI
         if (force) {
-          fetchPortfolio(true);
+          await fetchPortfolio(true);
         }
       }
     } catch (err) {
       console.error('❌ History sync failed:', err);
     } finally {
-      if (!force) setIsRefreshing(false);
+      setIsRefreshing(false);
     }
   }, [portfolio?.id, fetchPortfolio]);
 

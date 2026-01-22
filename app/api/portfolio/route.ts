@@ -129,7 +129,15 @@ export async function GET(request: Request) {
         const tickers = [...new Set(trades.map(t => t.ticker.toUpperCase()))];
         console.log('Fetching prices for tickers:', tickers);
 
-        const prices = await getCachedBatchPrices(tickers);
+        const refresh = searchParams.get('refresh') === 'true';
+        let prices: Map<string, any>;
+
+        if (refresh) {
+            const { getBatchPrices } = await import('@/lib/yahoo-finance');
+            prices = await getBatchPrices(tickers);
+        } else {
+            prices = await getCachedBatchPrices(tickers);
+        }
 
         const sets = ['USDEUR=X', 'USDHUF=X', 'USDGBP=X'];
         const ratesData = await getCachedBatchPrices(sets);

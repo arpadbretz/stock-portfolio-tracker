@@ -78,6 +78,7 @@ function PortfolioCommandCenterContent() {
         summary: PortfolioSummary;
     } | null>(null);
     const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+    const [isSyncing, setIsSyncing] = useState(false);
 
     // -- State: Modals & Forms --
     const [showCreate, setShowCreate] = useState(false);
@@ -140,10 +141,10 @@ function PortfolioCommandCenterContent() {
         }
     };
 
-    const fetchPortfolioDetails = async (id: string) => {
+    const fetchPortfolioDetails = async (id: string, refresh = false) => {
         try {
             setIsLoadingDetails(true);
-            const response = await fetch(`/api/portfolio?id=${id}`);
+            const response = await fetch(`/api/portfolio?id=${id}&refresh=${refresh}`);
             if (response.ok) {
                 const result = await response.json();
                 if (result.success) {
@@ -256,6 +257,21 @@ function PortfolioCommandCenterContent() {
             }
         } catch (error) {
             console.error('Error toggling share:', error);
+        }
+    };
+
+    const syncPortfolio = async (id: string) => {
+        try {
+            setIsSyncing(true);
+            const response = await fetch(`/api/cron/sync-history?portfolioId=${id}`);
+            if (response.ok) {
+                // After history sync, refetch details to update UI with latest prices/stats
+                await fetchPortfolioDetails(id, true);
+            }
+        } catch (error) {
+            console.error('Error syncing portfolio:', error);
+        } finally {
+            setIsSyncing(false);
         }
     };
 
@@ -381,6 +397,15 @@ function PortfolioCommandCenterContent() {
                             </div>
 
                             <div className="flex items-center gap-3 self-end lg:self-auto">
+                                <button
+                                    onClick={() => selectedPortfolioId && syncPortfolio(selectedPortfolioId)}
+                                    disabled={isSyncing}
+                                    title="Sync History & Refresh Prices"
+                                    className="p-3 bg-card border border-border rounded-2xl text-muted-foreground hover:text-primary transition-all shadow-lg active:scale-95 disabled:opacity-50 group"
+                                >
+                                    <RefreshCw size={20} className={isSyncing ? 'animate-spin text-primary' : 'group-hover:rotate-180 transition-transform duration-500'} />
+                                </button>
+
                                 <button
                                     onClick={() => setShowAddTrade(true)}
                                     className="px-6 py-3 bg-primary text-primary-foreground rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
