@@ -429,82 +429,76 @@ function PortfolioCommandCenterContent() {
                         </header>
 
                         {portfolioData ? (
-                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                                {/* LEFT COLUMN: Core Stats & Holdings */}
-                                <div className="lg:col-span-8 space-y-8">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {/* Performance Metric Cards */}
-                                        <div className="p-6 md:p-8 rounded-[40px] bg-card border border-border shadow-sm flex flex-col justify-between group overflow-hidden relative">
-                                            <div>
-                                                <div className="flex items-center gap-2 text-muted-foreground mb-4">
-                                                    <DollarSign size={16} />
-                                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap">Net Liquidation</span>
+                            <div className="space-y-10">
+                                {/* Top Analytics Grid */}
+                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                                    {/* Stats & Tools Column */}
+                                    <div className="lg:col-span-8 space-y-8">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {/* Liquidation Value */}
+                                            <div className="p-6 md:p-8 rounded-[40px] bg-card border border-border shadow-sm flex flex-col justify-between group overflow-hidden relative">
+                                                <div>
+                                                    <div className="flex items-center gap-2 text-muted-foreground mb-4">
+                                                        <DollarSign size={16} />
+                                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap">Net Liquidation</span>
+                                                    </div>
+                                                    <div className="text-3xl lg:text-5xl font-black tracking-tighter mb-4 blur-stealth break-all md:break-normal">
+                                                        {formatCurrency(convertedMarketValue, currency)}
+                                                    </div>
                                                 </div>
-                                                <div className="text-3xl lg:text-5xl font-black tracking-tighter mb-4 blur-stealth break-all md:break-normal">
-                                                    {formatCurrency(convertedMarketValue, currency)}
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-black text-xs ${convertedGain >= 0 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
+                                                        {convertedGain >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                                                        {formatCurrency(convertedGain, currency)}
+                                                    </div>
+                                                    <div className={`font-black text-xs ${convertedGain >= 0 ? 'text-emerald-500/60' : 'text-rose-500/60'}`}>
+                                                        {formatPercentage(portfolioData.summary.totalGainPercent)}
+                                                    </div>
+                                                </div>
+                                                <Activity size={100} className="absolute -right-4 -bottom-4 text-primary opacity-[0.03] group-hover:opacity-[0.08] transition-opacity rotate-12" />
+                                            </div>
+
+                                            {/* Asset Count */}
+                                            <div className="p-6 md:p-8 rounded-[40px] bg-card border border-border shadow-sm flex flex-col justify-between group">
+                                                <div>
+                                                    <div className="flex items-center gap-2 text-muted-foreground mb-4">
+                                                        <Zap size={16} />
+                                                        <span className="text-[10px] font-black uppercase tracking-[0.2em]">Asset Alpha</span>
+                                                    </div>
+                                                    <div className="text-3xl lg:text-5xl font-black tracking-tighter mb-4">
+                                                        {portfolioData.holdings.length}
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="px-3 py-1.5 bg-primary/10 text-primary rounded-full font-black text-xs">
+                                                        {new Set(portfolioData.holdings.map(h => h.sector)).size || 1} Sectors
+                                                    </div>
+                                                    <div className="text-muted-foreground font-black text-[10px] uppercase tracking-widest hidden md:block">
+                                                        High Diversification
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-3">
-                                                <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-black text-xs ${convertedGain >= 0 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
-                                                    {convertedGain >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                                                    {formatCurrency(convertedGain, currency)}
-                                                </div>
-                                                <div className={`font-black text-xs ${convertedGain >= 0 ? 'text-emerald-500/60' : 'text-rose-500/60'}`}>
-                                                    {formatPercentage(portfolioData.summary.totalGainPercent)}
-                                                </div>
-                                            </div>
-                                            <Activity size={100} className="absolute -right-4 -bottom-4 text-primary opacity-[0.03] group-hover:opacity-[0.08] transition-opacity rotate-12" />
                                         </div>
 
-                                        <div className="p-6 md:p-8 rounded-[40px] bg-card border border-border shadow-sm flex flex-col justify-between group">
-                                            <div>
-                                                <div className="flex items-center gap-2 text-muted-foreground mb-4">
-                                                    <Zap size={16} />
-                                                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">Asset Alpha</span>
+                                        {/* Dip Finder Chart */}
+                                        <div className="p-6 md:p-8 rounded-[40px] bg-card border border-border shadow-sm">
+                                            <div className="flex items-center justify-between mb-8">
+                                                <div>
+                                                    <h3 className="font-black text-xl tracking-tight">Dip Finder</h3>
+                                                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1">Relative Holding Performance</p>
                                                 </div>
-                                                <div className="text-3xl lg:text-5xl font-black tracking-tighter mb-4">
-                                                    {portfolioData.holdings.length}
+                                                <div className="p-3 bg-muted rounded-2xl text-muted-foreground">
+                                                    <BarChart3 size={20} />
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-3">
-                                                <div className="px-3 py-1.5 bg-primary/10 text-primary rounded-full font-black text-xs">
-                                                    {new Set(portfolioData.holdings.map(h => h.sector)).size || 1} Sectors
-                                                </div>
-                                                <div className="text-muted-foreground font-black text-[10px] uppercase tracking-widest hidden md:block">
-                                                    High Diversification
-                                                </div>
+                                            <div className="h-[240px]">
+                                                <DipFinderChart holdings={portfolioData.holdings} isLoading={isLoadingDetails} />
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Dip Finder Chart Integration */}
-                                    <div className="p-6 md:p-8 rounded-[40px] bg-card border border-border shadow-sm">
-                                        <div className="flex items-center justify-between mb-8">
-                                            <div>
-                                                <h3 className="font-black text-xl tracking-tight">Dip Finder</h3>
-                                                <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1">Relative Holding Performance</p>
-                                            </div>
-                                            <div className="p-3 bg-muted rounded-2xl text-muted-foreground">
-                                                <BarChart3 size={20} />
-                                            </div>
-                                        </div>
-                                        <div className="h-[240px]">
-                                            <DipFinderChart holdings={portfolioData.holdings} isLoading={isLoadingDetails} />
-                                        </div>
-                                    </div>
-
-                                    {/* Extensive Holdings Table */}
-                                    <HoldingsTable
-                                        holdings={portfolioData.holdings}
-                                        currency={currency}
-                                        exchangeRates={exchangeRates}
-                                        isLoading={isLoadingDetails}
-                                    />
-                                </div>
-
-                                {/* RIGHT COLUMN: Deep Composition & Insights */}
-                                <div className="lg:col-span-4 space-y-8">
-                                    <div className="p-6 md:p-8 rounded-[40px] bg-card border border-border shadow-sm min-h-[500px]">
+                                    {/* Composition Sidebar */}
+                                    <div className="lg:col-span-4 p-6 md:p-8 rounded-[40px] bg-card border border-border shadow-sm min-h-[500px]">
                                         <div className="flex items-center justify-between mb-8">
                                             <div>
                                                 <h3 className="font-black text-xl tracking-tight">Composition</h3>
@@ -525,26 +519,21 @@ function PortfolioCommandCenterContent() {
                                             isLoading={isLoadingDetails}
                                         />
                                     </div>
+                                </div>
 
-                                    {/* Action Card */}
-                                    <div className="p-10 rounded-[48px] bg-gradient-to-br from-primary via-indigo-600 to-accent text-primary-foreground shadow-2xl shadow-primary/30 relative overflow-hidden group">
-                                        <div className="relative z-10">
-                                            <div className="w-14 h-14 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center mb-6">
-                                                <ExternalLink size={24} />
-                                            </div>
-                                            <h3 className="text-3xl font-black mb-3 leading-tight">Maximize Alpha Yields</h3>
-                                            <p className="text-sm font-medium opacity-80 mb-8 leading-relaxed">
-                                                Your current allocation shows sector strength. Evaluate new research pipelines.
-                                            </p>
-                                            <button
-                                                onClick={() => router.push('/dashboard/stocks')}
-                                                className="w-full py-4 bg-white text-primary rounded-[24px] font-black text-xs uppercase tracking-[0.2em] hover:scale-105 active:scale-95 transition-all shadow-xl shadow-black/10"
-                                            >
-                                                Scout Markets
-                                            </button>
-                                        </div>
-                                        <div className="absolute -right-10 -bottom-10 w-64 h-64 bg-white/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700" />
+                                {/* FULL WIDTH: Holdings Inventory */}
+                                <div className="w-full">
+                                    <div className="flex items-center gap-3 mb-6 px-2">
+                                        <div className="w-1.5 h-6 bg-primary rounded-full" />
+                                        <h3 className="font-black text-xl tracking-tight uppercase italic">Active Position Inventory</h3>
+                                        <div className="flex-1 h-px bg-border ml-4" />
                                     </div>
+                                    <HoldingsTable
+                                        holdings={portfolioData.holdings}
+                                        currency={currency}
+                                        exchangeRates={exchangeRates}
+                                        isLoading={isLoadingDetails}
+                                    />
                                 </div>
                             </div>
                         ) : (
