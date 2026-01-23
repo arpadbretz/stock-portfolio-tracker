@@ -39,6 +39,7 @@ import HoldingsTable from '@/components/HoldingsTable';
 import AddTradeForm from '@/components/AddTradeForm';
 import { formatCurrency, formatPercentage, convertCurrency } from '@/lib/portfolio';
 import { Holding, PortfolioSummary } from '@/types/portfolio';
+import PortfolioSwitcher from '@/components/PortfolioSwitcher';
 
 interface Portfolio {
     id: string;
@@ -302,67 +303,9 @@ function PortfolioCommandCenterContent() {
     }
 
     return (
-        <div className="min-h-screen bg-background text-foreground flex flex-col md:flex-row">
-
-            {/* --- SLIM SIDEBAR: Portfolio Multi-Viewer --- */}
-            <aside className="w-full md:w-20 lg:w-64 border-b md:border-b-0 md:border-r border-border bg-card/10 backdrop-blur-3xl md:h-screen sticky top-0 z-40 p-4 lg:p-6 flex flex-row md:flex-col items-center md:items-stretch overflow-x-auto md:overflow-visible transition-all duration-300 gap-4 md:gap-0 no-scrollbar">
-                <div className="flex items-center gap-3 md:mb-10 shrink-0">
-                    <div className="p-2.5 bg-primary/10 rounded-xl text-primary shrink-0">
-                        <LayoutGrid size={20} />
-                    </div>
-                    <div className="hidden lg:block overflow-hidden">
-                        <h1 className="font-black text-lg tracking-tight truncate">Command</h1>
-                        <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest truncate">{portfolios.length} Vaults</p>
-                    </div>
-                </div>
-
-                <div className="flex-1 flex flex-row md:flex-col gap-4 md:gap-4 md:space-y-4 overflow-x-auto md:overflow-y-auto md:mb-6 custom-scrollbar p-2 md:px-1">
-
-                    {portfolios.map(portfolio => (
-                        <button
-                            key={portfolio.id}
-                            onClick={() => setSelectedPortfolioId(portfolio.id)}
-                            title={portfolio.name}
-                            className={`group relative flex items-center transition-all shrink-0 ${selectedPortfolioId === portfolio.id ? 'opacity-100 scale-100' : 'opacity-60 hover:opacity-100 scale-95'}`}
-                        >
-                            <div
-                                className={`w-12 h-12 lg:w-10 lg:h-10 rounded-2xl flex items-center justify-center text-white font-black text-sm shrink-0 transition-all shadow-lg ${selectedPortfolioId === portfolio.id ? 'ring-2 ring-primary ring-offset-4 ring-offset-background' : ''}`}
-                                style={{ backgroundColor: portfolio.color }}
-                            >
-                                {portfolio.name.slice(0, 1).toUpperCase()}
-                            </div>
-                            <div className="hidden lg:block ml-4 text-left overflow-hidden">
-                                <p className={`font-black text-xs truncate ${selectedPortfolioId === portfolio.id ? 'text-foreground' : 'text-muted-foreground'}`}>{portfolio.name}</p>
-                                <p className="text-[8px] uppercase font-bold text-muted-foreground tracking-tighter">Select Vault</p>
-                            </div>
-                            {selectedPortfolioId === portfolio.id && (
-                                <motion.div layoutId="bar-indicator" className="absolute -left-5 top-0 bottom-0 w-1.5 bg-primary rounded-r-full" />
-                            )}
-                        </button>
-                    ))}
-
-                    <button
-                        onClick={() => { setShowCreate(true); resetForm(); }}
-                        title="Initialize New Vault"
-                        className="w-12 h-12 lg:w-10 lg:h-10 border-2 border-dashed border-border rounded-2xl flex items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-all shrink-0 group"
-                    >
-                        <Plus size={20} className="group-hover:rotate-90 transition-transform duration-300" />
-                    </button>
-                </div>
-
-                <div className="hidden lg:block pt-6 border-t border-border/50">
-                    <div className="p-4 bg-primary/5 rounded-3xl border border-primary/10">
-                        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-primary mb-2">Vault Security</p>
-                        <div className="flex items-center gap-2">
-                            <Lock size={12} className="text-muted-foreground" />
-                            <span className="text-[10px] font-bold text-muted-foreground underline">Encrypted Connection</span>
-                        </div>
-                    </div>
-                </div>
-            </aside>
-
+        <div className="w-full">
             {/* --- MAIN AREA: Deep Analytics --- */}
-            <main className="flex-1 p-4 md:p-8 lg:p-12 overflow-y-auto h-screen scrollbar-hide">
+            <div className="space-y-10">
                 {selectedPortfolio ? (
                     <motion.div
                         key={selectedPortfolio.id}
@@ -382,7 +325,11 @@ function PortfolioCommandCenterContent() {
                                         {selectedPortfolio.name[0]}
                                     </div>
                                     <div>
-                                        <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3">
+                                        <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-5">
+                                            <PortfolioSwitcher
+                                                currentPortfolioId={selectedPortfolioId || ''}
+                                                onPortfolioChange={(id) => setSelectedPortfolioId(id)}
+                                            />
                                             <h2 className="text-3xl md:text-5xl font-black tracking-tighter truncate max-w-[200px] md:max-w-none">{selectedPortfolio.name}</h2>
                                             <div className="flex items-center gap-1.5 px-3 py-1 bg-muted rounded-full border border-border text-[8px] md:text-[10px] font-black uppercase tracking-widest text-muted-foreground w-fit">
                                                 {selectedPortfolio.is_public ? <Globe size={12} /> : <Lock size={12} />}
@@ -433,7 +380,7 @@ function PortfolioCommandCenterContent() {
                                 {/* Top Analytics Grid */}
                                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                                     {/* Stats & Tools Column */}
-                                    <div className="lg:col-span-8 space-y-8">
+                                    <div className="lg:col-span-7 space-y-8">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             {/* Liquidation Value */}
                                             <div className="p-6 md:p-8 rounded-[40px] bg-card border border-border shadow-sm flex flex-col justify-between group overflow-hidden relative">
@@ -498,7 +445,7 @@ function PortfolioCommandCenterContent() {
                                     </div>
 
                                     {/* Composition Sidebar */}
-                                    <div className="lg:col-span-4 p-6 md:p-8 rounded-[40px] bg-card border border-border shadow-sm min-h-[500px]">
+                                    <div className="lg:col-span-5 p-6 md:p-8 rounded-[40px] bg-card border border-border shadow-sm min-h-[500px]">
                                         <div className="flex items-center justify-between mb-8">
                                             <div>
                                                 <h3 className="font-black text-xl tracking-tight">Composition</h3>
@@ -551,7 +498,7 @@ function PortfolioCommandCenterContent() {
                         <p className="text-xs font-black uppercase tracking-[0.3em] text-muted-foreground opacity-50">Select a secure vault to proceed</p>
                     </div>
                 )}
-            </main>
+            </div>
 
             {/* --- MODALS --- */}
 
