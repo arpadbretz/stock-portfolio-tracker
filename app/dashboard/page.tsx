@@ -225,7 +225,10 @@ export default function DashboardPage() {
     name: h.ticker, // Holding type doesn't have name, use ticker
     gainPercent: h.unrealizedGainPercent || 0,
     gain: h.unrealizedGain || 0,
+    dayChangePercent: h.dayChangePercent || 0,
+    value: h.marketValue || 0,
   }));
+
 
   // ============ WIDGET CONTENT RENDERER ============
   // Now receives size parameter to adapt content
@@ -493,27 +496,47 @@ export default function DashboardPage() {
 
       case 'top-performers':
         const topLimit = isLarge ? 10 : isSmall ? 3 : 5;
-        // Enhance holdings data with daily change info
-        const holdingsWithDaily = holdings.map(h => ({
-          symbol: h.ticker,
-          name: h.ticker,
-          gainPercent: h.unrealizedGainPercent || 0,
-          gain: h.unrealizedGain || 0,
-          dayChangePercent: h.dayChangePercent || 0,
-          value: h.marketValue || 0,
-        }));
-        return <TopPerformersWidget holdings={holdingsWithDaily} limit={topLimit} showChart={isLarge} showDailyMovers={true} />;
+        return (
+          <TopPerformersWidget
+            holdings={holdingsForPerformers}
+            limit={topLimit}
+            showChart={isLarge}
+            showDailyMovers={true}
+            currency={currency}
+            exchangeRates={rates}
+            isStealthMode={isStealthMode}
+          />
+        );
 
       case 'worst-performers':
         const worstLimit = isLarge ? 10 : isSmall ? 3 : 5;
-        return <WorstPerformersWidget holdings={holdingsForPerformers} limit={worstLimit} showChart={isLarge} />;
+        return (
+          <WorstPerformersWidget
+            holdings={holdingsForPerformers}
+            limit={worstLimit}
+            showChart={isLarge}
+            showDailyMovers={true}
+            currency={currency}
+            exchangeRates={rates}
+            isStealthMode={isStealthMode}
+          />
+        );
+
 
       // Market Widgets
       case 'market-overview':
         return <MarketOverviewWidget expanded={isLarge} />;
 
       case 'watchlist-mini':
-        return <WatchlistMiniWidget limit={isLarge ? 10 : isSmall ? 3 : 5} />;
+        return (
+          <WatchlistMiniWidget
+            limit={isLarge ? 10 : isSmall ? 3 : 5}
+            currency={currency}
+            exchangeRates={rates}
+            isStealthMode={isStealthMode}
+          />
+        );
+
 
       // Tool Widgets
       case 'quick-actions':

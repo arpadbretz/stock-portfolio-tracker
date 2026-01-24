@@ -21,6 +21,9 @@ import {
     Sparkles,
     Clock,
 } from 'lucide-react';
+import { formatCurrency, convertCurrency } from '@/lib/portfolio';
+import { CurrencyCode } from '@/types/portfolio';
+
 
 // ============ MARKET OVERVIEW WIDGET ============
 interface MarketIndex {
@@ -139,13 +142,25 @@ interface PerformerProps {
     }>;
     limit?: number;
     showChart?: boolean;
-    showDailyMovers?: boolean; // New prop for daily movers
+    showDailyMovers?: boolean;
+    currency?: CurrencyCode;
+    exchangeRates?: Record<string, number>;
+    isStealthMode?: boolean;
 }
 
-export function TopPerformersWidget({ holdings = [], limit = 5, showChart = false, showDailyMovers = false }: PerformerProps) {
+
+export function TopPerformersWidget({
+    holdings = [],
+    limit = 5,
+    showChart = false,
+    showDailyMovers = false,
+    currency = 'USD',
+    exchangeRates = { USD: 1 },
+    isStealthMode = false
+}: PerformerProps) {
     const [view, setView] = useState<'daily' | 'total'>(showDailyMovers ? 'daily' : 'total');
 
-    // Filter and sort based on view
+    // Filter and sort based on view (Best first)
     const sorted = view === 'daily'
         ? [...holdings]
             .filter(h => h.dayChangePercent !== undefined)
@@ -212,15 +227,115 @@ export function TopPerformersWidget({ holdings = [], limit = 5, showChart = fals
                                 </div>
                                 <div className="text-right">
                                     <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold border ${isUp
-                                            ? 'border-emerald-500/30 text-emerald-500 bg-emerald-500/5'
-                                            : 'border-rose-500/30 text-rose-500 bg-rose-500/5'
+                                        ? 'border-emerald-500/30 text-emerald-500 bg-emerald-500/5'
+                                        : 'border-rose-500/30 text-rose-500 bg-rose-500/5'
                                         }`}>
                                         {isUp ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
                                         {isUp ? '+' : ''}{changePercent.toFixed(2)}%
                                     </div>
-                                    {view === 'daily' && holding.value && (
-                                        <div className="text-[10px] font-bold text-muted-foreground mt-1">
-                                            ${holding.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                    {holding.value !== undefined && (
+                                        <div className={`text-[10px] font-bold text-muted-foreground mt-1 ${isStealthMode ? 'blur-stealth' : ''}`}>
+                                            {formatCurrency(convertCurrency(holding.value, currency, exchangeRates), currency)}
+                                        </div>
+                                    )}
+                                </div>
+                            </Link>
+                        </motion.div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
+// ============ WORST PERFORMERS WIDGET ============
+export function WorstPerformersWidget({
+    holdings = [],
+    limit = 5,
+    showChart = false,
+    showDailyMovers = false,
+    currency = 'USD',
+    exchangeRates = { USD: 1 },
+    isStealthMode = false
+}: PerformerProps) {
+    const [view, setView] = useState<'daily' | 'total'>(showDailyMovers ? 'daily' : 'total');
+
+    // Filter and sort based on view (Worst first)
+    const sorted = view === 'daily'
+        ? [...holdings]
+            .filter(h => h.dayChangePercent !== undefined)
+            .sort((a, b) => (a.dayChangePercent || 0) - (b.dayChangePercent || 0))
+            .slice(0, limit)
+        : [...holdings].sort((a, b) => a.gainPercent - b.gainPercent).slice(0, limit);
+
+    if (sorted.length === 0) {
+        return (
+            <div className="text-center py-8 text-muted-foreground">
+                <TrendingDown size={32} className="mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No holdings yet</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-4">
+            {/* View Toggle */}
+            <div className="flex items-center justify-center bg-muted/30 p-1 rounded-xl border border-border/50">
+                <button
+                    onClick={() => setView('total')}
+                    className={`flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${view === 'total' ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                >
+                    All-time
+                </button>
+                <button
+                    onClick={() => setView('daily')}
+                    className={`flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${view === 'daily' ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                >
+                    Daily Movers
+                </button>
+            </div>
+
+            <div className="space-y-3">
+                {sorted.map((holding, i) => {
+                    const changePercent = view === 'daily' ? (holding.dayChangePercent || 0) : (holding.gainPercent || 0);
+                    const isUp = changePercent >= 0;
+
+                    return (
+                        <motion.div
+                            key={holding.symbol}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: i * 0.1 }}
+                        >
+                            <Link
+                                href={`/dashboard/ticker/${holding.symbol}`}
+                                className="flex items-center justify-between p-3 rounded-2xl bg-card/50 hover:bg-muted/30 border border-border/30 transition-all cursor-pointer group"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform ${isUp ? 'bg-emerald-500/10' : 'bg-rose-500/10'
+                                        }`}>
+                                        <span className={`text-[10px] font-black ${isUp ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                            {holding.symbol.slice(0, 2)}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <div className="font-black text-sm">{holding.symbol}</div>
+                                        {showChart && <div className="text-[10px] text-muted-foreground font-bold truncate max-w-[80px]">{holding.name}</div>}
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold border ${isUp
+                                        ? 'border-emerald-500/30 text-emerald-500 bg-emerald-500/5'
+                                        : 'border-rose-500/30 text-rose-500 bg-rose-500/5'
+                                        }`}>
+                                        {isUp ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
+                                        {isUp ? '+' : ''}{changePercent.toFixed(2)}%
+                                    </div>
+                                    {holding.value !== undefined && (
+                                        <div className={`text-[10px] font-bold text-muted-foreground mt-1 ${isStealthMode ? 'blur-stealth' : ''}`}>
+                                            {formatCurrency(convertCurrency(holding.value, currency, exchangeRates), currency)}
                                         </div>
                                     )}
                                 </div>
@@ -234,61 +349,6 @@ export function TopPerformersWidget({ holdings = [], limit = 5, showChart = fals
 }
 
 
-// ============ WORST PERFORMERS WIDGET ============
-export function WorstPerformersWidget({ holdings = [], limit = 5, showChart = false }: PerformerProps) {
-    // Sort from most negative to least negative/most positive, then take top X
-    const sorted = [...holdings]
-        .sort((a, b) => a.gainPercent - b.gainPercent)
-        .slice(0, limit);
-
-    if (sorted.length === 0) {
-        return (
-            <div className="text-center py-8 text-muted-foreground">
-                <TrendingDown size={32} className="mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No holdings yet</p>
-            </div>
-        );
-    }
-
-    // For chart scale, use the most negative value as the 100% bar
-    const maxLoss = Math.max(...sorted.map(h => Math.abs(h.gainPercent)));
-
-    return (
-        <div className="space-y-2">
-            {sorted.map((holding, i) => (
-                <Link
-                    key={holding.symbol}
-                    href={`/dashboard/ticker/${holding.symbol}`}
-                    className="flex items-center justify-between p-2 rounded-xl hover:bg-muted/50 transition-colors group"
-                >
-                    <div className="flex items-center gap-3">
-                        <div className="w-6 h-6 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-500 font-black text-xs">
-                            {i + 1}
-                        </div>
-                        <div>
-                            <div className="font-bold text-sm group-hover:text-primary transition-colors">{holding.symbol}</div>
-                            {showChart && <div className="text-xs text-muted-foreground truncate max-w-[100px]">{holding.name}</div>}
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        {showChart && (
-                            <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
-                                <div
-                                    className="h-full bg-rose-500 rounded-full"
-                                    style={{ width: `${(Math.abs(Math.min(0, holding.gainPercent)) / maxLoss) * 100}%` }}
-                                />
-                            </div>
-                        )}
-                        <div className={`${(holding.gainPercent ?? 0) < 0 ? 'text-rose-500' : 'text-emerald-500'} font-bold text-sm w-16 text-right`}>
-                            {(holding.gainPercent ?? 0) > 0 ? '+' : ''}{(holding.gainPercent ?? 0).toFixed(2)}%
-                        </div>
-                    </div>
-                </Link>
-            ))}
-        </div>
-    );
-}
-
 // ============ WATCHLIST MINI WIDGET ============
 interface WatchlistItem {
     symbol: string;
@@ -297,8 +357,19 @@ interface WatchlistItem {
     changePercent: number;
 }
 
-export function WatchlistMiniWidget({ limit = 5 }: { limit?: number }) {
+export function WatchlistMiniWidget({
+    limit = 5,
+    currency = 'USD',
+    exchangeRates = { USD: 1 },
+    isStealthMode = false
+}: {
+    limit?: number;
+    currency?: CurrencyCode;
+    exchangeRates?: Record<string, number>;
+    isStealthMode?: boolean;
+}) {
     const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
+
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -370,9 +441,14 @@ export function WatchlistMiniWidget({ limit = 5 }: { limit?: number }) {
                             <Star size={14} className="text-yellow-500" />
                             <div>
                                 <span className="font-bold text-sm group-hover:text-primary transition-colors">{item.symbol}</span>
-                                {item.price && <div className="text-[10px] text-muted-foreground">${item.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>}
+                                {item.price && (
+                                    <div className={`text-[10px] text-muted-foreground ${isStealthMode ? 'blur-stealth' : ''}`}>
+                                        {formatCurrency(convertCurrency(item.price, currency, exchangeRates), currency)}
+                                    </div>
+                                )}
                             </div>
                         </div>
+
                         <div className={`font-bold text-sm ${isPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
                             {item.changePercent !== undefined && item.changePercent !== null ? (
                                 <>{isPositive ? '+' : ''}{(item.changePercent ?? 0).toFixed(2)}%</>
