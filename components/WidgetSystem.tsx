@@ -28,6 +28,7 @@ import {
     Cloud,
     CloudOff,
     Loader2,
+    Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -203,6 +204,16 @@ export const WIDGET_REGISTRY: WidgetConfig[] = [
         title: 'Price Alerts',
         description: 'Active price alerts',
         icon: <Bell size={18} className="text-rose-500" />,
+        category: 'tools',
+        defaultSize: 'medium',
+        minW: 3,
+        minH: 3,
+    },
+    {
+        id: 'recent-alerts',
+        title: 'Recent Alerts',
+        description: 'Latest notifications and updates',
+        icon: <Sparkles size={18} className="text-accent" />,
         category: 'tools',
         defaultSize: 'medium',
         minW: 3,

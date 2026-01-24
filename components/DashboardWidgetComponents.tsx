@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     TrendingUp,
     TrendingDown,
@@ -18,6 +18,8 @@ import {
     FileText,
     Activity,
     Settings,
+    Sparkles,
+    Clock,
 } from 'lucide-react';
 
 // ============ MARKET OVERVIEW WIDGET ============
@@ -132,13 +134,22 @@ interface PerformerProps {
         name: string;
         gainPercent: number;
         gain: number;
+        dayChangePercent?: number;
+        value?: number;
     }>;
     limit?: number;
     showChart?: boolean;
+    showDailyMovers?: boolean; // New prop for daily movers
 }
 
-export function TopPerformersWidget({ holdings = [], limit = 5, showChart = false }: PerformerProps) {
-    const sorted = [...holdings].sort((a, b) => b.gainPercent - a.gainPercent).slice(0, limit);
+export function TopPerformersWidget({ holdings = [], limit = 5, showChart = false, showDailyMovers = false }: PerformerProps) {
+    // If showDailyMovers, sort by daily change instead of total gain
+    const sorted = showDailyMovers
+        ? [...holdings]
+            .filter(h => h.dayChangePercent !== undefined)
+            .sort((a, b) => Math.abs(b.dayChangePercent || 0) - Math.abs(a.dayChangePercent || 0))
+            .slice(0, limit)
+        : [...holdings].sort((a, b) => b.gainPercent - a.gainPercent).slice(0, limit);
 
     if (sorted.length === 0) {
         return (
@@ -149,39 +160,65 @@ export function TopPerformersWidget({ holdings = [], limit = 5, showChart = fals
         );
     }
 
-    // Calculate max gain for chart scale
-    const maxGain = Math.max(...sorted.map(h => Math.abs(h.gainPercent)));
+    // Calculate max for chart scale
+    const maxValue = showDailyMovers
+        ? Math.max(...sorted.map(h => Math.abs(h.dayChangePercent || 0)))
+        : Math.max(...sorted.map(h => Math.abs(h.gainPercent)));
 
     return (
-        <div className="space-y-2">
-            {sorted.map((holding, i) => (
-                <Link
-                    key={holding.symbol}
-                    href={`/dashboard/ticker/${holding.symbol}`}
-                    className="flex items-center justify-between p-2 rounded-xl hover:bg-muted/50 transition-colors group"
-                >
-                    <div className="flex items-center gap-3">
-                        <div className="w-6 h-6 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500 font-black text-xs">
-                            {i + 1}
-                        </div>
-                        <div>
-                            <div className="font-bold text-sm group-hover:text-primary transition-colors">{holding.symbol}</div>
-                            {showChart && <div className="text-xs text-muted-foreground truncate max-w-[100px]">{holding.name}</div>}
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        {showChart && (
-                            <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
-                                <div
-                                    className="h-full bg-emerald-500 rounded-full"
-                                    style={{ width: `${(holding.gainPercent / maxGain) * 100}%` }}
-                                />
+        <div className="space-y-3">
+            {sorted.map((holding, i) => {
+                const changePercent = showDailyMovers ? (holding.dayChangePercent || 0) : (holding.gainPercent || 0);
+                const isUp = changePercent >= 0;
+                
+                return (
+                    <motion.div
+                        key={holding.symbol}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.1 }}
+                    >
+                        <Link
+                            href={`/dashboard/ticker/${holding.symbol}`}
+                            className="flex items-center justify-between p-4 rounded-2xl bg-card/50 hover:bg-muted/30 border border-border/30 transition-all cursor-pointer group"
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform ${
+                                    isUp ? 'bg-emerald-500/10' : 'bg-rose-500/10'
+                                }`}>
+                                    <span className={`text-sm font-black ${isUp ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                        {holding.symbol.slice(0, 2)}
+                                    </span>
+                                </div>
+                                <div>
+                                    <div className="font-black text-sm">{holding.symbol}</div>
+                                    {showChart && <div className="text-xs text-muted-foreground font-bold">{holding.name}</div>}
+                                    {showDailyMovers && holding.value && (
+                                        <div className="text-xs font-bold text-muted-foreground mt-1">
+                                            ${holding.value.toLocaleString()}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                        )}
-                        <div className="text-emerald-500 font-bold text-sm w-16 text-right">+{(holding.gainPercent ?? 0).toFixed(2)}%</div>
-                    </div>
-                </Link>
-            ))}
+                            <div className="text-right">
+                                {showDailyMovers && holding.value && (
+                                    <div className="text-sm font-bold text-muted-foreground mb-1">
+                                        ${holding.value.toLocaleString()}
+                                    </div>
+                                )}
+                                <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-bold border ${
+                                    isUp 
+                                        ? 'border-emerald-500/30 text-emerald-500 bg-emerald-500/5' 
+                                        : 'border-rose-500/30 text-rose-500 bg-rose-500/5'
+                                }`}>
+                                    {isUp ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+                                    {isUp ? '+' : ''}{changePercent.toFixed(2)}%
+                                </div>
+                            </div>
+                        </Link>
+                    </motion.div>
+                );
+            })}
         </div>
     );
 }
@@ -393,6 +430,135 @@ export function QuickActionsWidget({ compact = false, onEditDashboard, onTradeAc
                     <span>Customize Dashboard</span>
                 </button>
             )}
+        </div>
+    );
+}
+
+// ============ RECENT ALERTS WIDGET ============
+interface RecentAlert {
+    ticker: string;
+    type: 'price_target' | 'analyst' | 'earnings' | 'price_alert';
+    message: string;
+    time: string; // Relative time like "5 min ago"
+    isPositive: boolean;
+}
+
+export function RecentAlertsWidget({ limit = 5 }: { limit?: number }) {
+    const [alerts, setAlerts] = useState<RecentAlert[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchRecentAlerts = async () => {
+            try {
+                // Fetch price alerts
+                const alertsRes = await fetch('/api/alerts');
+                const alertsData = await alertsRes.json();
+                
+                const recentAlerts: RecentAlert[] = [];
+                
+                if (alertsData.success && alertsData.data) {
+                    // Convert price alerts to recent alerts format
+                    alertsData.data.slice(0, limit).forEach((alert: Alert) => {
+                        const currentPrice = alert.currentPrice || 0;
+                        const targetPrice = alert.target_price;
+                        const isPositive = alert.condition === 'above' ? currentPrice >= targetPrice : currentPrice <= targetPrice;
+                        const diff = Math.abs(currentPrice - targetPrice);
+                        
+                        recentAlerts.push({
+                            ticker: alert.symbol,
+                            type: 'price_alert',
+                            message: alert.condition === 'above' 
+                                ? `Target ${targetPrice} reached` 
+                                : `Target ${targetPrice} reached`,
+                            time: 'Just now', // Would calculate from timestamp
+                            isPositive,
+                        });
+                    });
+                }
+                
+                // Sort by time (most recent first) and limit
+                setAlerts(recentAlerts.slice(0, limit));
+            } catch (e) {
+                console.error('Failed to fetch recent alerts:', e);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        
+        fetchRecentAlerts();
+        // Refresh every minute
+        const interval = setInterval(fetchRecentAlerts, 60000);
+        return () => clearInterval(interval);
+    }, [limit]);
+
+    if (isLoading) {
+        return (
+            <div className="space-y-3">
+                {[1, 2, 3].map(i => (
+                    <div key={i} className="h-16 bg-muted/50 rounded-2xl animate-pulse" />
+                ))}
+            </div>
+        );
+    }
+
+    if (alerts.length === 0) {
+        return (
+            <div className="text-center py-8">
+                <Sparkles size={32} className="mx-auto mb-2 text-muted-foreground/50" />
+                <p className="text-sm text-muted-foreground">No recent alerts</p>
+                <Link href="/dashboard/alerts" className="text-primary text-sm font-bold hover:underline mt-2 inline-block">
+                    Create alert →
+                </Link>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-3">
+            <AnimatePresence>
+                {alerts.map((alert, index) => (
+                    <motion.div
+                        key={`${alert.ticker}-${index}`}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ delay: index * 0.1 }}
+                    >
+                        <Link
+                            href={`/dashboard/ticker/${alert.ticker}`}
+                            className="flex items-start gap-4 p-4 rounded-2xl bg-card/50 hover:bg-muted/30 border border-border/30 transition-all cursor-pointer"
+                        >
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                                alert.isPositive ? 'bg-emerald-500/10' : 'bg-rose-500/10'
+                            }`}>
+                                <span className={`text-xs font-black ${
+                                    alert.isPositive ? 'text-emerald-500' : 'text-rose-500'
+                                }`}>
+                                    {alert.ticker.slice(0, 2)}
+                                </span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="font-black text-sm">{alert.ticker}</span>
+                                    <div className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-muted/50 text-muted-foreground">
+                                        {alert.type.replace('_', ' ')}
+                                    </div>
+                                </div>
+                                <p className="text-sm text-muted-foreground font-medium mb-1">
+                                    {alert.message}
+                                </p>
+                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                    <Clock size={12} />
+                                    <span className="font-bold">{alert.time}</span>
+                                </div>
+                            </div>
+                        </Link>
+                    </motion.div>
+                ))}
+            </AnimatePresence>
+            <Link href="/dashboard/alerts" className="block text-center text-primary text-xs font-bold hover:underline mt-3">
+                View All Alerts →
+            </Link>
         </div>
     );
 }

@@ -57,9 +57,8 @@
 
 | Document | Description |
 |----------|-------------|
-| [ROADMAP.md](./ROADMAP.md) | Master implementation roadmap with 85 features |
-| [TASKS.md](./TASKS.md) | Detailed task tracker with status |
-| [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) | Common issues and solutions |
+| [TASKS.md](./TASKS.md) | Detailed task tracker with status (254 tasks, 40.9% complete) |
+| [NEXT-STEPS.md](./NEXT-STEPS.md) | Prioritized next steps and sprint planning |
 
 ---
 
@@ -82,12 +81,13 @@ npm run dev
 
 | Metric | Value |
 |--------|-------|
-| Total Features Planned | 121 |
-| Features Completed | 39 |
-| Completion Rate | 32% |
-| High Priority Remaining | 24 |
+| Total Tasks | 254 |
+| Tasks Completed | 104 |
+| Completion Rate | 40.9% |
+| High Priority Remaining | 28 |
+| Beta Launch Tasks Remaining | 43 |
 
-See [ROADMAP.md](./ROADMAP.md) for full details.
+See [TASKS.md](./TASKS.md) for full details and [NEXT-STEPS.md](./NEXT-STEPS.md) for prioritized action items.
 
 ---
 

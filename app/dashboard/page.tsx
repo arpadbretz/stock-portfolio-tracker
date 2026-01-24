@@ -52,6 +52,7 @@ import {
   WatchlistMiniWidget,
   QuickActionsWidget,
   PriceAlertsWidget,
+  RecentAlertsWidget,
   MarketOverviewWidget,
   PerformanceChartWidget,
 } from '@/components/DashboardWidgetComponents';
@@ -236,30 +237,45 @@ export default function DashboardPage() {
     switch (widgetId) {
       // Core Metrics
       case 'portfolio-value':
+        const totalReturnPercent = summary?.totalGainPercent || 0;
+        const totalReturnValue = summary?.totalGain || 0;
         return (
-          <div className="h-full flex flex-col justify-between">
-            <div className={`flex items-center gap-3 ${isSmall ? 'mb-2' : 'mb-4'}`}>
-              <div className={`${isSmall ? 'w-8 h-8' : 'w-10 h-10'} bg-emerald-500/20 rounded-xl flex items-center justify-center`}>
-                <Wallet size={isSmall ? 14 : 18} className="text-emerald-500" />
-              </div>
-              {!isSmall && <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Net Asset Value</span>}
-            </div>
-            <h2 className={`${isSmall ? 'text-2xl' : isLarge ? 'text-5xl' : 'text-3xl'} font-black tracking-tight ${isSmall ? 'mb-1' : 'mb-3'} blur-stealth`}>
-              {formatCurrency(convertCurrency(summary?.totalMarketValue || 0, currency, rates), currency)}
-            </h2>
-            {!isSmall && (
-              <div className="flex items-center gap-2">
-                <div className="h-1.5 flex-1 bg-muted rounded-full overflow-hidden">
-                  <motion.div initial={{ width: 0 }} animate={{ width: "100%" }} className="h-full bg-emerald-500" />
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="h-full flex flex-col justify-between relative overflow-hidden"
+          >
+            {/* Decorative orb */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16" />
+            
+            <div className="relative z-10">
+              <div className={`flex items-center justify-between ${isSmall ? 'mb-2' : 'mb-4'}`}>
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Total Value</span>
+                <div className={`${isSmall ? 'w-8 h-8' : 'w-10 h-10'} rounded-xl bg-primary/10 flex items-center justify-center`}>
+                  <Wallet size={isSmall ? 14 : 18} className="text-primary" />
                 </div>
               </div>
-            )}
-            <div className={`mt-auto ${isSmall ? 'pt-1' : 'pt-3'} flex items-center justify-between text-[10px]`}>
-              <span className="font-bold text-muted-foreground">{holdings.length} Holdings</span>
-              <span className="font-bold text-emerald-500">LIVE</span>
+              <h2 className={`${isSmall ? 'text-2xl' : isLarge ? 'text-5xl' : 'text-3xl'} font-black tracking-tight mb-2 blur-stealth`}>
+                {formatCurrency(convertCurrency(summary?.totalMarketValue || 0, currency, rates), currency)}
+              </h2>
+              <div className="flex items-center gap-2">
+                <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-bold border ${
+                  totalReturnPercent >= 0 
+                    ? 'border-primary/30 text-primary bg-primary/5' 
+                    : 'border-rose-500/30 text-rose-500 bg-rose-500/5'
+                }`}>
+                  {totalReturnPercent >= 0 ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+                  {formatPercentage(totalReturnPercent)}
+                </div>
+                <span className="text-xs text-muted-foreground font-bold">
+                  {totalReturnValue >= 0 ? '+' : ''}{formatCurrency(convertCurrency(totalReturnValue, currency, rates), currency)}
+                </span>
+              </div>
             </div>
+            
             {isLarge && (
-              <div className="mt-4 pt-4 border-t border-border/50 grid grid-cols-2 gap-4">
+              <div className="mt-4 pt-4 border-t border-border/50 grid grid-cols-2 gap-4 relative z-10">
                 <div className="p-3 bg-muted/30 rounded-xl">
                   <div className="text-[10px] text-muted-foreground font-bold mb-1">Cost Basis</div>
                   <div className="font-black blur-stealth">{formatCurrency(convertCurrency(summary?.totalInvested || 0, currency, rates), currency)}</div>
@@ -272,27 +288,38 @@ export default function DashboardPage() {
                 </div>
               </div>
             )}
-          </div>
+          </motion.div>
         );
 
       case 'total-invested':
         return (
-          <div className="h-full flex flex-col justify-between">
-            <div className={`flex items-center gap-3 ${isSmall ? 'mb-2' : 'mb-4'}`}>
-              <div className={`${isSmall ? 'w-8 h-8' : 'w-10 h-10'} bg-blue-500/20 rounded-xl flex items-center justify-center`}>
-                <BarChart3 size={isSmall ? 14 : 18} className="text-blue-500" />
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.1 }}
+            className="h-full flex flex-col justify-between relative overflow-hidden"
+          >
+            {/* Decorative orb */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-secondary/5 rounded-full -mr-16 -mt-16" />
+            
+            <div className="relative z-10">
+              <div className={`flex items-center justify-between ${isSmall ? 'mb-2' : 'mb-4'}`}>
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Total Invested</span>
+                <div className={`${isSmall ? 'w-8 h-8' : 'w-10 h-10'} rounded-xl bg-secondary/10 flex items-center justify-center`}>
+                  <BarChart3 size={isSmall ? 14 : 18} className="text-secondary" />
+                </div>
               </div>
-              {!isSmall && <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Capital Deployed</span>}
+              <h2 className={`${isSmall ? 'text-2xl' : isLarge ? 'text-5xl' : 'text-3xl'} font-black tracking-tight mb-2 blur-stealth`}>
+                {formatCurrency(convertCurrency(summary?.totalInvested || 0, currency, rates), currency)}
+              </h2>
+              <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
+                <div className="w-2 h-2 rounded-full bg-secondary" />
+                Cost Basis
+              </div>
             </div>
-            <h2 className={`${isSmall ? 'text-2xl' : isLarge ? 'text-5xl' : 'text-3xl'} font-black tracking-tight ${isSmall ? 'mb-1' : 'mb-3'} blur-stealth`}>
-              {formatCurrency(convertCurrency(summary?.totalInvested || 0, currency, rates), currency)}
-            </h2>
-            <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground">
-              <div className="w-2 h-2 rounded-full bg-blue-500" />
-              COST BASIS
-            </div>
+            
             {isLarge && summary && (
-              <div className="mt-4 pt-4 border-t border-border/50">
+              <div className="mt-4 pt-4 border-t border-border/50 relative z-10">
                 <div className="text-xs text-muted-foreground mb-2">Top Allocations</div>
                 <div className="space-y-2">
                   {holdings.slice(0, 5).map(h => (
@@ -304,37 +331,50 @@ export default function DashboardPage() {
                 </div>
               </div>
             )}
-          </div>
+          </motion.div>
         );
 
       case 'daily-pnl':
         const isPnLPositive = dailyPnL >= 0;
         return (
-          <div className="h-full flex flex-col justify-between">
-            <div className={`flex items-center gap-3 ${isSmall ? 'mb-2' : 'mb-4'}`}>
-              <div className={`${isSmall ? 'w-8 h-8' : 'w-10 h-10'} rounded-xl flex items-center justify-center ${isPnLPositive ? 'bg-emerald-500/20' : 'bg-rose-500/20'}`}>
-                {isPnLPositive ? <ArrowUpRight size={isSmall ? 14 : 18} className="text-emerald-500" /> : <ArrowDownRight size={isSmall ? 14 : 18} className="text-rose-500" />}
-              </div>
-              {!isSmall && (
-                <div className="flex items-center gap-2">
-                  <CalendarDays size={12} className="text-muted-foreground" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Today's P&L</span>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.2 }}
+            className="h-full flex flex-col justify-between relative overflow-hidden"
+          >
+            {/* Decorative orb */}
+            <div className={`absolute top-0 right-0 w-32 h-32 rounded-full -mr-16 -mt-16 ${
+              isPnLPositive ? 'bg-emerald-500/5' : 'bg-rose-500/5'
+            }`} />
+            
+            <div className="relative z-10">
+              <div className={`flex items-center justify-between ${isSmall ? 'mb-2' : 'mb-4'}`}>
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Day Change</span>
+                <div className={`${isSmall ? 'w-8 h-8' : 'w-10 h-10'} rounded-xl flex items-center justify-center ${
+                  isPnLPositive ? 'bg-emerald-500/10' : 'bg-rose-500/10'
+                }`}>
+                  {isPnLPositive ? <ArrowUpRight size={isSmall ? 14 : 18} className="text-emerald-500" /> : <ArrowDownRight size={isSmall ? 14 : 18} className="text-rose-500" />}
                 </div>
-              )}
-            </div>
-            <h2 className={`${isSmall ? 'text-2xl' : isLarge ? 'text-5xl' : 'text-3xl'} font-black tracking-tight mb-2 ${isPnLPositive ? 'text-emerald-500' : 'text-rose-500'} blur-stealth`}>
-              {isPnLPositive ? '+' : ''}{formatCurrency(convertCurrency(dailyPnL, currency, rates), currency)}
-            </h2>
-            <div className={`inline-flex px-3 py-1 rounded-xl ${isSmall ? 'text-xs' : 'text-sm'} font-black w-fit ${isPnLPositive ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
-              {(dailyPnLPercent ?? 0) >= 0 ? '+' : ''}{(dailyPnLPercent ?? 0).toFixed(2)}%
-            </div>
-            {!isSmall && (
-              <div className="mt-auto pt-2 text-[10px] font-bold text-muted-foreground">
-                vs Previous Close
               </div>
-            )}
+              <h2 className={`${isSmall ? 'text-2xl' : isLarge ? 'text-5xl' : 'text-3xl'} font-black tracking-tight mb-2 ${isPnLPositive ? 'text-emerald-500' : 'text-rose-500'} blur-stealth`}>
+                {isPnLPositive ? '+' : ''}{formatCurrency(convertCurrency(dailyPnL, currency, rates), currency)}
+              </h2>
+              <div className="flex items-center gap-2">
+                <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-bold border ${
+                  isPnLPositive 
+                    ? 'border-emerald-500/30 text-emerald-500 bg-emerald-500/5' 
+                    : 'border-rose-500/30 text-rose-500 bg-rose-500/5'
+                }`}>
+                  {isPnLPositive ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+                  {(dailyPnLPercent ?? 0) >= 0 ? '+' : ''}{(dailyPnLPercent ?? 0).toFixed(2)}%
+                </div>
+                <span className="text-xs text-muted-foreground font-bold">Today</span>
+              </div>
+            </div>
+            
             {isLarge && (
-              <div className="mt-4 pt-4 border-t border-border/50">
+              <div className="mt-4 pt-4 border-t border-border/50 relative z-10">
                 <div className="text-xs text-muted-foreground mb-2">Biggest Movers Today</div>
                 <div className="space-y-2">
                   {holdings
@@ -352,41 +392,53 @@ export default function DashboardPage() {
                 </div>
               </div>
             )}
-          </div>
+          </motion.div>
         );
 
       case 'total-gain':
         const isGainPositive = (summary?.totalGain || 0) >= 0;
         return (
-          <div className="h-full flex flex-col justify-between">
-            <div>
-              <div className="flex items-center gap-3 mb-4">
-                <div className={`p-2 rounded-xl ${isGainPositive ? 'bg-emerald-500/10' : 'bg-rose-500/10'}`}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.3 }}
+            className="h-full flex flex-col justify-between relative overflow-hidden"
+          >
+            {/* Decorative orb */}
+            <div className={`absolute top-0 right-0 w-32 h-32 rounded-full -mr-16 -mt-16 ${
+              isGainPositive ? 'bg-emerald-500/5' : 'bg-rose-500/5'
+            }`} />
+            
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Total Return</span>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                  isGainPositive ? 'bg-emerald-500/10' : 'bg-rose-500/10'
+                }`}>
                   {isGainPositive ? <TrendingUp className="text-emerald-500" size={20} /> : <TrendingDown className="text-rose-500" size={20} />}
                 </div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Alpha Protocol Performance</span>
               </div>
 
-              <div className="flex items-baseline gap-4 mb-4 flex-wrap">
-                <h2 className={`${isLarge ? 'text-5xl' : 'text-3xl'} font-black tracking-tight ${isGainPositive ? 'text-emerald-500' : 'text-rose-500'} blur-stealth`}>
+              <div className="mb-4">
+                <h2 className={`${isLarge ? 'text-5xl' : 'text-3xl'} font-black tracking-tight mb-2 blur-stealth`}>
                   {formatCurrency(convertCurrency(summary?.totalGain || 0, currency, rates), currency)}
                 </h2>
-                <div className={`px-4 py-1.5 rounded-xl ${isLarge ? 'text-base' : 'text-xs'} font-black ${isGainPositive ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
-                  {formatPercentage(summary?.totalGainPercent || 0)}
+                <div className="flex items-center gap-2">
+                  <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-bold border ${
+                    isGainPositive 
+                      ? 'border-emerald-500/30 text-emerald-500 bg-emerald-500/5' 
+                      : 'border-rose-500/30 text-rose-500 bg-rose-500/5'
+                  }`}>
+                    {isGainPositive ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                    {formatPercentage(summary?.totalGainPercent || 0)}
+                  </div>
+                  <span className="text-xs text-muted-foreground font-bold">All time</span>
                 </div>
-              </div>
-
-              <div className="h-2 w-full bg-muted rounded-full overflow-hidden mb-6">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${Math.min(100, Math.abs(summary?.totalGainPercent || 0) * 2)}%` }}
-                  className={`h-full ${isGainPositive ? 'bg-emerald-500' : 'bg-rose-500'}`}
-                />
               </div>
             </div>
 
             {!isSmall && (
-              <div className={`grid ${isLarge ? 'grid-cols-3 gap-4' : 'grid-cols-1 gap-2'} mt-2`}>
+              <div className={`grid ${isLarge ? 'grid-cols-3 gap-4' : 'grid-cols-1 gap-2'} mt-2 relative z-10`}>
                 <div className={`flex ${isLarge ? 'flex-col items-center p-3' : 'justify-between items-center p-2'} bg-muted/20 hover:bg-muted/30 transition-colors rounded-xl border border-border/10`}>
                   <div className="text-[10px] text-muted-foreground font-black uppercase tracking-tighter">Invested</div>
                   <div className="font-black text-sm blur-stealth">{formatCurrency(convertCurrency(summary?.totalInvested || 0, currency, rates), currency)}</div>
@@ -403,7 +455,7 @@ export default function DashboardPage() {
                 </div>
               </div>
             )}
-          </div>
+          </motion.div>
         );
 
       // Portfolio Widgets
@@ -451,7 +503,16 @@ export default function DashboardPage() {
 
       case 'top-performers':
         const topLimit = isLarge ? 10 : isSmall ? 3 : 5;
-        return <TopPerformersWidget holdings={holdingsForPerformers} limit={topLimit} showChart={isLarge} />;
+        // Enhance holdings data with daily change info
+        const holdingsWithDaily = holdings.map(h => ({
+          symbol: h.ticker,
+          name: h.ticker,
+          gainPercent: h.unrealizedGainPercent || 0,
+          gain: h.unrealizedGain || 0,
+          dayChangePercent: h.dayChangePercent || 0,
+          value: h.marketValue || 0,
+        }));
+        return <TopPerformersWidget holdings={holdingsWithDaily} limit={topLimit} showChart={isLarge} showDailyMovers={true} />;
 
       case 'worst-performers':
         const worstLimit = isLarge ? 10 : isSmall ? 3 : 5;
@@ -476,6 +537,9 @@ export default function DashboardPage() {
 
       case 'price-alerts':
         return <PriceAlertsWidget limit={isLarge ? 10 : isSmall ? 2 : 4} />;
+
+      case 'recent-alerts':
+        return <RecentAlertsWidget limit={isLarge ? 10 : isSmall ? 3 : 5} />;
 
       case 'asset-allocation':
         return (
@@ -510,19 +574,31 @@ export default function DashboardPage() {
       <header className="flex flex-col gap-10 mb-12">
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-8">
           <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <div className="p-1 px-3 bg-primary/10 rounded-full border border-primary/20">
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">System Dashboard</span>
-              </div>
-              <div className="h-1 w-1 bg-border rounded-full" />
-              <div className="flex items-center gap-2 text-muted-foreground text-[10px] font-black uppercase tracking-widest">
-                <Clock size={12} />
-                <span>Sync: {lastUpdated ? new Date(lastUpdated).toLocaleTimeString() : '--:--'}</span>
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-3xl md:text-4xl font-black tracking-tight">Dashboard</h1>
+              <div className="flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full">
+                <div className="w-2 h-2 bg-primary rounded-full pulse-glow" />
+                <span className="text-xs font-bold text-primary uppercase tracking-wider">Live</span>
               </div>
             </div>
-            <h1 className="text-4xl md:text-5xl font-black tracking-tighter leading-none">
-              Investment <span className="text-primary text-glow-primary">Protocol.</span>
-            </h1>
+            <p className="text-muted-foreground">
+              Last updated: <span className="text-foreground font-bold">
+                {lastUpdated 
+                  ? (() => {
+                      const now = new Date();
+                      const updated = new Date(lastUpdated);
+                      const diffMs = now.getTime() - updated.getTime();
+                      const diffMins = Math.floor(diffMs / 60000);
+                      if (diffMins < 1) return 'Just now';
+                      if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+                      const diffHours = Math.floor(diffMins / 60);
+                      if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+                      return updated.toLocaleTimeString();
+                    })()
+                  : '--:--'
+                }
+              </span>
+            </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-4">

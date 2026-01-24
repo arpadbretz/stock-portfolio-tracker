@@ -44,6 +44,7 @@ import {
     Maximize2,
     Minimize2,
     Square,
+    Sparkles,
 } from 'lucide-react';
 
 // ============ TYPES ============
@@ -190,6 +191,14 @@ export const WIDGET_DEFINITIONS: WidgetDefinition[] = [
         allowedSizes: ['small', 'medium', 'large'],
     },
     {
+        id: 'recent-alerts',
+        title: 'Recent Alerts',
+        icon: <Sparkles size={18} className="text-accent" />,
+        category: 'tools',
+        defaultSize: 'medium',
+        allowedSizes: ['small', 'medium', 'large'],
+    },
+    {
         id: 'asset-allocation',
         title: 'Allocation',
         icon: <Layers size={18} className="text-pink-500" />,
@@ -271,12 +280,14 @@ function SortableWidgetCard({
         >
             <div
                 className={`
-                    h-full w-full bg-card border rounded-[24px] overflow-hidden relative
+                    h-full w-full bg-gradient-to-br from-card to-card/50 border rounded-[24px] overflow-hidden relative
                     transition-all duration-200
-                    ${isEditing ? 'border-primary/40 shadow-lg shadow-primary/10' : 'border-border/60 shadow-xl shadow-black/5'}
+                    ${isEditing ? 'border-primary/40 shadow-lg shadow-primary/10' : 'border-border/50 shadow-xl shadow-black/5'}
                     ${isDragging ? 'shadow-2xl shadow-primary/30 ring-2 ring-primary/40' : ''}
                 `}
             >
+                {/* Decorative orb for all cards */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/3 rounded-full -mr-16 -mt-16 opacity-50" />
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-3 border-b border-border/40 bg-card/80 backdrop-blur-sm">
                     <div className="flex items-center gap-2.5">

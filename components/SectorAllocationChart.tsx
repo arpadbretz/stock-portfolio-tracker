@@ -112,20 +112,33 @@ export default function SectorAllocationChart({ holdings, currency, exchangeRate
                 </div>
             </div>
 
-            {/* Legend */}
+            {/* Legend with Progress Bars */}
             <div className="w-full space-y-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
                 {data.map((item, index) => (
-                    <div key={item.name} className="flex items-center justify-between p-4 rounded-[20px] bg-muted/20 border border-transparent hover:border-border/50 hover:bg-muted/40 transition-all group/item shadow-sm">
-                        <div className="flex items-center gap-4 min-w-0 flex-1">
-                            <div
-                                className="w-3 h-3 rounded-full flex-shrink-0 shadow-lg"
-                                style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                            />
-                            <span className="text-foreground font-black text-sm uppercase tracking-wider group-hover/item:text-secondary transition-colors truncate">{item.name}</span>
+                    <div key={item.name} className="space-y-2">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                                <div
+                                    className="w-3 h-3 rounded-full flex-shrink-0"
+                                    style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                                />
+                                <span className="text-sm font-bold text-muted-foreground truncate">{item.name}</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
+                                    <div
+                                        className="h-full rounded-full transition-all"
+                                        style={{
+                                            width: `${item.percentage}%`,
+                                            backgroundColor: COLORS[index % COLORS.length]
+                                        }}
+                                    />
+                                </div>
+                                <span className="text-sm font-black w-12 text-right">{item.percentage.toFixed(1)}%</span>
+                            </div>
                         </div>
-                        <div className="text-right flex-shrink-0 ml-4">
-                            <div className="text-sm font-black text-foreground mb-0.5 whitespace-nowrap">{formatCurrency(item.value, currency)}</div>
-                            <div className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.1em]">{item.percentage.toFixed(1)}% Weight</div>
+                        <div className="text-xs text-muted-foreground font-bold ml-6">
+                            {formatCurrency(item.value, currency)}
                         </div>
                     </div>
                 ))}
