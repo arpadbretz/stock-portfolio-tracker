@@ -143,11 +143,13 @@ interface PerformerProps {
 }
 
 export function TopPerformersWidget({ holdings = [], limit = 5, showChart = false, showDailyMovers = false }: PerformerProps) {
-    // If showDailyMovers, sort by daily change instead of total gain
-    const sorted = showDailyMovers
+    const [view, setView] = useState<'daily' | 'total'>(showDailyMovers ? 'daily' : 'total');
+
+    // Filter and sort based on view
+    const sorted = view === 'daily'
         ? [...holdings]
             .filter(h => h.dayChangePercent !== undefined)
-            .sort((a, b) => Math.abs(b.dayChangePercent || 0) - Math.abs(a.dayChangePercent || 0))
+            .sort((a, b) => (b.dayChangePercent || 0) - (a.dayChangePercent || 0))
             .slice(0, limit)
         : [...holdings].sort((a, b) => b.gainPercent - a.gainPercent).slice(0, limit);
 
@@ -160,68 +162,77 @@ export function TopPerformersWidget({ holdings = [], limit = 5, showChart = fals
         );
     }
 
-    // Calculate max for chart scale
-    const maxValue = showDailyMovers
-        ? Math.max(...sorted.map(h => Math.abs(h.dayChangePercent || 0)))
-        : Math.max(...sorted.map(h => Math.abs(h.gainPercent)));
-
     return (
-        <div className="space-y-3">
-            {sorted.map((holding, i) => {
-                const changePercent = showDailyMovers ? (holding.dayChangePercent || 0) : (holding.gainPercent || 0);
-                const isUp = changePercent >= 0;
-                
-                return (
-                    <motion.div
-                        key={holding.symbol}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: i * 0.1 }}
-                    >
-                        <Link
-                            href={`/dashboard/ticker/${holding.symbol}`}
-                            className="flex items-center justify-between p-4 rounded-2xl bg-card/50 hover:bg-muted/30 border border-border/30 transition-all cursor-pointer group"
+        <div className="space-y-4">
+            {/* View Toggle */}
+            <div className="flex items-center justify-center bg-muted/30 p-1 rounded-xl border border-border/50">
+                <button
+                    onClick={() => setView('total')}
+                    className={`flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${view === 'total' ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                >
+                    All-time
+                </button>
+                <button
+                    onClick={() => setView('daily')}
+                    className={`flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${view === 'daily' ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                >
+                    Daily Movers
+                </button>
+            </div>
+
+            <div className="space-y-3">
+                {sorted.map((holding, i) => {
+                    const changePercent = view === 'daily' ? (holding.dayChangePercent || 0) : (holding.gainPercent || 0);
+                    const isUp = changePercent >= 0;
+
+                    return (
+                        <motion.div
+                            key={holding.symbol}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: i * 0.1 }}
                         >
-                            <div className="flex items-center gap-4">
-                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform ${
-                                    isUp ? 'bg-emerald-500/10' : 'bg-rose-500/10'
-                                }`}>
-                                    <span className={`text-sm font-black ${isUp ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                        {holding.symbol.slice(0, 2)}
-                                    </span>
+                            <Link
+                                href={`/dashboard/ticker/${holding.symbol}`}
+                                className="flex items-center justify-between p-3 rounded-2xl bg-card/50 hover:bg-muted/30 border border-border/30 transition-all cursor-pointer group"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform ${isUp ? 'bg-emerald-500/10' : 'bg-rose-500/10'
+                                        }`}>
+                                        <span className={`text-[10px] font-black ${isUp ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                            {holding.symbol.slice(0, 2)}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <div className="font-black text-sm">{holding.symbol}</div>
+                                        {showChart && <div className="text-[10px] text-muted-foreground font-bold truncate max-w-[80px]">{holding.name}</div>}
+                                    </div>
                                 </div>
-                                <div>
-                                    <div className="font-black text-sm">{holding.symbol}</div>
-                                    {showChart && <div className="text-xs text-muted-foreground font-bold">{holding.name}</div>}
-                                    {showDailyMovers && holding.value && (
-                                        <div className="text-xs font-bold text-muted-foreground mt-1">
-                                            ${holding.value.toLocaleString()}
+                                <div className="text-right">
+                                    <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold border ${isUp
+                                            ? 'border-emerald-500/30 text-emerald-500 bg-emerald-500/5'
+                                            : 'border-rose-500/30 text-rose-500 bg-rose-500/5'
+                                        }`}>
+                                        {isUp ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
+                                        {isUp ? '+' : ''}{changePercent.toFixed(2)}%
+                                    </div>
+                                    {view === 'daily' && holding.value && (
+                                        <div className="text-[10px] font-bold text-muted-foreground mt-1">
+                                            ${holding.value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                         </div>
                                     )}
                                 </div>
-                            </div>
-                            <div className="text-right">
-                                {showDailyMovers && holding.value && (
-                                    <div className="text-sm font-bold text-muted-foreground mb-1">
-                                        ${holding.value.toLocaleString()}
-                                    </div>
-                                )}
-                                <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-bold border ${
-                                    isUp 
-                                        ? 'border-emerald-500/30 text-emerald-500 bg-emerald-500/5' 
-                                        : 'border-rose-500/30 text-rose-500 bg-rose-500/5'
-                                }`}>
-                                    {isUp ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
-                                    {isUp ? '+' : ''}{changePercent.toFixed(2)}%
-                                </div>
-                            </div>
-                        </Link>
-                    </motion.div>
-                );
-            })}
+                            </Link>
+                        </motion.div>
+                    );
+                })}
+            </div>
         </div>
     );
 }
+
 
 // ============ WORST PERFORMERS WIDGET ============
 export function WorstPerformersWidget({ holdings = [], limit = 5, showChart = false }: PerformerProps) {
@@ -453,9 +464,9 @@ export function RecentAlertsWidget({ limit = 5 }: { limit?: number }) {
                 // Fetch price alerts
                 const alertsRes = await fetch('/api/alerts');
                 const alertsData = await alertsRes.json();
-                
+
                 const recentAlerts: RecentAlert[] = [];
-                
+
                 if (alertsData.success && alertsData.data) {
                     // Convert price alerts to recent alerts format
                     alertsData.data.slice(0, limit).forEach((alert: Alert) => {
@@ -463,19 +474,19 @@ export function RecentAlertsWidget({ limit = 5 }: { limit?: number }) {
                         const targetPrice = alert.target_price;
                         const isPositive = alert.condition === 'above' ? currentPrice >= targetPrice : currentPrice <= targetPrice;
                         const diff = Math.abs(currentPrice - targetPrice);
-                        
+
                         recentAlerts.push({
                             ticker: alert.symbol,
                             type: 'price_alert',
-                            message: alert.condition === 'above' 
-                                ? `Target ${targetPrice} reached` 
-                                : `Target ${targetPrice} reached`,
+                            message: alert.condition === 'above'
+                                ? `Price crossed above $${targetPrice}`
+                                : `Price dropped below $${targetPrice}`,
                             time: 'Just now', // Would calculate from timestamp
                             isPositive,
                         });
                     });
                 }
-                
+
                 // Sort by time (most recent first) and limit
                 setAlerts(recentAlerts.slice(0, limit));
             } catch (e) {
@@ -484,7 +495,7 @@ export function RecentAlertsWidget({ limit = 5 }: { limit?: number }) {
                 setIsLoading(false);
             }
         };
-        
+
         fetchRecentAlerts();
         // Refresh every minute
         const interval = setInterval(fetchRecentAlerts, 60000);
@@ -528,12 +539,10 @@ export function RecentAlertsWidget({ limit = 5 }: { limit?: number }) {
                             href={`/dashboard/ticker/${alert.ticker}`}
                             className="flex items-start gap-4 p-4 rounded-2xl bg-card/50 hover:bg-muted/30 border border-border/30 transition-all cursor-pointer"
                         >
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                                alert.isPositive ? 'bg-emerald-500/10' : 'bg-rose-500/10'
-                            }`}>
-                                <span className={`text-xs font-black ${
-                                    alert.isPositive ? 'text-emerald-500' : 'text-rose-500'
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${alert.isPositive ? 'bg-emerald-500/10' : 'bg-rose-500/10'
                                 }`}>
+                                <span className={`text-xs font-black ${alert.isPositive ? 'text-emerald-500' : 'text-rose-500'
+                                    }`}>
                                     {alert.ticker.slice(0, 2)}
                                 </span>
                             </div>

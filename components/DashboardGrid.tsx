@@ -47,15 +47,12 @@ import {
     Sparkles,
 } from 'lucide-react';
 
+import { WIDGET_REGISTRY, WidgetConfig } from '@/components/WidgetSystem';
+
 // ============ TYPES ============
 export type WidgetSize = 'small' | 'medium' | 'large';
 
-export interface WidgetDefinition {
-    id: string;
-    title: string;
-    icon: ReactNode;
-    category: 'core' | 'portfolio' | 'market' | 'tools';
-    defaultSize: WidgetSize;
+export interface WidgetDefinition extends WidgetConfig {
     allowedSizes: WidgetSize[];
 }
 
@@ -80,148 +77,21 @@ interface DashboardGridProps {
     widgetRegistry: WidgetDefinition[];
 }
 
-// ============ WIDGET DEFINITIONS ============
-export const WIDGET_DEFINITIONS: WidgetDefinition[] = [
-    // Core Metrics
-    {
-        id: 'portfolio-value',
-        title: 'Portfolio Value',
-        icon: <Wallet size={18} className="text-emerald-500" />,
-        category: 'core',
-        defaultSize: 'medium',
-        allowedSizes: ['small', 'medium', 'large'],
-    },
-    {
-        id: 'total-invested',
-        title: 'Total Invested',
-        icon: <BarChart3 size={18} className="text-blue-500" />,
-        category: 'core',
-        defaultSize: 'medium',
-        allowedSizes: ['small', 'medium', 'large'],
-    },
-    {
-        id: 'daily-pnl',
-        title: "Today's P&L",
-        icon: <TrendingUp size={18} className="text-amber-500" />,
-        category: 'core',
-        defaultSize: 'medium',
-        allowedSizes: ['small', 'medium', 'large'],
-    },
-    {
-        id: 'total-gain',
-        title: 'Total Gain/Loss',
-        icon: <Activity size={18} className="text-purple-500" />,
-        category: 'core',
-        defaultSize: 'large',
-        allowedSizes: ['medium', 'large'],
-    },
-    // Portfolio Widgets
-    {
-        id: 'holdings',
-        title: 'Holdings',
-        icon: <Layers size={18} className="text-indigo-500" />,
-        category: 'portfolio',
-        defaultSize: 'large',
-        allowedSizes: ['medium', 'large'],
-    },
-    {
-        id: 'sector-allocation',
-        title: 'Sector Allocation',
-        icon: <PieChart size={18} className="text-cyan-500" />,
-        category: 'portfolio',
-        defaultSize: 'medium',
-        allowedSizes: ['small', 'medium', 'large'],
-    },
-    {
-        id: 'recent-trades',
-        title: 'Recent Trades',
-        icon: <Clock size={18} className="text-orange-500" />,
-        category: 'portfolio',
-        defaultSize: 'large',
-        allowedSizes: ['medium', 'large'],
-    },
-    {
-        id: 'top-performers',
-        title: 'Top Performers',
-        icon: <TrendingUp size={18} className="text-emerald-500" />,
-        category: 'portfolio',
-        defaultSize: 'medium',
-        allowedSizes: ['small', 'medium', 'large'],
-    },
-    {
-        id: 'worst-performers',
-        title: 'Worst Performers',
-        icon: <TrendingDown size={18} className="text-rose-500" />,
-        category: 'portfolio',
-        defaultSize: 'medium',
-        allowedSizes: ['small', 'medium', 'large'],
-    },
-    // Market Widgets
-    {
-        id: 'market-overview',
-        title: 'Market Overview',
-        icon: <Globe size={18} className="text-blue-500" />,
-        category: 'market',
-        defaultSize: 'large',
-        allowedSizes: ['medium', 'large'],
-    },
-    {
-        id: 'watchlist-mini',
-        title: 'Watchlist',
-        icon: <Star size={18} className="text-yellow-500" />,
-        category: 'market',
-        defaultSize: 'medium',
-        allowedSizes: ['small', 'medium', 'large'],
-    },
-    // Tool Widgets
-    {
-        id: 'quick-actions',
-        title: 'Quick Actions',
-        icon: <Zap size={18} className="text-amber-500" />,
-        category: 'tools',
-        defaultSize: 'small',
-        allowedSizes: ['small', 'medium'],
-    },
-    {
-        id: 'price-alerts',
-        title: 'Price Alerts',
-        icon: <Bell size={18} className="text-rose-500" />,
-        category: 'tools',
-        defaultSize: 'medium',
-        allowedSizes: ['small', 'medium', 'large'],
-    },
-    {
-        id: 'recent-alerts',
-        title: 'Recent Alerts',
-        icon: <Sparkles size={18} className="text-accent" />,
-        category: 'tools',
-        defaultSize: 'medium',
-        allowedSizes: ['small', 'medium', 'large'],
-    },
-    {
-        id: 'asset-allocation',
-        title: 'Allocation',
-        icon: <Layers size={18} className="text-pink-500" />,
-        category: 'portfolio',
-        defaultSize: 'medium',
-        allowedSizes: ['small', 'medium', 'large'],
-    },
-    {
-        id: 'performance-line',
-        title: 'Performance',
-        icon: <Activity size={18} className="text-emerald-500" />,
-        category: 'portfolio',
-        defaultSize: 'large',
-        allowedSizes: ['medium', 'large'],
-    },
-];
+// Map the registry to definition format
+export const WIDGET_DEFINITIONS: WidgetDefinition[] = WIDGET_REGISTRY.map(w => ({
+    ...w,
+    allowedSizes: (w.id === 'portfolio-value' || w.id === 'total-invested' || w.id === 'daily-pnl' || w.id === 'total-gain')
+        ? ['small', 'medium', 'large']
+        : ['medium', 'large']
+}));
 
 // Size classes and heights
 const SIZE_CONFIG: Record<WidgetSize, { colSpan: string; rowSpan: string; height: string; gridSpan: number }> = {
-    small: { colSpan: 'col-span-1', rowSpan: 'row-span-2', height: 'h-[148px]', gridSpan: 1 },
+    small: { colSpan: 'col-span-1', rowSpan: 'row-span-3', height: 'h-[216px]', gridSpan: 1 },
     medium: { colSpan: 'col-span-1', rowSpan: 'row-span-4', height: 'h-[312px]', gridSpan: 1 },
     large: { colSpan: 'col-span-1 lg:col-span-2', rowSpan: 'row-span-6', height: 'h-[476px]', gridSpan: 2 },
 };
+
 
 // ============ SORTABLE WIDGET CARD ============
 interface SortableWidgetCardProps {
