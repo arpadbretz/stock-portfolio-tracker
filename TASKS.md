@@ -135,10 +135,10 @@
 | PORT-012 | Sector Exposure Heatmap | ⬜ | 4h | 🔴 Over/under-weight visualization |
 | PORT-013 | Risk Metrics Dashboard | ⬜ | 6h | 🔴 Sharpe, Sortino, Max Drawdown, Beta |
 | PORT-014 | Trade Tagging System | ⬜ | 4h | 🔴 Tag: momentum, value, earnings |
-| PORT-015 | Win/Loss Analytics | ⬜ | 4h | 🔴 P&L by tag, holding period |
+| PORT-015 | Win/Loss Analytics | ✅ | 4h | Implemented Jan 26: Realized P/L tracking and summary API |
 | PORT-016 | Trade Notes & Screenshots | ⬜ | 3h | 🔴 Attach thesis to trades |
 | PORT-017 | Monthly Performance Reports | ⬜ | 4h | 🔴 Auto-generated reviews |
-| PORT-018 | Cash Balance Tracking System | 🔄 | 6h | Implemented Jan 26: DB table, API routes, widget component |
+| PORT-018 | Cash Balance Tracking System | ✅ | 6h | Implemented Jan 26: DB table, API routes, widget and integration |
 
 ## Portfolio Features (🟡 MED/LOW PRIORITY)
 
@@ -146,7 +146,7 @@
 |----|------|--------|--------|-------|
 | PORT-020 | Rebalancing Tool | ⬜ | 6h | Target allocation vs actual |
 | PORT-021 | Dividend Tracker | ⬜ | 4h | Track dividends, yield on cost |
-| PORT-022 | Tax Lot Management | ⬜ | 6h | FIFO/LIFO/Specific ID |
+| PORT-022 | Tax Lot Management | 🔄 | 6h | Implemented FIFO cost basis logic in DB |
 | PORT-023 | Export to CSV/PDF | ⬜ | 4h | Professional reports |
 | PORT-024 | Portfolio Leaderboard | ⬜ | 4h | Opt-in anonymous ranking |
 | PORT-025 | Copy Portfolio | ⬜ | 3h | Copy weights from public portfolios |

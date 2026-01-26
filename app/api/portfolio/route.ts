@@ -158,9 +158,32 @@ export async function GET(request: Request) {
             console.log('Cash balance not available (table may not exist yet):', e);
         }
 
+        // Fetch realized P/L summary
+        let realizedGain = 0;
+        try {
+            const { data: pnlData } = await supabase
+                .rpc('get_realized_pnl_summary', {
+                    p_portfolio_id: portfolio.id,
+                    p_start_date: null,
+                    p_end_date: null
+                });
+            if (pnlData && pnlData.length > 0) {
+                realizedGain = Number(pnlData[0].total_realized_gain) || 0;
+            }
+        } catch (e) {
+            console.log('Realized P/L not available (table may not exist yet):', e);
+        }
+
         // Aggregate and calculate (now with cash balance)
         const holdings = aggregateHoldings(trades, prices);
         const summary = calculatePortfolioSummary(holdings, exchangeRates, cashBalance);
+
+        // Add realized P/L to summary
+        const enhancedSummary = {
+            ...summary,
+            realizedGain,
+            totalReturn: summary.totalGain + realizedGain
+        };
 
         return NextResponse.json({
             success: true,
@@ -170,9 +193,10 @@ export async function GET(request: Request) {
                 description: portfolio.description,
                 color: portfolio.color,
                 trades,
-                holdings: summary.holdings,
-                summary,
+                holdings: enhancedSummary.holdings,
+                summary: enhancedSummary,
                 cashBalance,
+                realizedGain,
                 lastUpdated: new Date().toISOString(),
             },
         });

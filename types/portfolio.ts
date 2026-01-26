@@ -44,6 +44,35 @@ export interface CashBalanceData {
 
 export type CashTransactionFormData = Omit<CashTransaction, 'id' | 'user_id' | 'created_at' | 'updated_at'>;
 
+// Realized P/L types
+export interface RealizedPnL {
+  id: string;
+  user_id: string;
+  portfolio_id: string;
+  trade_id?: string;
+  ticker: string;
+  quantity: number;
+  cost_basis: number;
+  sale_price: number;
+  realized_gain: number;
+  realized_gain_percent: number;
+  holding_period_days?: number;
+  closed_at: string;
+  created_at: string;
+}
+
+export interface RealizedPnLSummary {
+  total_realized_gain: number;
+  total_trades: number;
+  winning_trades: number;
+  losing_trades: number;
+  win_rate: number;
+  avg_gain: number;
+  avg_loss: number;
+  biggest_win: number;
+  biggest_loss: number;
+}
+
 export interface Trade {
   id: string;
   timestamp: string;
@@ -56,6 +85,7 @@ export interface Trade {
   notes?: string;
   user_id?: string;
   portfolio_id?: string;
+  cash_transaction_id?: string;  // Links to cash transaction
 }
 
 export interface Holding {
@@ -89,10 +119,12 @@ export interface PriceData {
 export interface PortfolioSummary {
   totalInvested: number;
   totalMarketValue: number;
-  totalGain: number;
+  totalGain: number;  // Unrealized gain
   totalGainPercent: number;
   cashBalance: number;  // Available cash in portfolio
   totalPortfolioValue: number;  // Market value + cash balance
+  realizedGain?: number;  // Total realized P/L from closed positions
+  totalReturn?: number;  // Unrealized + Realized gains
   holdings: Holding[];
   exchangeRates: Record<CurrencyCode, number>;
 }
