@@ -77,9 +77,9 @@ const CLOUD_SAVE_DEBOUNCE_MS = 1500;
 export const WIDGET_REGISTRY: WidgetConfig[] = [
     // Core Widgets
     {
-        id: 'portfolio-value',
-        title: 'Portfolio Value',
-        description: 'Total market value of your portfolio',
+        id: 'net-worth',
+        title: 'Net Worth',
+        description: 'Total value of stocks and cash',
         icon: <Wallet size={18} className="text-emerald-500" />,
         category: 'core',
         defaultSize: 'medium',
@@ -249,6 +249,16 @@ export const WIDGET_REGISTRY: WidgetConfig[] = [
         minW: 3,
         minH: 3,
     },
+    {
+        id: 'wealth-composition',
+        title: 'Composition',
+        description: 'Stocks vs Cash and Currency breakdown',
+        icon: <PieChart size={18} className="text-pink-500" />,
+        category: 'portfolio',
+        defaultSize: 'medium',
+        minW: 3,
+        minH: 3,
+    },
 ];
 
 // Default visible widgets for new users
@@ -258,7 +268,7 @@ const DEFAULT_VISIBLE = [
     'watchlist-mini',
     'total-gain',
     'holdings',
-    'asset-allocation',
+    'wealth-composition',
 ];
 
 // ============ CLOUD SYNC HOOK ============

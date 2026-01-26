@@ -80,7 +80,7 @@ interface DashboardGridProps {
 // Map the registry to definition format
 export const WIDGET_DEFINITIONS: WidgetDefinition[] = WIDGET_REGISTRY.map(w => ({
     ...w,
-    allowedSizes: (w.id === 'portfolio-value' || w.id === 'total-invested' || w.id === 'daily-pnl' || w.id === 'total-gain')
+    allowedSizes: (w.id === 'net-worth' || w.id === 'total-invested' || w.id === 'daily-pnl' || w.id === 'total-gain')
         ? ['small', 'medium', 'large']
         : ['medium', 'large']
 }));

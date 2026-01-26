@@ -55,6 +55,7 @@ import {
   RecentAlertsWidget,
   MarketOverviewWidget,
   PerformanceChartWidget,
+  WealthCompositionWidget,
 } from '@/components/DashboardWidgetComponents';
 import { CashBalanceWidget } from '@/components/CashBalanceWidget';
 
@@ -241,7 +242,7 @@ export default function DashboardPage() {
 
     switch (widgetId) {
       // Core Metrics
-      case 'portfolio-value':
+      case 'net-worth':
         const totalReturnPercent = summary?.totalGainPercent || 0;
         const totalReturnValue = summary?.totalGain || 0;
         return (
@@ -256,13 +257,13 @@ export default function DashboardPage() {
             <div className="relative z-10 flex flex-col h-full justify-between">
               <div>
                 <div className={`flex items-center justify-between ${isSmall ? 'mb-1' : 'mb-4'}`}>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Total Value</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Net Worth</span>
                   <div className={`${isSmall ? 'w-8 h-8' : 'w-10 h-10'} rounded-xl bg-primary/10 flex items-center justify-center`}>
                     <Wallet size={isSmall ? 14 : 18} className="text-primary" />
                   </div>
                 </div>
                 <h2 className={`${isSmall ? 'text-2xl' : isLarge ? 'text-5xl' : 'text-3xl'} font-black tracking-tight blur-stealth`}>
-                  {formatCurrency(convertCurrency(summary?.totalMarketValue || 0, currency, rates), currency)}
+                  {formatCurrency(convertCurrency(summary?.totalPortfolioValue || 0, currency, rates), currency)}
                 </h2>
               </div>
               <div className="flex items-center gap-2 mt-auto">
@@ -584,6 +585,16 @@ export default function DashboardPage() {
             exchangeRates={rates}
             isStealthMode={isStealthMode}
             expanded={isLarge}
+          />
+        );
+
+      case 'wealth-composition':
+        return (
+          <WealthCompositionWidget
+            summary={summary}
+            isStealthMode={isStealthMode}
+            currency={currency}
+            exchangeRates={rates}
           />
         );
 

@@ -988,4 +988,116 @@ export function PerformanceChartWidget({ portfolioId, refreshKey }: { portfolioI
     );
 }
 
-// End of widgets
+// ============ WEALTH COMPOSITION WIDGET ============
+export function WealthCompositionWidget({
+    summary,
+    isStealthMode = false,
+    currency = 'USD',
+    exchangeRates = { USD: 1 }
+}: {
+    summary?: any; // PortfolioSummary
+    isStealthMode?: boolean;
+    currency?: CurrencyCode;
+    exchangeRates?: Record<string, number>;
+}) {
+    if (!summary) return null;
+
+    const stocksValue = summary.totalMarketValue || 0;
+    const cashValue = summary.cashBalance || 0;
+    const totalValue = summary.totalPortfolioValue || 1;
+
+    const stocksPct = (stocksValue / totalValue) * 100;
+    const cashPct = (cashValue / totalValue) * 100;
+
+    // Currency breakdown
+    const cashBalances = summary.cashBalances || {};
+    const currencyData = Object.entries(cashBalances)
+        .filter(([_, amount]) => (amount as number) !== 0)
+        .map(([curr, amount]) => {
+            const usdVal = (amount as number) / (exchangeRates[curr] || 1);
+            return {
+                name: curr,
+                value: (amount as number),
+                usdValue: usdVal,
+                percentage: (usdVal / totalValue) * 100
+            };
+        })
+        .sort((a, b) => b.usdValue - a.usdValue);
+
+    return (
+        <div className="h-full flex flex-col space-y-6">
+            {/* Split Bar */}
+            <div>
+                <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Asset Split</span>
+                    <div className="flex items-center gap-4 text-[10px] font-bold">
+                        <div className="flex items-center gap-1.5">
+                            <div className="w-2 h-2 rounded-full bg-primary" />
+                            <span>Stocks {stocksPct.toFixed(1)}%</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                            <span>Cash {cashPct.toFixed(1)}%</span>
+                        </div>
+                    </div>
+                </div>
+                <div className="w-full h-3 bg-muted rounded-full overflow-hidden flex">
+                    <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${stocksPct}%` }}
+                        className="h-full bg-primary"
+                    />
+                    <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${cashPct}%` }}
+                        className="h-full bg-emerald-500"
+                    />
+                </div>
+            </div>
+
+            {/* Values */}
+            <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 rounded-2xl bg-primary/5 border border-primary/10">
+                    <div className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">Stocks</div>
+                    <div className={`text-lg font-black ${isStealthMode ? 'blur-stealth' : ''}`}>
+                        {formatCurrency(convertCurrency(stocksValue, currency, exchangeRates), currency)}
+                    </div>
+                </div>
+                <div className="p-3 rounded-2xl bg-emerald-500/5 border border-emerald-500/10">
+                    <div className="text-[10px] font-black uppercase tracking-widest text-emerald-500 mb-1">Liquid Cash</div>
+                    <div className={`text-lg font-black ${isStealthMode ? 'blur-stealth' : ''}`}>
+                        {formatCurrency(convertCurrency(cashValue, currency, exchangeRates), currency)}
+                    </div>
+                </div>
+            </div>
+
+            {/* Currency Breakdown */}
+            {currencyData.length > 0 && (
+                <div className="flex-1 min-h-0">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-3">Currency Weights</span>
+                    <div className="space-y-2 overflow-auto custom-scrollbar pr-2">
+                        {currencyData.map((data) => (
+                            <div key={data.name} className="flex items-center justify-between p-2 rounded-xl bg-muted/20 hover:bg-muted/40 transition-colors group">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-background border border-border flex items-center justify-center font-black text-[10px] group-hover:border-primary/30 transition-colors">
+                                        {data.name}
+                                    </div>
+                                    <div>
+                                        <div className="text-xs font-black">{data.name} Allocation</div>
+                                        <div className={`text-[10px] text-muted-foreground font-bold ${isStealthMode ? 'blur-stealth' : ''}`}>
+                                            {formatCurrency(data.value, data.name as any)}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-xs font-black">{data.percentage.toFixed(1)}%</div>
+                                    <div className="text-[10px] text-muted-foreground font-bold">of Total</div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
