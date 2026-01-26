@@ -139,9 +139,27 @@ export default function AssetAllocationChart({
         .map(([name, data]) => ({ name, ...data }))
         .sort((a, b) => b.value - a.value);
 
+    // Helper to generate distinctive shades of a base color
+    const getShade = (hex: string, index: number, total: number) => {
+        if (total <= 1) return hex;
+        // Simple shade logic: vary luminosity based on index
+        // Extract RGB (basic)
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+
+        // Vary by +/- 25%
+        const factor = 0.75 + (index / (total - 1)) * 0.5;
+        const nr = Math.min(255, Math.max(0, Math.round(r * factor)));
+        const ng = Math.min(255, Math.max(0, Math.round(g * factor)));
+        const nb = Math.min(255, Math.max(0, Math.round(b * factor)));
+
+        return `#${nr.toString(16).padStart(2, '0')}${ng.toString(16).padStart(2, '0')}${nb.toString(16).padStart(2, '0')}`;
+    };
+
     sortedSectors.forEach(sector => {
         const percentage = (sector.value / totalValue) * 100;
-        if (percentage < 0.1) return; // Hide tiny slices
+        if (percentage < 0.1) return;
 
         innerData.push({
             name: sector.name,
@@ -149,31 +167,24 @@ export default function AssetAllocationChart({
             color: sector.color
         });
 
-        // Group tiny tickers within sector
         const sortedTickers = sector.tickers.sort((a, b) => b.value - a.value);
-        let sectorCurrentValue = 0;
-
-        sortedTickers.forEach(ticker => {
-            const tickerPct = (ticker.value / totalValue) * 100;
-            // If ticker is too small, we might want to group? 
-            // For now, let's keep it simple and show them with sector shade
+        sortedTickers.forEach((ticker, idx) => {
             outerData.push({
                 name: ticker.name,
                 value: ticker.value,
                 parent: sector.name,
                 color: sector.name === 'Cash'
                     ? (CASH_COLORS[ticker.name] || sector.color)
-                    : sector.color // We could use varying shades here for more "wow"
+                    : getShade(sector.color, idx, sortedTickers.length)
             });
-            sectorCurrentValue += ticker.value;
         });
     });
 
-    // Fallback for non-sunburst mode (medium/small) - Focus on Stocks only
-    const flatData = holdings.map(h => ({
+    // Fallback for non-sunburst mode (medium/small) - Use distinctive colors for each ticker
+    const flatData = holdings.map((h, idx) => ({
         name: h.ticker,
         value: convertCurrency(h.marketValue, currency, exchangeRates),
-        color: SECTOR_COLORS[h.sector || 'Unknown'] || COLORS[0]
+        color: COLORS[idx % COLORS.length] // Use a broader palette for distinct tickers
     })).sort((a, b) => b.value - a.value);
 
     return (
@@ -295,9 +306,15 @@ export default function AssetAllocationChart({
                                     </span>
                                 </div>
                                 <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 mt-1">
-                                    {sector.tickers.sort((a, b) => b.value - a.value).map(ticker => (
-                                        <div key={ticker.name} className="flex items-center justify-between py-0.5">
-                                            <span className="text-[9px] font-bold text-muted-foreground truncate mr-2">{ticker.name}</span>
+                                    {sector.tickers.sort((a, b) => b.value - a.value).map((ticker, idx) => (
+                                        <div key={ticker.name} className="flex items-center justify-between py-0.5 group/ticker">
+                                            <div className="flex items-center gap-1.5 min-w-0">
+                                                <div
+                                                    className="w-1 h-1 rounded-full flex-shrink-0 opacity-40 group-hover/ticker:opacity-100 transition-opacity"
+                                                    style={{ backgroundColor: sector.name === 'Cash' ? (CASH_COLORS[ticker.name] || sector.color) : getShade(sector.color, idx, sector.tickers.length) }}
+                                                />
+                                                <span className="text-[9px] font-bold text-muted-foreground truncate group-hover/ticker:text-foreground transition-colors">{ticker.name}</span>
+                                            </div>
                                             <span className="text-[8px] font-black text-foreground/40 italic">
                                                 {((ticker.value / totalValue) * 100).toFixed(1)}%
                                             </span>
