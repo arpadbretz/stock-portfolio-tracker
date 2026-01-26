@@ -8,6 +8,7 @@ interface SectorAllocationChartProps {
     currency: CurrencyCode;
     exchangeRates: Record<CurrencyCode, number>;
     isLoading?: boolean;
+    cashBalance?: number;
 }
 
 const COLORS = [
@@ -21,7 +22,7 @@ const COLORS = [
     '#d946ef', // fuchsia-500
 ];
 
-export default function SectorAllocationChart({ holdings, currency, exchangeRates, isLoading }: SectorAllocationChartProps) {
+export default function SectorAllocationChart({ holdings, currency, exchangeRates, isLoading, cashBalance }: SectorAllocationChartProps) {
     if (isLoading) {
         return (
             <div className="h-[300px] flex flex-col justify-center items-center">
@@ -49,13 +50,19 @@ export default function SectorAllocationChart({ holdings, currency, exchangeRate
         sectorMap.set(sector, (sectorMap.get(sector) || 0) + value);
     });
 
+    // Add Cash as a sector
+    if (cashBalance && cashBalance > 0) {
+        const value = convertCurrency(cashBalance, currency, exchangeRates);
+        sectorMap.set('Liquidity/Cash', (sectorMap.get('Liquidity/Cash') || 0) + value);
+    }
+
     const totalPortfolioValue = Array.from(sectorMap.values()).reduce((a, b) => a + b, 0);
 
     const data = Array.from(sectorMap.entries())
         .map(([name, value]) => ({
             name,
             value,
-            percentage: (value / totalPortfolioValue) * 100
+            percentage: totalPortfolioValue > 0 ? (value / totalPortfolioValue) * 100 : 0
         }))
         .sort((a, b) => b.value - a.value);
 

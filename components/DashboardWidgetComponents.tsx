@@ -44,17 +44,25 @@ export function MarketOverviewWidget({ expanded = false }: { expanded?: boolean 
         const fetchIndices = async () => {
             try {
                 setHasError(false);
-                const symbols = ['^GSPC', '^IXIC', '^DJI', '^VIX'];
+                const symbols = expanded
+                    ? ['^GSPC', '^IXIC', '^DJI', '^VIX', 'USDEUR=X', 'USDHUF=X']
+                    : ['^GSPC', '^IXIC', '^DJI', '^VIX'];
                 const promises = symbols.map(async (symbol) => {
                     try {
                         const res = await fetch(`/api/stock/${encodeURIComponent(symbol)}`);
                         const data = await res.json();
                         if (data.success && data.data?.price) {
+                            let name = symbol;
+                            if (symbol === '^GSPC') name = 'S&P 500';
+                            else if (symbol === '^IXIC') name = 'NASDAQ';
+                            else if (symbol === '^DJI') name = 'DOW';
+                            else if (symbol === '^VIX') name = 'VIX';
+                            else if (symbol === 'USDEUR=X') name = 'USD/EUR';
+                            else if (symbol === 'USDHUF=X') name = 'USD/HUF';
+
                             return {
                                 symbol,
-                                name: symbol === '^GSPC' ? 'S&P 500' :
-                                    symbol === '^IXIC' ? 'NASDAQ' :
-                                        symbol === '^DJI' ? 'DOW' : 'VIX',
+                                name,
                                 price: data.data.price,
                                 change: data.data.change || 0,
                                 changePercent: data.data.changePercent || 0,
@@ -85,8 +93,8 @@ export function MarketOverviewWidget({ expanded = false }: { expanded?: boolean 
 
     if (isLoading) {
         return (
-            <div className={`grid ${expanded ? 'grid-cols-4' : 'grid-cols-2'} gap-3`}>
-                {[1, 2, 3, 4].map(i => (
+            <div className={`grid ${expanded ? 'grid-cols-2 md:grid-cols-3' : 'grid-cols-2'} gap-3`}>
+                {[1, 2, 3, 4, 5, 6].slice(0, expanded ? 6 : 4).map(i => (
                     <div key={i} className="h-20 bg-muted/50 rounded-xl animate-pulse" />
                 ))}
             </div>
@@ -104,7 +112,7 @@ export function MarketOverviewWidget({ expanded = false }: { expanded?: boolean 
     }
 
     return (
-        <div className={`grid ${expanded ? 'grid-cols-4' : 'grid-cols-2'} gap-3`}>
+        <div className={`grid ${expanded ? 'grid-cols-2 md:grid-cols-3' : 'grid-cols-2'} gap-3`}>
             {indices.map((index) => {
                 const isPositive = (index.changePercent ?? 0) >= 0;
                 return (
@@ -1036,21 +1044,21 @@ export function WealthCompositionWidget({
                             <span>Stocks {stocksPct.toFixed(1)}%</span>
                         </div>
                         <div className="flex items-center gap-1.5">
-                            <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                            <div className="w-2 h-2 rounded-full bg-blue-500" />
                             <span>Cash {cashPct.toFixed(1)}%</span>
                         </div>
                     </div>
                 </div>
-                <div className="w-full h-3 bg-muted rounded-full overflow-hidden flex">
+                <div className="w-full h-3 bg-slate-800/50 rounded-full overflow-hidden flex gap-0.5 p-0.5 border border-white/5">
                     <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${stocksPct}%` }}
-                        className="h-full bg-primary"
+                        className="h-full bg-primary rounded-l-full"
                     />
                     <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${cashPct}%` }}
-                        className="h-full bg-emerald-500"
+                        className="h-full bg-blue-500 rounded-r-full"
                     />
                 </div>
             </div>
@@ -1063,8 +1071,8 @@ export function WealthCompositionWidget({
                         {formatCurrency(convertCurrency(stocksValue, currency, exchangeRates), currency)}
                     </div>
                 </div>
-                <div className="p-3 rounded-2xl bg-emerald-500/5 border border-emerald-500/10">
-                    <div className="text-[10px] font-black uppercase tracking-widest text-emerald-500 mb-1">Liquid Cash</div>
+                <div className="p-3 rounded-2xl bg-blue-500/5 border border-blue-500/10">
+                    <div className="text-[10px] font-black uppercase tracking-widest text-blue-500 mb-1">Liquid Cash</div>
                     <div className={`text-lg font-black ${isStealthMode ? 'blur-stealth' : ''}`}>
                         {formatCurrency(convertCurrency(cashValue, currency, exchangeRates), currency)}
                     </div>
