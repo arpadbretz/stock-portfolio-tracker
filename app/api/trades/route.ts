@@ -22,7 +22,8 @@ export async function POST(request: NextRequest) {
             fees = 0,
             notes = '',
             dateTraded = new Date().toISOString(),
-            skipCashTransaction = false  // Allow opting out for imports
+            skipCashTransaction = false,
+            currency = 'USD'
         } = body;
 
         // --- VALIDATION ---
@@ -66,6 +67,8 @@ export async function POST(request: NextRequest) {
         const grossAmount = quantity * pricePerShare;
         const totalCost = grossAmount + fees;
 
+        const currencySymbol = currency === 'EUR' ? '€' : currency === 'HUF' ? 'Ft' : '$';
+
         // --- CREATE CASH TRANSACTION (BUY = withdrawal, SELL = deposit) ---
         let cashTransactionId: string | null = null;
 
@@ -82,9 +85,9 @@ export async function POST(request: NextRequest) {
                     portfolio_id: portfolioId,
                     transaction_type: cashTransactionType,
                     amount: cashAmount,
-                    currency: 'USD',
+                    currency,
                     ticker: ticker.toUpperCase(),
-                    description: `${action} ${quantity} shares of ${ticker.toUpperCase()} @ $${pricePerShare.toFixed(2)}`,
+                    description: `${action} ${quantity} shares of ${ticker.toUpperCase()} @ ${currencySymbol}${pricePerShare.toFixed(2)}`,
                     transaction_date: dateTraded
                 })
                 .select('id')
@@ -106,7 +109,7 @@ export async function POST(request: NextRequest) {
                         portfolio_id: portfolioId,
                         transaction_type: 'FEE',
                         amount: -Math.abs(fees),
-                        currency: 'USD',
+                        currency,
                         ticker: ticker.toUpperCase(),
                         description: `Trading fee for ${action} ${ticker.toUpperCase()}`,
                         transaction_date: dateTraded
@@ -132,7 +135,8 @@ export async function POST(request: NextRequest) {
                 notes,
                 date_traded: dateTraded,
                 user_id: user.id,
-                cash_transaction_id: cashTransactionId
+                cash_transaction_id: cashTransactionId,
+                currency
             })
             .select()
             .single();
@@ -155,7 +159,8 @@ export async function POST(request: NextRequest) {
                     .rpc('calculate_cost_basis_fifo', {
                         p_portfolio_id: portfolioId,
                         p_ticker: ticker.toUpperCase(),
-                        p_sell_quantity: quantity
+                        p_sell_quantity: quantity,
+                        p_currency: currency
                     });
 
                 if (costBasisData && costBasisData.length > 0) {
@@ -195,7 +200,8 @@ export async function POST(request: NextRequest) {
                             realized_gain: realizedGain,
                             realized_gain_percent: realizedGainPercent,
                             holding_period_days: holdingPeriodDays,
-                            closed_at: dateTraded
+                            closed_at: dateTraded,
+                            currency
                         })
                         .select()
                         .single();

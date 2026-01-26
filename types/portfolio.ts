@@ -1,6 +1,6 @@
 // Trade data types for the Stock Portfolio Tracker
 
-export type CurrencyCode = 'USD' | 'EUR' | 'HUF' | 'GBP';
+export type CurrencyCode = 'USD' | 'EUR' | 'HUF';
 
 // Cash transaction types
 export type CashTransactionType =
@@ -33,7 +33,8 @@ export interface CashFlowSummary {
 }
 
 export interface CashBalanceData {
-  cashBalance: number;
+  cashBalance: number; // Normalized total in preferred currency
+  cashBalances?: Record<string, number>; // Breakdown by currency
   totalDeposits: number;
   totalWithdrawals: number;
   totalDividends: number;

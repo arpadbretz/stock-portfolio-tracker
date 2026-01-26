@@ -15,7 +15,7 @@ const CURRENCIES = [
     { code: 'USD', symbol: '$', name: 'US Dollar' },
     { code: 'EUR', symbol: '€', name: 'Euro' },
     { code: 'HUF', symbol: 'Ft', name: 'Hungarian Forint' },
-    { code: 'GBP', symbol: '£', name: 'British Pound' },
+
 ];
 
 export default function AccountPage() {
@@ -56,7 +56,7 @@ export default function AccountPage() {
     useEffect(() => {
         // Load saved currency preference
         const saved = localStorage.getItem('preferredCurrency');
-        if (saved && (saved === 'USD' || saved === 'EUR' || saved === 'HUF' || saved === 'GBP')) {
+        if (saved && (saved === 'USD' || saved === 'EUR' || saved === 'HUF')) {
             setCurrency(saved as CurrencyCode);
         }
 
@@ -211,7 +211,7 @@ export default function AccountPage() {
         setSavingCurrency(true);
         try {
             await updateSettings({ preferred_currency: newCurrency });
-            if (newCurrency === 'USD' || newCurrency === 'EUR' || newCurrency === 'HUF' || newCurrency === 'GBP') {
+            if (newCurrency === 'USD' || newCurrency === 'EUR' || newCurrency === 'HUF') {
                 setCurrency(newCurrency as CurrencyCode);
             }
             localStorage.setItem('preferredCurrency', newCurrency);

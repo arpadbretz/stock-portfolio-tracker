@@ -306,6 +306,7 @@ function CashTransactionModal({ onClose, onSubmit, currency }: CashTransactionMo
     const [description, setDescription] = useState('');
     const [ticker, setTicker] = useState('');
     const [transactionDate, setTransactionDate] = useState(new Date().toISOString().split('T')[0]);
+    const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>(currency);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const transactionTypes: { type: CashTransactionType; label: string; icon: typeof Wallet; color: string }[] = [
@@ -329,7 +330,7 @@ function CashTransactionModal({ onClose, onSubmit, currency }: CashTransactionMo
         await onSubmit({
             transaction_type: transactionType,
             amount: parseFloat(amount),
-            currency,
+            currency: selectedCurrency,
             ticker: ticker || undefined,
             description: description || undefined,
             transaction_date: new Date(transactionDate).toISOString(),
@@ -379,8 +380,8 @@ function CashTransactionModal({ onClose, onSubmit, currency }: CashTransactionMo
                                     type="button"
                                     onClick={() => setTransactionType(type)}
                                     className={`p-2 rounded-xl border transition-all flex flex-col items-center gap-1 ${transactionType === type
-                                            ? color + ' border-current shadow-lg'
-                                            : 'border-border/50 hover:border-border text-muted-foreground hover:text-foreground'
+                                        ? color + ' border-current shadow-lg'
+                                        : 'border-border/50 hover:border-border text-muted-foreground hover:text-foreground'
                                         }`}
                                 >
                                     <Icon size={16} />
@@ -395,8 +396,8 @@ function CashTransactionModal({ onClose, onSubmit, currency }: CashTransactionMo
                                     type="button"
                                     onClick={() => setTransactionType(type)}
                                     className={`p-2 rounded-xl border transition-all flex flex-col items-center gap-1 ${transactionType === type
-                                            ? color + ' border-current shadow-lg'
-                                            : 'border-border/50 hover:border-border text-muted-foreground hover:text-foreground'
+                                        ? color + ' border-current shadow-lg'
+                                        : 'border-border/50 hover:border-border text-muted-foreground hover:text-foreground'
                                         }`}
                                 >
                                     <Icon size={16} />
@@ -406,23 +407,39 @@ function CashTransactionModal({ onClose, onSubmit, currency }: CashTransactionMo
                         </div>
                     </div>
 
-                    {/* Amount */}
-                    <div>
-                        <label className="block text-xs font-bold text-muted-foreground mb-2 uppercase tracking-wider">
-                            Amount ({currency})
-                        </label>
-                        <div className="relative">
-                            <DollarSign size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                            <input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                value={amount}
-                                onChange={(e) => setAmount(e.target.value)}
-                                placeholder="0.00"
-                                className="w-full pl-10 pr-4 py-3 rounded-xl bg-muted/30 border border-border/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 text-lg font-bold"
-                                required
-                            />
+                    {/* Amount & Currency */}
+                    <div className="grid grid-cols-3 gap-3">
+                        <div className="col-span-2">
+                            <label className="block text-xs font-bold text-muted-foreground mb-2 uppercase tracking-wider">
+                                Amount
+                            </label>
+                            <div className="relative">
+                                <DollarSign size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={amount}
+                                    onChange={(e) => setAmount(e.target.value)}
+                                    placeholder="0.00"
+                                    className="w-full pl-10 pr-4 py-3 rounded-xl bg-muted/30 border border-border/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 text-lg font-bold"
+                                    required
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-muted-foreground mb-2 uppercase tracking-wider">
+                                Currency
+                            </label>
+                            <select
+                                value={selectedCurrency}
+                                onChange={(e) => setSelectedCurrency(e.target.value as CurrencyCode)}
+                                className="w-full px-3 py-3 rounded-xl bg-muted/30 border border-border/50 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 font-bold"
+                            >
+                                <option value="USD">USD</option>
+                                <option value="EUR">EUR</option>
+                                <option value="HUF">HUF</option>
+                            </select>
                         </div>
                     </div>
 

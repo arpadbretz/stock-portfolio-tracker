@@ -139,21 +139,25 @@ export async function GET(request: Request) {
             prices = await getCachedBatchPrices(tickers);
         }
 
-        const sets = ['USDEUR=X', 'USDHUF=X', 'USDGBP=X'];
+        const sets = ['USDEUR=X', 'USDHUF=X'];
         const ratesData = await getCachedBatchPrices(sets);
         const exchangeRates = {
             USD: 1,
             EUR: ratesData.get('USDEUR=X')?.currentPrice || 0.92,
             HUF: ratesData.get('USDHUF=X')?.currentPrice || 350,
-            GBP: ratesData.get('USDGBP=X')?.currentPrice || 0.79,
         };
 
-        // Fetch cash balance for the portfolio
-        let cashBalance = 0;
+        // Fetch multi-currency cash balance for the portfolio
+        let cashBalances: Record<string, number> = { USD: 0, EUR: 0, HUF: 0 };
         try {
             const { data: balanceData } = await supabase
-                .rpc('get_portfolio_cash_balance', { p_portfolio_id: portfolio.id });
-            cashBalance = Number(balanceData) || 0;
+                .rpc('get_portfolio_cash_balance_multi', { p_portfolio_id: portfolio.id });
+
+            if (balanceData && Array.isArray(balanceData)) {
+                balanceData.forEach((row: any) => {
+                    cashBalances[row.currency] = Number(row.balance) || 0;
+                });
+            }
         } catch (e) {
             console.log('Cash balance not available (table may not exist yet):', e);
         }
@@ -174,9 +178,9 @@ export async function GET(request: Request) {
             console.log('Realized P/L not available (table may not exist yet):', e);
         }
 
-        // Aggregate and calculate (now with cash balance)
+        // Aggregate and calculate (now with multi-currency cash balance)
         const holdings = aggregateHoldings(trades, prices);
-        const summary = calculatePortfolioSummary(holdings, exchangeRates, cashBalance);
+        const summary = calculatePortfolioSummary(holdings, exchangeRates, cashBalances);
 
         // Add realized P/L to summary
         const enhancedSummary = {
@@ -195,7 +199,7 @@ export async function GET(request: Request) {
                 trades,
                 holdings: enhancedSummary.holdings,
                 summary: enhancedSummary,
-                cashBalance,
+                cashBalances,
                 realizedGain,
                 lastUpdated: new Date().toISOString(),
             },

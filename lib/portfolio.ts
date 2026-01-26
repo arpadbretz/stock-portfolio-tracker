@@ -72,8 +72,8 @@ export function aggregateHoldings(trades: Trade[], prices: Map<string, PriceData
 // Calculate portfolio summary
 export function calculatePortfolioSummary(
     holdings: Holding[],
-    exchangeRates: Record<string, number> = { USD: 1, EUR: 0.92, HUF: 350, GBP: 0.79 },
-    cashBalance: number = 0
+    exchangeRates: Record<string, number> = { USD: 1, EUR: 0.92, HUF: 350 },
+    cashBalance: number | Record<string, number> = 0
 ): PortfolioSummary {
     const totalInvested = holdings.reduce((sum, h) => sum + h.totalInvested, 0);
     const totalMarketValue = holdings.reduce((sum, h) => sum + h.marketValue, 0);
@@ -82,8 +82,23 @@ export function calculatePortfolioSummary(
         ? (totalGain / totalInvested) * 100
         : 0;
 
+    // Handle cash balance which could be a single number (USD) or an object with multiple currencies
+    let normalizedCashBalance = 0;
+    if (typeof cashBalance === 'number') {
+        normalizedCashBalance = cashBalance;
+    } else {
+        // Convert all cash balances to USD first or directly to the reporting currency?
+        // Since the summary expects totals, we should aim for consistency.
+        // Usually everything else is in USD internally for aggregation, then converted for display.
+        for (const [curr, amount] of Object.entries(cashBalance)) {
+            // Convert to USD (assuming USD is base 1 in rates)
+            const usdRate = exchangeRates[curr] || 1;
+            normalizedCashBalance += amount / usdRate;
+        }
+    }
+
     // Total portfolio value includes cash balance
-    const totalPortfolioValue = totalMarketValue + cashBalance;
+    const totalPortfolioValue = totalMarketValue + normalizedCashBalance;
 
     // Calculate allocation percentages (based on market value only, not including cash)
     const holdingsWithAllocation = holdings.map(h => ({
@@ -96,7 +111,7 @@ export function calculatePortfolioSummary(
         totalMarketValue,
         totalGain,
         totalGainPercent,
-        cashBalance,
+        cashBalance: normalizedCashBalance,
         totalPortfolioValue,
         holdings: holdingsWithAllocation,
         exchangeRates: exchangeRates as any,

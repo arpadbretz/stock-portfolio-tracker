@@ -49,12 +49,19 @@ export async function GET(request: Request) {
             throw txError;
         }
 
-        // Calculate cash balance
-        const { data: balanceData, error: balanceError } = await supabase
-            .rpc('get_portfolio_cash_balance', { p_portfolio_id: portfolioId });
+        // Calculate multi-currency cash balance
+        let cashBalances: Record<string, number> = { USD: 0, EUR: 0, HUF: 0 };
+        try {
+            const { data: balanceData } = await supabase
+                .rpc('get_portfolio_cash_balance_multi', { p_portfolio_id: portfolioId });
 
-        if (balanceError) {
-            console.error('Error getting cash balance:', balanceError);
+            if (balanceData && Array.isArray(balanceData)) {
+                balanceData.forEach((row: any) => {
+                    cashBalances[row.currency] = Number(row.balance) || 0;
+                });
+            }
+        } catch (e) {
+            console.error('Error getting multi-currency cash balance:', e);
         }
 
         // Get cash flow summary
@@ -81,10 +88,12 @@ export async function GET(request: Request) {
         const totalDividends = Number(flowMap.get('DIVIDEND') || 0);
         const totalFees = Math.abs(Number(flowMap.get('FEE') || 0)) + Math.abs(Number(flowMap.get('TAX') || 0));
 
+        // For compatibility, return the USD balance as "cashBalance" or use a converter?
+        // Let's return the dictionary as primary.
         return NextResponse.json({
             success: true,
             data: {
-                cashBalance: Number(balanceData) || 0,
+                cashBalances,
                 totalDeposits,
                 totalWithdrawals,
                 totalDividends,
@@ -185,15 +194,21 @@ export async function POST(request: Request) {
             throw insertError;
         }
 
-        // Get updated balance
-        const { data: newBalance } = await supabase
-            .rpc('get_portfolio_cash_balance', { p_portfolio_id: portfolio_id });
+        // Get updated balance (multi-currency)
+        let cashBalances: Record<string, number> = { USD: 0, EUR: 0, HUF: 0 };
+        const { data: balanceData } = await supabase
+            .rpc('get_portfolio_cash_balance_multi', { p_portfolio_id: portfolio_id });
+        if (balanceData && Array.isArray(balanceData)) {
+            balanceData.forEach((row: any) => {
+                cashBalances[row.currency] = Number(row.balance) || 0;
+            });
+        }
 
         return NextResponse.json({
             success: true,
             data: {
                 transaction,
-                newBalance: Number(newBalance) || 0
+                cashBalances
             }
         });
 
@@ -266,15 +281,21 @@ export async function PUT(request: Request) {
             return NextResponse.json({ success: false, error: 'Transaction not found' }, { status: 404 });
         }
 
-        // Get updated balance
-        const { data: newBalance } = await supabase
-            .rpc('get_portfolio_cash_balance', { p_portfolio_id: transaction.portfolio_id });
+        // Get updated balance (multi-currency)
+        let cashBalances: Record<string, number> = { USD: 0, EUR: 0, HUF: 0 };
+        const { data: balanceData } = await supabase
+            .rpc('get_portfolio_cash_balance_multi', { p_portfolio_id: transaction.portfolio_id });
+        if (balanceData && Array.isArray(balanceData)) {
+            balanceData.forEach((row: any) => {
+                cashBalances[row.currency] = Number(row.balance) || 0;
+            });
+        }
 
         return NextResponse.json({
             success: true,
             data: {
                 transaction,
-                newBalance: Number(newBalance) || 0
+                cashBalances
             }
         });
 
@@ -330,15 +351,21 @@ export async function DELETE(request: Request) {
             throw deleteError;
         }
 
-        // Get updated balance
-        const { data: newBalance } = await supabase
-            .rpc('get_portfolio_cash_balance', { p_portfolio_id: existing.portfolio_id });
+        // Get updated balance (multi-currency)
+        let cashBalances: Record<string, number> = { USD: 0, EUR: 0, HUF: 0 };
+        const { data: balanceData } = await supabase
+            .rpc('get_portfolio_cash_balance_multi', { p_portfolio_id: existing.portfolio_id });
+        if (balanceData && Array.isArray(balanceData)) {
+            balanceData.forEach((row: any) => {
+                cashBalances[row.currency] = Number(row.balance) || 0;
+            });
+        }
 
         return NextResponse.json({
             success: true,
             data: {
                 deleted: true,
-                newBalance: Number(newBalance) || 0
+                cashBalances
             }
         });
 

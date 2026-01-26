@@ -17,6 +17,7 @@ const tradeSchema = z.object({
     fees: z.number().min(0, 'Fees cannot be negative'),
     notes: z.string().optional(),
     dateTraded: z.string().min(1, 'Date is required'),
+    currency: z.enum(['USD', 'EUR', 'HUF']),
 });
 
 type TradeFormValues = z.infer<typeof tradeSchema>;
@@ -51,6 +52,7 @@ export default function AddTradeForm({ portfolioId, onTradeAdded, editTrade, onC
             fees: 0,
             notes: '',
             dateTraded: new Date().toISOString().split('T')[0],
+            currency: 'USD',
         },
     });
 
@@ -64,6 +66,7 @@ export default function AddTradeForm({ portfolioId, onTradeAdded, editTrade, onC
                 fees: editTrade.fees,
                 notes: editTrade.notes || '',
                 dateTraded: new Date(editTrade.timestamp || Date.now()).toISOString().split('T')[0],
+                currency: (editTrade as any).currency || 'USD',
             });
         }
     }, [editTrade, reset]);
@@ -167,6 +170,22 @@ export default function AddTradeForm({ portfolioId, onTradeAdded, editTrade, onC
                         >
                             <option value="BUY">Buy</option>
                             <option value="SELL">Sell</option>
+                        </select>
+                    </div>
+
+                    {/* Currency */}
+                    <div>
+                        <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                            Currency
+                        </label>
+                        <select
+                            {...register('currency')}
+                            className="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                            disabled={isLoading}
+                        >
+                            <option value="USD">USD ($)</option>
+                            <option value="EUR">EUR (€)</option>
+                            <option value="HUF">HUF (Ft)</option>
                         </select>
                     </div>
                 </div>
