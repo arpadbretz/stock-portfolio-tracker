@@ -16,6 +16,7 @@ const tradeSchema = z.object({
     pricePerShare: z.number().positive('Price must be positive'),
     fees: z.number().min(0, 'Fees cannot be negative'),
     notes: z.string().optional(),
+    dateTraded: z.string().min(1, 'Date is required'),
 });
 
 type TradeFormValues = z.infer<typeof tradeSchema>;
@@ -49,6 +50,7 @@ export default function AddTradeForm({ portfolioId, onTradeAdded, editTrade, onC
             pricePerShare: undefined,
             fees: 0,
             notes: '',
+            dateTraded: new Date().toISOString().split('T')[0],
         },
     });
 
@@ -61,6 +63,7 @@ export default function AddTradeForm({ portfolioId, onTradeAdded, editTrade, onC
                 pricePerShare: editTrade.pricePerShare,
                 fees: editTrade.fees,
                 notes: editTrade.notes || '',
+                dateTraded: new Date(editTrade.timestamp || Date.now()).toISOString().split('T')[0],
             });
         }
     }, [editTrade, reset]);
@@ -218,6 +221,22 @@ export default function AddTradeForm({ portfolioId, onTradeAdded, editTrade, onC
                             className="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                             disabled={isLoading}
                         />
+                    </div>
+
+                    {/* Date */}
+                    <div>
+                        <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                            Date
+                        </label>
+                        <input
+                            {...register('dateTraded')}
+                            type="date"
+                            className="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                            disabled={isLoading}
+                        />
+                        {errors.dateTraded && (
+                            <p className="text-red-400 text-xs mt-1">{errors.dateTraded.message}</p>
+                        )}
                     </div>
                 </div>
 
