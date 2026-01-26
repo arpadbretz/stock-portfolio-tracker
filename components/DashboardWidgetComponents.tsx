@@ -1182,24 +1182,46 @@ export function MarketPulseWidget() {
 
     return (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {data.map((item) => (
-                <div key={item.ticker} className="p-4 rounded-2xl bg-card/50 border border-border/30 hover:border-primary/30 transition-all hover:bg-muted/20 group">
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{item.name}</span>
-                        <div className={`px-2 py-0.5 rounded-md text-[9px] font-black ${item.changePercent >= 0 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
-                            {item.changePercent >= 0 ? '+' : ''}{item.changePercent.toFixed(2)}%
+            {data.map((item) => {
+                const isPositive = item.changePercent >= 0;
+                const chartColor = isPositive ? '#10b981' : '#f43f5e';
+
+                return (
+                    <div key={item.ticker} className="p-4 rounded-2xl bg-card/50 border border-border/30 hover:border-primary/30 transition-all hover:bg-muted/20 group flex flex-col h-full">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{item.name}</span>
+                            <div className={`px-2 py-0.5 rounded-md text-[9px] font-black ${isPositive ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
+                                {isPositive ? '+' : ''}{item.changePercent.toFixed(2)}%
+                            </div>
+                        </div>
+                        <div className="text-lg font-black tracking-tight group-hover:text-primary transition-colors">
+                            {item.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
+
+                        <div className="mt-auto pt-4 h-12 w-full opacity-60 group-hover:opacity-100 transition-opacity">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={item.history}>
+                                    <defs>
+                                        <linearGradient id={`pulseGradient-${item.ticker}`} x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor={chartColor} stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor={chartColor} stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <Area
+                                        type="monotone"
+                                        dataKey="price"
+                                        stroke={chartColor}
+                                        strokeWidth={2}
+                                        fillOpacity={1}
+                                        fill={`url(#pulseGradient-${item.ticker})`}
+                                        isAnimationActive={false}
+                                    />
+                                </AreaChart>
+                            </ResponsiveContainer>
                         </div>
                     </div>
-                    <div className="text-lg font-black tracking-tight group-hover:text-primary transition-colors">{item.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                    <div className="mt-2 h-8 w-full opacity-30 group-hover:opacity-60 transition-opacity">
-                        <div className="w-full h-full border-b border-dashed border-primary/50 flex items-end">
-                            {Array.from({ length: 12 }).map((_, i) => (
-                                <div key={i} className="flex-1 bg-primary/20 mx-px rounded-t-sm" style={{ height: `${20 + Math.random() * 60}%` }} />
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            ))}
+                );
+            })}
         </div>
     );
 }

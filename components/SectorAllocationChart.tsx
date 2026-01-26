@@ -15,24 +15,26 @@ interface SectorAllocationChartProps {
 }
 
 const SECTOR_COLORS: Record<string, string> = {
-    'Information Technology': '#3b82f6',
-    'Financials': '#6366f1',
-    'Healthcare': '#10b981',
-    'Consumer Discretionary': '#f59e0b',
-    'Communication Services': '#8b5cf6',
-    'Industrials': '#06b6d4',
-    'Energy': '#f43f5e',
-    'Utilities': '#d946ef',
-    'Materials': '#ec4899',
-    'Real Estate': '#14b8a6',
-    'Consumer Staples': '#84cc16',
-    'Unknown': '#64748b',
+    'Information Technology': '#3b82f6',   // Blue
+    'Financials': '#6366f1',               // Indigo
+    'Healthcare': '#10b981',               // Emerald
+    'Consumer Discretionary': '#f59e0b',   // Amber
+    'Consumer Cyclical': '#f59e0b',        // Amber
+    'Communication Services': '#8b5cf6',   // Violet
+    'Industrials': '#06b6d4',               // Cyan
+    'Energy': '#f43f5e',                   // Rose
+    'Utilities': '#d946ef',                // Fuchsia
+    'Materials': '#ec4899',                // Pink
+    'Real Estate': '#14b8a6',              // Teal
+    'Consumer Staples': '#84cc16',         // Lime
+    'Unknown': '#64748b',                  // Slate
+    'Cash': '#0ea5e9',                     // Sky (Distinct from Healthcare)
 };
 
 const CASH_COLORS: Record<string, string> = {
-    'USD': '#0ea5e9',
-    'EUR': '#2dd4bf',
-    'HUF': '#22c55e',
+    'USD': '#0ea5e9', // Sky
+    'EUR': '#2dd4bf', // Teal/Cyan
+    'HUF': '#22c55e', // Green
 };
 
 export default function SectorAllocationChart({
@@ -91,7 +93,7 @@ export default function SectorAllocationChart({
     // Inner Ring: Asset Classes
     const innerData = [
         { name: 'Stocks', value: totalStockValue, color: '#3b82f6' },
-        { name: 'Cash', value: totalCashValue, color: '#10b981' }
+        { name: 'Cash', value: totalCashValue, color: '#0ea5e9' }
     ].filter(d => d.value > 0);
 
     // Outer Ring: Detailed Breakdown

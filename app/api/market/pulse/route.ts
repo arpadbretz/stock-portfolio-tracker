@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getBatchPrices } from '@/lib/yahoo-finance';
+import { getBatchPrices, getHistoricalPrices } from '@/lib/yahoo-finance';
 
 export async function GET() {
     try {
@@ -16,14 +16,26 @@ export async function GET() {
 
         const prices = await getBatchPrices(macroTickers);
 
+        // Fetch 30 days of history for each
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        const historyPromises = macroTickers.map(ticker =>
+            getHistoricalPrices(ticker, thirtyDaysAgo).then((h: any[]) => ({ ticker, history: h }))
+        );
+        const allHistory = await Promise.all(historyPromises);
+        const historyMap = new Map<string, any[]>(allHistory.map(h => [h.ticker, h.history]));
+
         const data = macroTickers.map(ticker => {
             const price = prices.get(ticker);
+            const history = historyMap.get(ticker) || [];
             return {
                 ticker,
                 name: getMacroName(ticker),
                 price: price?.currentPrice || 0,
                 change: price?.change || 0,
                 changePercent: price?.changePercent || 0,
+                history: history.map((h: any) => ({ date: h.date, price: h.close })),
             };
         });
 
