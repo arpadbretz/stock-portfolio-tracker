@@ -9,6 +9,7 @@ interface PerformanceChartProps {
     exchangeRates: Record<CurrencyCode, number>;
     isLoading?: boolean;
     size?: 'small' | 'medium' | 'large';
+    cashBalance?: number;
 }
 
 const COLORS = [
@@ -22,7 +23,7 @@ const COLORS = [
     '#d946ef', // fuchsia-500
 ];
 
-export default function AssetAllocationChart({ holdings, currency, exchangeRates, isLoading, size = 'medium' }: PerformanceChartProps) {
+export default function AssetAllocationChart({ holdings, currency, exchangeRates, isLoading, size = 'medium', cashBalance }: PerformanceChartProps) {
     if (isLoading) {
         return (
             <div className="h-full flex flex-col justify-center items-center">
@@ -43,13 +44,28 @@ export default function AssetAllocationChart({ holdings, currency, exchangeRates
         );
     }
 
-    const data = holdings
+    const chartHoldings = [...holdings];
+    const chartData = chartHoldings
         .map(h => ({
             name: h.ticker,
             value: convertCurrency(h.marketValue, currency, exchangeRates),
             percentage: h.allocation || 0
-        }))
-        .sort((a, b) => b.value - a.value);
+        }));
+
+    // Add Cash if present
+    if (cashBalance && cashBalance > 0) {
+        const totalValue = holdings.reduce((sum, h) => sum + h.marketValue, 0) + cashBalance;
+        const cashValue = convertCurrency(cashBalance, currency, exchangeRates);
+        const cashPercentage = totalValue > 0 ? (cashBalance / totalValue) * 100 : 0;
+
+        chartData.push({
+            name: 'CASH',
+            value: cashValue,
+            percentage: cashPercentage
+        });
+    }
+
+    const data = chartData.sort((a, b) => b.value - a.value);
 
     const isLarge = size === 'large';
 

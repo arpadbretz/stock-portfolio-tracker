@@ -17,9 +17,19 @@ interface HoldingsTableProps {
     exchangeRates: Record<CurrencyCode, number>;
     isLoading?: boolean;
     compact?: boolean;
+    cashBalance?: number; // Normalized USD
+    cashBalances?: Record<string, number>;
 }
 
-export default function HoldingsTable({ holdings, currency, exchangeRates, isLoading, compact = false }: HoldingsTableProps) {
+export default function HoldingsTable({
+    holdings,
+    currency,
+    exchangeRates,
+    isLoading,
+    compact = false,
+    cashBalance = 0,
+    cashBalances = {}
+}: HoldingsTableProps) {
     if (isLoading) {
         return (
             <div className="bg-card rounded-[40px] border border-border p-8">
@@ -174,6 +184,45 @@ export default function HoldingsTable({ holdings, currency, exchangeRates, isLoa
                                 </motion.tr>
                             );
                         })}
+
+                        {/* Cash Row */}
+                        {cashBalance !== 0 && (
+                            <motion.tr
+                                whileHover={{ backgroundColor: 'var(--muted)', opacity: 1 }}
+                                className="transition-colors group"
+                            >
+                                <td className="py-5 px-8">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-500 font-black text-sm group-hover:scale-110 transition-transform">
+                                            CASH
+                                        </div>
+                                        <div>
+                                            <div className="font-black text-foreground">Cash Balance</div>
+                                            <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">
+                                                {Object.entries(cashBalances)
+                                                    .filter(([_, b]) => b !== 0)
+                                                    .map(([c, b]) => `${formatCurrency(b, c as any)}`)
+                                                    .join(' • ')}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td className="py-5 px-8 text-right font-bold text-sm text-muted-foreground">--</td>
+                                <td className="py-5 px-8 text-right text-muted-foreground text-sm">--</td>
+                                <td className="py-5 px-8 text-right text-muted-foreground text-sm">--</td>
+                                <td className="py-5 px-8 text-right font-black text-foreground blur-stealth">
+                                    {formatCurrency(convertCurrency(cashBalance, currency, exchangeRates), currency)}
+                                </td>
+                                <td className="py-5 px-8 text-right">
+                                    <div className="text-right pr-4">
+                                        <div className="font-black text-sm text-emerald-500">
+                                            {((cashBalance / (holdings.reduce((s, h) => s + h.marketValue, 0) + cashBalance)) * 100).toFixed(1)}%
+                                        </div>
+                                        <div className="text-[10px] font-black text-muted-foreground">Allocation</div>
+                                    </div>
+                                </td>
+                            </motion.tr>
+                        )}
                     </tbody>
                 </table>
             </div>
@@ -225,6 +274,51 @@ export default function HoldingsTable({ holdings, currency, exchangeRates, isLoa
                         </Link>
                     );
                 })}
+
+                {/* Cash Card Mobile */}
+                {cashBalance !== 0 && (
+                    <div className="block p-6 bg-emerald-500/5 transition-colors border-t border-border/50">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-500 font-black text-sm">
+                                    CASH
+                                </div>
+                                <div>
+                                    <div className="font-black text-lg text-foreground">Cash Balance</div>
+                                    <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter">
+                                        Multi-Currency Assets
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <div className="font-black text-lg blur-stealth text-emerald-500">
+                                    {formatCurrency(convertCurrency(cashBalance, currency, exchangeRates), currency)}
+                                </div>
+                                <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest leading-none mt-1">
+                                    Total Liquid
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="bg-background/50 p-4 rounded-2xl border border-border/50">
+                                <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mb-1 text-center">Weight</div>
+                                <div className="font-black text-center text-sm text-emerald-500">
+                                    {((cashBalance / (holdings.reduce((s, h) => s + h.marketValue, 0) + cashBalance)) * 100).toFixed(1)}%
+                                </div>
+                            </div>
+                            <div className="bg-background/50 p-4 rounded-2xl border border-border/50">
+                                <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mb-1 text-center">Breakdown</div>
+                                <div className="font-black text-center text-[10px] truncate leading-tight">
+                                    {Object.entries(cashBalances)
+                                        .filter(([_, b]) => b !== 0)
+                                        .map(([c]) => c)
+                                        .join(' • ')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <div className="p-8 pt-4 border-t border-border/50 text-center">

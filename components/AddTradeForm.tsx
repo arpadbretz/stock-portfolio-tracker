@@ -18,6 +18,7 @@ const tradeSchema = z.object({
     notes: z.string().optional(),
     dateTraded: z.string().min(1, 'Date is required'),
     currency: z.enum(['USD', 'EUR', 'HUF']),
+    adjustCash: z.boolean(),
 });
 
 type TradeFormValues = z.infer<typeof tradeSchema>;
@@ -41,6 +42,7 @@ export default function AddTradeForm({ portfolioId, onTradeAdded, editTrade, onC
         handleSubmit,
         reset,
         setValue,
+        watch,
         formState: { errors },
     } = useForm<TradeFormValues>({
         resolver: zodResolver(tradeSchema),
@@ -53,8 +55,11 @@ export default function AddTradeForm({ portfolioId, onTradeAdded, editTrade, onC
             notes: '',
             dateTraded: new Date().toISOString().split('T')[0],
             currency: 'USD',
+            adjustCash: true,
         },
     });
+
+    const selectedCurrency = watch('currency');
 
     useEffect(() => {
         if (editTrade) {
@@ -81,9 +86,11 @@ export default function AddTradeForm({ portfolioId, onTradeAdded, editTrade, onC
             const method = isEditing ? 'PATCH' : 'POST';
 
             // We combine the form data with the portfolioId before sending
+            const { adjustCash, ...tradeData } = data;
             const payload = {
-                ...data,
-                portfolioId
+                ...tradeData,
+                portfolioId,
+                skipCashTransaction: !adjustCash
             };
 
             const response = await fetch(url, {
@@ -212,7 +219,7 @@ export default function AddTradeForm({ portfolioId, onTradeAdded, editTrade, onC
                     {/* Price Per Share */}
                     <div>
                         <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                            Price/Share ($)
+                            Price/Share ({selectedCurrency === 'EUR' ? '€' : selectedCurrency === 'HUF' ? 'Ft' : '$'})
                         </label>
                         <input
                             {...register('pricePerShare', { valueAsNumber: true })}
@@ -230,7 +237,7 @@ export default function AddTradeForm({ portfolioId, onTradeAdded, editTrade, onC
                     {/* Fees */}
                     <div>
                         <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                            Fees ($)
+                            Fees ({selectedCurrency === 'EUR' ? '€' : selectedCurrency === 'HUF' ? 'Ft' : '$'})
                         </label>
                         <input
                             {...register('fees', { valueAsNumber: true })}
@@ -259,7 +266,29 @@ export default function AddTradeForm({ portfolioId, onTradeAdded, editTrade, onC
                     </div>
                 </div>
 
-                {/* Notes */}
+                {/* Cash Balance Sync Toggle */}
+                <div className="pt-2">
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                        <div className="relative">
+                            <input
+                                type="checkbox"
+                                {...register('adjustCash')}
+                                className="sr-only peer"
+                                disabled={isLoading}
+                            />
+                            <div className="w-10 h-6 bg-slate-700 rounded-full peer peer-focus:ring-4 peer-focus:ring-emerald-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-sm font-medium text-slate-200 group-hover:text-emerald-400 transition-colors">
+                                Adjust Cash Balance Automatically
+                            </span>
+                            <span className="text-xs text-slate-400">
+                                Trade amount will be deducted from or added to your {selectedCurrency} balance
+                            </span>
+                        </div>
+                    </label>
+                </div>
+
                 <div>
                     <label className="block text-sm font-medium text-slate-300 mb-1.5">
                         Notes (optional)

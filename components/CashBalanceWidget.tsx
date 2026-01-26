@@ -142,6 +142,22 @@ export function CashBalanceWidget({
                     </button>
                 </div>
 
+                {/* Currency Breakdown */}
+                {data?.cashBalances && Object.values(data.cashBalances).some(b => b !== 0) && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                        {Object.entries(data.cashBalances).map(([curr, bal]) => (
+                            bal !== 0 && (
+                                <div key={curr} className="px-2 py-0.5 rounded-lg bg-emerald-500/10 border border-emerald-500/10 text-[10px] font-bold">
+                                    <span className="text-muted-foreground mr-1">{curr}:</span>
+                                    <span className={isStealthMode ? 'blur-stealth' : ''}>
+                                        {formatCurrency(bal, curr as CurrencyCode)}
+                                    </span>
+                                </div>
+                            )
+                        ))}
+                    </div>
+                )}
+
                 {/* Quick Stats */}
                 {expanded && (
                     <div className="grid grid-cols-3 gap-2 mt-4">

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { CashTransaction, CashTransactionType, CurrencyCode } from '@/types/portfolio';
+import { getCachedBatchPrices } from '@/lib/yahoo-finance/cached';
 
 // GET - Fetch all cash transactions for a portfolio
 export async function GET(request: Request) {
@@ -64,6 +65,22 @@ export async function GET(request: Request) {
             console.error('Error getting multi-currency cash balance:', e);
         }
 
+        // Fetch exchange rates to calculate normalized cashBalance
+        const sets = ['USDEUR=X', 'USDHUF=X'];
+        const ratesData = await getCachedBatchPrices(sets);
+        const exchangeRates = {
+            USD: 1,
+            EUR: ratesData.get('USDEUR=X')?.currentPrice || 0.92,
+            HUF: ratesData.get('USDHUF=X')?.currentPrice || 350,
+        };
+
+        // Calculate normalized cashBalance in USD
+        let cashBalance = 0;
+        for (const [curr, amount] of Object.entries(cashBalances)) {
+            const rate = (exchangeRates as any)[curr] || 1;
+            cashBalance += amount / rate;
+        }
+
         // Get cash flow summary
         const { data: flowSummary, error: flowError } = await supabase
             .rpc('get_cash_flow_summary', {
@@ -93,6 +110,7 @@ export async function GET(request: Request) {
         return NextResponse.json({
             success: true,
             data: {
+                cashBalance,
                 cashBalances,
                 totalDeposits,
                 totalWithdrawals,

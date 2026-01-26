@@ -100,10 +100,10 @@ export function calculatePortfolioSummary(
     // Total portfolio value includes cash balance
     const totalPortfolioValue = totalMarketValue + normalizedCashBalance;
 
-    // Calculate allocation percentages (based on market value only, not including cash)
+    // Calculate allocation percentages (based on total portfolio value, including cash)
     const holdingsWithAllocation = holdings.map(h => ({
         ...h,
-        allocation: totalMarketValue > 0 ? (h.marketValue / totalMarketValue) * 100 : 0
+        allocation: totalPortfolioValue > 0 ? (h.marketValue / totalPortfolioValue) * 100 : 0
     }));
 
     return {
@@ -112,6 +112,7 @@ export function calculatePortfolioSummary(
         totalGain,
         totalGainPercent,
         cashBalance: normalizedCashBalance,
+        cashBalances: typeof cashBalance === 'object' ? cashBalance : { USD: cashBalance },
         totalPortfolioValue,
         holdings: holdingsWithAllocation,
         exchangeRates: exchangeRates as any,

@@ -462,6 +462,8 @@ export default function DashboardPage() {
               currency={currency}
               exchangeRates={rates}
               compact
+              cashBalance={summary?.cashBalance}
+              cashBalances={summary?.cashBalances}
             />
             {!isLarge && holdings.length > 5 && (
               <div className="text-center mt-2 text-xs text-muted-foreground">
@@ -562,6 +564,7 @@ export default function DashboardPage() {
             currency={currency}
             exchangeRates={rates}
             size={size}
+            cashBalance={summary?.cashBalance}
           />
         );
 

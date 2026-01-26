@@ -123,6 +123,7 @@ export interface PortfolioSummary {
   totalGain: number;  // Unrealized gain
   totalGainPercent: number;
   cashBalance: number;  // Available cash in portfolio
+  cashBalances?: Record<string, number>; // Breakdown by currency
   totalPortfolioValue: number;  // Market value + cash balance
   realizedGain?: number;  // Total realized P/L from closed positions
   totalReturn?: number;  // Unrealized + Realized gains
