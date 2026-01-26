@@ -148,9 +148,19 @@ export async function GET(request: Request) {
             GBP: ratesData.get('USDGBP=X')?.currentPrice || 0.79,
         };
 
-        // Aggregate and calculate
+        // Fetch cash balance for the portfolio
+        let cashBalance = 0;
+        try {
+            const { data: balanceData } = await supabase
+                .rpc('get_portfolio_cash_balance', { p_portfolio_id: portfolio.id });
+            cashBalance = Number(balanceData) || 0;
+        } catch (e) {
+            console.log('Cash balance not available (table may not exist yet):', e);
+        }
+
+        // Aggregate and calculate (now with cash balance)
         const holdings = aggregateHoldings(trades, prices);
-        const summary = calculatePortfolioSummary(holdings, exchangeRates);
+        const summary = calculatePortfolioSummary(holdings, exchangeRates, cashBalance);
 
         return NextResponse.json({
             success: true,
@@ -162,6 +172,7 @@ export async function GET(request: Request) {
                 trades,
                 holdings: summary.holdings,
                 summary,
+                cashBalance,
                 lastUpdated: new Date().toISOString(),
             },
         });

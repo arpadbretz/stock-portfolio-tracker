@@ -56,6 +56,7 @@ import {
   MarketOverviewWidget,
   PerformanceChartWidget,
 } from '@/components/DashboardWidgetComponents';
+import { CashBalanceWidget } from '@/components/CashBalanceWidget';
 
 
 export default function DashboardPage() {
@@ -569,6 +570,17 @@ export default function DashboardPage() {
           <PerformanceChartWidget
             portfolioId={portfolio?.id}
             refreshKey={lastSyncedAt}
+          />
+        );
+
+      case 'cash-balance':
+        return (
+          <CashBalanceWidget
+            portfolioId={portfolio?.id}
+            currency={currency}
+            exchangeRates={rates}
+            isStealthMode={isStealthMode}
+            expanded={isLarge}
           />
         );
 

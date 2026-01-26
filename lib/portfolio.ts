@@ -72,7 +72,8 @@ export function aggregateHoldings(trades: Trade[], prices: Map<string, PriceData
 // Calculate portfolio summary
 export function calculatePortfolioSummary(
     holdings: Holding[],
-    exchangeRates: Record<string, number> = { USD: 1, EUR: 0.92, HUF: 350, GBP: 0.79 }
+    exchangeRates: Record<string, number> = { USD: 1, EUR: 0.92, HUF: 350, GBP: 0.79 },
+    cashBalance: number = 0
 ): PortfolioSummary {
     const totalInvested = holdings.reduce((sum, h) => sum + h.totalInvested, 0);
     const totalMarketValue = holdings.reduce((sum, h) => sum + h.marketValue, 0);
@@ -81,7 +82,10 @@ export function calculatePortfolioSummary(
         ? (totalGain / totalInvested) * 100
         : 0;
 
-    // Calculate allocation percentages
+    // Total portfolio value includes cash balance
+    const totalPortfolioValue = totalMarketValue + cashBalance;
+
+    // Calculate allocation percentages (based on market value only, not including cash)
     const holdingsWithAllocation = holdings.map(h => ({
         ...h,
         allocation: totalMarketValue > 0 ? (h.marketValue / totalMarketValue) * 100 : 0
@@ -92,6 +96,8 @@ export function calculatePortfolioSummary(
         totalMarketValue,
         totalGain,
         totalGainPercent,
+        cashBalance,
+        totalPortfolioValue,
         holdings: holdingsWithAllocation,
         exchangeRates: exchangeRates as any,
     };

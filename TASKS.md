@@ -138,6 +138,7 @@
 | PORT-015 | Win/Loss Analytics | ⬜ | 4h | 🔴 P&L by tag, holding period |
 | PORT-016 | Trade Notes & Screenshots | ⬜ | 3h | 🔴 Attach thesis to trades |
 | PORT-017 | Monthly Performance Reports | ⬜ | 4h | 🔴 Auto-generated reviews |
+| PORT-018 | Cash Balance Tracking System | 🔄 | 6h | Implemented Jan 26: DB table, API routes, widget component |
 
 ## Portfolio Features (🟡 MED/LOW PRIORITY)
 

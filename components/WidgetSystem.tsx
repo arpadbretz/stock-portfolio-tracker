@@ -239,6 +239,16 @@ export const WIDGET_REGISTRY: WidgetConfig[] = [
         minW: 4,
         minH: 4,
     },
+    {
+        id: 'cash-balance',
+        title: 'Cash Balance',
+        description: 'Available cash and transactions',
+        icon: <Wallet size={18} className="text-emerald-500" />,
+        category: 'portfolio',
+        defaultSize: 'medium',
+        minW: 3,
+        minH: 3,
+    },
 ];
 
 // Default visible widgets for new users
