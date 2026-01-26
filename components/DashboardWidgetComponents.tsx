@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -20,6 +20,7 @@ import {
     Settings,
     Sparkles,
     Clock,
+    Zap,
 } from 'lucide-react';
 import { formatCurrency, convertCurrency } from '@/lib/portfolio';
 import { CurrencyCode } from '@/types/portfolio';
@@ -1143,6 +1144,184 @@ export function WealthCompositionWidget({
                     </div>
                 </div>
             )}
+        </div>
+    );
+}
+
+// ============ MARKET PULSE WIDGET ============
+export function MarketPulseWidget() {
+    const [data, setData] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchPulse = async () => {
+            try {
+                const res = await fetch('/api/market/pulse');
+                const result = await res.json();
+                if (result.success) setData(result.data);
+            } catch (e) {
+                console.error('Pulse fetch failed:', e);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchPulse();
+        const interval = setInterval(fetchPulse, 60000);
+        return () => clearInterval(interval);
+    }, []);
+
+    if (isLoading) {
+        return (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+                    <div key={i} className="h-24 bg-muted/50 rounded-2xl animate-pulse" />
+                ))}
+            </div>
+        );
+    }
+
+    return (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {data.map((item) => (
+                <div key={item.ticker} className="p-4 rounded-2xl bg-card/50 border border-border/30 hover:border-primary/30 transition-all hover:bg-muted/20 group">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{item.name}</span>
+                        <div className={`px-2 py-0.5 rounded-md text-[9px] font-black ${item.changePercent >= 0 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
+                            {item.changePercent >= 0 ? '+' : ''}{item.changePercent.toFixed(2)}%
+                        </div>
+                    </div>
+                    <div className="text-lg font-black tracking-tight group-hover:text-primary transition-colors">{item.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    <div className="mt-2 h-8 w-full opacity-30 group-hover:opacity-60 transition-opacity">
+                        <div className="w-full h-full border-b border-dashed border-primary/50 flex items-end">
+                            {Array.from({ length: 12 }).map((_, i) => (
+                                <div key={i} className="flex-1 bg-primary/20 mx-px rounded-t-sm" style={{ height: `${20 + Math.random() * 60}%` }} />
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}
+
+// ============ PORTFOLIO INTELLIGENCE WIDGET ============
+export function PortfolioIntelligenceWidget({ holdings, isStealthMode = false }: { holdings: any[], isStealthMode?: boolean }) {
+    const score = useMemo(() => {
+        if (!holdings || holdings.length === 0) return 0;
+
+        // Calculate HHI (Concentration)
+        const hhi = holdings.reduce((sum, h) => sum + Math.pow((h.allocation || 0) / 100, 2), 0);
+
+        // Sector Diversification
+        const sectors = new Set(holdings.map(h => h.sector).filter(Boolean));
+        const sectorCount = sectors.size;
+
+        let finalScore = 100;
+
+        // Concentration penalty
+        if (hhi > 0.3) finalScore -= 40;
+        else if (hhi > 0.2) finalScore -= 20;
+
+        // Sector penalty/reward
+        if (sectorCount < 3) finalScore -= 20;
+        else if (sectorCount >= 5) finalScore += 5;
+
+        // Size penalty
+        if (holdings.length < 5) finalScore -= 15;
+
+        return Math.min(Math.max(finalScore, 0), 100);
+    }, [holdings]);
+
+    const insights = useMemo(() => {
+        if (!holdings || holdings.length === 0) return [];
+        const list = [];
+        const hhi = holdings.reduce((sum, h) => sum + Math.pow((h.allocation || 0) / 100, 2), 0);
+
+        if (hhi > 0.25) list.push({ type: 'warning', text: 'Concentration Risk: Consider trimming your largest positions.' });
+        if (holdings.length < 5) list.push({ type: 'info', text: 'Low Item Count: Vulnerable to single-stock volatility.' });
+
+        const topSector = holdings.reduce((acc: any, h) => {
+            const s = h.sector || 'Unknown';
+            acc[s] = (acc[s] || 0) + (h.allocation || 0);
+            return acc;
+        }, {});
+
+        const strongestSector = Object.entries(topSector).sort((a: any, b: any) => b[1] - a[1])[0] as [string, any];
+        if (strongestSector && strongestSector[1] > 40) {
+            list.push({
+                type: 'warning',
+                text: `Sector Overweight: ${isStealthMode ? '•••••' : strongestSector[0]} is over 40% of portfolio.`
+            });
+        }
+
+        const topHolding = [...holdings].sort((a, b) => (b.allocation || 0) - (a.allocation || 0))[0];
+        if (topHolding && topHolding.allocation > 30) {
+            list.push({
+                type: 'warning',
+                text: `Risk Exposure: ${isStealthMode ? '••••' : topHolding.ticker} makes up ${isStealthMode ? '••' : topHolding.allocation.toFixed(1)}% of wealth.`
+            });
+        }
+
+        if (score > 85) list.push({ type: 'success', text: 'Optimal Split: Your capital is perfectly distributed.' });
+
+        return list;
+    }, [holdings, score]);
+
+    return (
+        <div className="h-full flex flex-col">
+            <div className="flex items-center justify-between mb-6 bg-muted/10 p-4 rounded-2xl border border-border/50">
+                <div>
+                    <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Health Score</div>
+                    <div className={`text-4xl font-black ${score > 75 ? 'text-emerald-500' : score > 45 ? 'text-amber-500' : 'text-rose-500'}`}>
+                        {score}<span className="text-xl text-muted-foreground/30">/100</span>
+                    </div>
+                </div>
+                <div className="w-16 h-16 rounded-full border-4 border-muted/20 flex items-center justify-center relative shadow-inner">
+                    <svg className="absolute inset-0 w-full h-full -rotate-90">
+                        <circle
+                            cx="32"
+                            cy="32"
+                            r="28"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                            className={score > 75 ? 'text-emerald-500' : score > 45 ? 'text-amber-500' : 'text-rose-500'}
+                            strokeDasharray={175}
+                            strokeDashoffset={175 - (175 * score) / 100}
+                            strokeLinecap="round"
+                            style={{ transition: 'stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                        />
+                    </svg>
+                    <Zap size={24} className={score > 75 ? 'text-emerald-500' : score > 45 ? 'text-amber-500' : 'text-rose-500'} />
+                </div>
+            </div>
+
+            <div className="flex-1 space-y-3 overflow-auto custom-scrollbar pr-2">
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block mb-2 px-1">Risk Assessment</span>
+                {insights.length === 0 ? (
+                    <div className="text-center py-8 text-xs text-muted-foreground border-2 border-dashed border-border/50 rounded-2xl">
+                        Add holdings to activate Intelligence
+                    </div>
+                ) : (
+                    insights.map((insight: { type: string; text: string }, i: number) => (
+                        <motion.div
+                            key={i}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: i * 0.1 }}
+                            className={`p-4 rounded-2xl text-[11px] font-black border flex gap-4 ${insight.type === 'warning' ? 'bg-rose-500/5 border-rose-500/20 text-rose-500' :
+                                insight.type === 'success' ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-500' :
+                                    'bg-blue-500/5 border-blue-500/20 text-blue-500'
+                                }`}
+                        >
+                            <div className="p-1.5 rounded-lg bg-background/50 flex-shrink-0 self-start shadow-sm">
+                                {insight.type === 'warning' ? <Bell size={12} /> : insight.type === 'success' ? <Sparkles size={12} /> : <Activity size={12} />}
+                            </div>
+                            <span className="leading-relaxed">{insight.text}</span>
+                        </motion.div>
+                    ))
+                )}
+            </div>
         </div>
     );
 }

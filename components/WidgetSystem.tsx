@@ -259,6 +259,26 @@ export const WIDGET_REGISTRY: WidgetConfig[] = [
         minW: 3,
         minH: 3,
     },
+    {
+        id: 'market-pulse',
+        title: 'Market Pulse',
+        description: 'Macro indices and global markets',
+        icon: <Activity size={18} className="text-amber-500" />,
+        category: 'market',
+        defaultSize: 'large',
+        minW: 4,
+        minH: 3,
+    },
+    {
+        id: 'portfolio-intelligence',
+        title: 'Intelligence',
+        description: 'Portfolio health and AI-driven insights',
+        icon: <Zap size={18} className="text-indigo-500" />,
+        category: 'portfolio',
+        defaultSize: 'medium',
+        minW: 3,
+        minH: 3,
+    },
 ];
 
 // Default visible widgets for new users

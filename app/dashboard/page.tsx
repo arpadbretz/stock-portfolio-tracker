@@ -56,6 +56,8 @@ import {
   MarketOverviewWidget,
   PerformanceChartWidget,
   WealthCompositionWidget,
+  MarketPulseWidget,
+  PortfolioIntelligenceWidget,
 } from '@/components/DashboardWidgetComponents';
 import { CashBalanceWidget } from '@/components/CashBalanceWidget';
 
@@ -595,6 +597,12 @@ export default function DashboardPage() {
             exchangeRates={rates}
           />
         );
+
+      case 'market-pulse':
+        return <MarketPulseWidget />;
+
+      case 'portfolio-intelligence':
+        return <PortfolioIntelligenceWidget holdings={holdings} isStealthMode={isStealthMode} />;
 
       default:
         return (
