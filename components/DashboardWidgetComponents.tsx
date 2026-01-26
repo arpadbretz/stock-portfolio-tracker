@@ -360,9 +360,12 @@ export function WorstPerformersWidget({
 // ============ WATCHLIST MINI WIDGET ============
 interface WatchlistItem {
     symbol: string;
-    name: string;
+    // name: string; // Removed as per new structure, not used in the new display
     price: number;
     changePercent: number;
+    fiftyTwoWeekLow?: number;
+    fiftyTwoWeekHigh?: number;
+    earningsDate?: string;
 }
 
 export function WatchlistMiniWidget({
@@ -396,6 +399,9 @@ export function WatchlistMiniWidget({
                                     ...item,
                                     price: priceData.data?.price || item.added_price,
                                     changePercent: priceData.data?.changePercent || 0,
+                                    fiftyTwoWeekLow: priceData.data?.fiftyTwoWeekLow,
+                                    fiftyTwoWeekHigh: priceData.data?.fiftyTwoWeekHigh,
+                                    earningsDate: priceData.data?.earningsDate,
                                 };
                             } catch {
                                 return item;
@@ -439,29 +445,62 @@ export function WatchlistMiniWidget({
         <div className="space-y-2">
             {watchlist.map((item) => {
                 const isPositive = (item.changePercent ?? 0) >= 0;
+
+                // Smart Badges
+                const nearLow = item.price && item.fiftyTwoWeekLow && item.price <= (item.fiftyTwoWeekLow * 1.05);
+                const nearHigh = item.price && item.fiftyTwoWeekHigh && item.price >= (item.fiftyTwoWeekHigh * 0.95);
+
+                let earningsSoon = false;
+                if (item.earningsDate) {
+                    const eDate = new Date(item.earningsDate);
+                    const now = new Date();
+                    const diff = (eDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+                    earningsSoon = diff >= 0 && diff <= 7;
+                }
+
                 return (
                     <Link
                         key={item.symbol}
                         href={`/dashboard/ticker/${item.symbol}`}
-                        className="flex items-center justify-between p-2 rounded-xl hover:bg-muted/50 transition-colors group"
+                        className="flex items-center justify-between p-2 rounded-xl hover:bg-muted/50 transition-colors group relative overflow-hidden"
                     >
                         <div className="flex items-center gap-2">
-                            <Star size={14} className="text-yellow-500" />
+                            <div className="w-8 h-8 rounded-lg bg-background border border-border flex items-center justify-center font-black text-[10px] group-hover:border-primary/30 transition-colors">
+                                {item.symbol.slice(0, 2)}
+                            </div>
                             <div>
-                                <span className="font-bold text-sm group-hover:text-primary transition-colors">{item.symbol}</span>
-                                {item.price && (
-                                    <div className={`text-[10px] text-muted-foreground ${isStealthMode ? 'blur-stealth' : ''}`}>
-                                        {formatCurrency(convertCurrency(item.price, currency, exchangeRates), currency)}
-                                    </div>
-                                )}
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-xs font-black">{item.symbol}</span>
+                                    {nearLow && (
+                                        <div className="px-1.5 py-0.5 rounded-[4px] bg-emerald-500/10 text-emerald-500 text-[8px] font-black uppercase tracking-tighter shadow-sm animate-pulse">
+                                            Near Low
+                                        </div>
+                                    )}
+                                    {nearHigh && (
+                                        <div className="px-1.5 py-0.5 rounded-[4px] bg-blue-500/10 text-blue-500 text-[8px] font-black uppercase tracking-tighter shadow-sm">
+                                            Near High
+                                        </div>
+                                    )}
+                                    {earningsSoon && (
+                                        <div className="px-1.5 py-0.5 rounded-[4px] bg-amber-500/10 text-amber-500 text-[8px] font-black uppercase tracking-tighter shadow-sm">
+                                            Earnings
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="text-[10px] text-muted-foreground font-bold leading-none">
+                                    NASDAQ
+                                </div>
                             </div>
                         </div>
 
-                        <div className={`font-bold text-sm ${isPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
-                            {item.changePercent !== undefined && item.changePercent !== null ? (
-                                <>{isPositive ? '+' : ''}{(item.changePercent ?? 0).toFixed(2)}%</>
-                            ) : (
-                                <span className="text-muted-foreground">N/A</span>
+                        <div className="text-right">
+                            <div className={`text-xs font-black ${isPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                {isPositive ? '+' : ''}{(item.changePercent ?? 0).toFixed(2)}%
+                            </div>
+                            {item.price && (
+                                <div className={`text-[10px] text-muted-foreground font-bold ${isStealthMode ? 'blur-stealth' : ''}`}>
+                                    {formatCurrency(convertCurrency(item.price, currency, exchangeRates), currency)}
+                                </div>
                             )}
                         </div>
                     </Link>
@@ -475,7 +514,6 @@ export function WatchlistMiniWidget({
 }
 
 // ============ QUICK ACTIONS WIDGET ============
-
 interface QuickActionsProps {
     compact?: boolean;
     onEditDashboard?: () => void;
@@ -553,11 +591,10 @@ export function RecentAlertsWidget({ limit = 5 }: { limit?: number }) {
 
                 if (alertsData.success && alertsData.data) {
                     // Convert price alerts to recent alerts format
-                    alertsData.data.slice(0, limit).forEach((alert: Alert) => {
+                    alertsData.data.slice(0, limit).forEach((alert: any) => {
                         const currentPrice = alert.currentPrice || 0;
                         const targetPrice = alert.target_price;
                         const isPositive = alert.condition === 'above' ? currentPrice >= targetPrice : currentPrice <= targetPrice;
-                        const diff = Math.abs(currentPrice - targetPrice);
 
                         recentAlerts.push({
                             ticker: alert.symbol,
@@ -660,7 +697,7 @@ export function RecentAlertsWidget({ limit = 5 }: { limit?: number }) {
 interface Alert {
     id: string;
     symbol: string;
-    target_price: number; // Snake case from API
+    target_price: number;
     condition: 'above' | 'below';
     currentPrice?: number;
 }
