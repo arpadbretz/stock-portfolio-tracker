@@ -476,6 +476,7 @@ export default function DashboardPage() {
             currency={currency}
             exchangeRates={rates}
             cashBalances={summary?.cashBalances}
+            size={size}
           />
         );
 

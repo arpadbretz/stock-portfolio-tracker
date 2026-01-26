@@ -11,6 +11,7 @@ interface SectorAllocationChartProps {
     isLoading?: boolean;
     cashBalance?: number;
     cashBalances?: Record<string, number>;
+    size?: 'small' | 'medium' | 'large';
 }
 
 const SECTOR_COLORS: Record<string, string> = {
@@ -39,11 +40,12 @@ export default function SectorAllocationChart({
     currency,
     exchangeRates,
     isLoading,
-    cashBalances
+    cashBalances,
+    size = 'medium'
 }: SectorAllocationChartProps) {
     if (isLoading) {
         return (
-            <div className="h-[300px] flex flex-col justify-center items-center">
+            <div className="h-full flex flex-col justify-center items-center">
                 <div className="w-10 h-10 border-4 border-muted border-t-primary rounded-full animate-spin mb-4"></div>
                 <p className="text-muted-foreground text-xs animate-pulse font-black uppercase tracking-widest">Analyzing Sectors...</p>
             </div>
@@ -67,10 +69,6 @@ export default function SectorAllocationChart({
         Object.entries(cashBalances).forEach(([curr, bal]) => {
             if (bal <= 0) return;
             const rate = exchangeRates[curr as CurrencyCode] || 1;
-            const value = bal / rate; // Normalized to USD (base) then to target? 
-            // wait, exchangeRates[curr] is USD per CURR if USD=1. 
-            // So Bal_USD = Bal / rate.
-            // TargetValue = Bal_USD * exchangeRates[targetCurrency]
             const valueInTarget = (bal / rate) * (exchangeRates[currency] || 1);
             cashData.push({ name: `${curr} Cash`, value: valueInTarget });
             totalCashValue += valueInTarget;
@@ -81,7 +79,7 @@ export default function SectorAllocationChart({
 
     if (totalPortfolioValue === 0) {
         return (
-            <div className="h-[300px] flex flex-col justify-center items-center text-center">
+            <div className="h-full flex flex-col justify-center items-center text-center">
                 <div className="bg-muted p-4 rounded-full mb-4">
                     <ChartIcon size={24} className="text-muted-foreground" />
                 </div>
@@ -89,8 +87,6 @@ export default function SectorAllocationChart({
             </div>
         );
     }
-
-    // --- DATA PREP FOR SUNBURST ---
 
     // Inner Ring: Asset Classes
     const innerData = [
@@ -116,39 +112,40 @@ export default function SectorAllocationChart({
         }))
     ].filter(d => d.value > 0);
 
+    const isLarge = size === 'large';
+    const isMedium = size === 'medium';
+
     return (
-        <div className="flex flex-col lg:grid lg:grid-cols-2 gap-8 lg:gap-10 items-center">
+        <div className={`h-full flex ${isLarge ? 'flex-col lg:grid lg:grid-cols-2 gap-8 lg:gap-10' : 'flex-row gap-4'} items-center`}>
             {/* Chart Container */}
-            <div className="w-full flex items-center justify-center">
-                <div className="relative w-full max-w-[320px] aspect-square">
+            <div className={`${isLarge ? 'w-full' : 'w-1/2'} flex items-center justify-center`}>
+                <div className={`relative w-full ${isLarge ? 'max-w-[320px]' : 'max-w-[180px]'} aspect-square`}>
                     <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
-                            {/* INNER RING: ASSET CLASS */}
                             <Pie
                                 data={innerData}
                                 cx="50%"
                                 cy="50%"
-                                innerRadius="35%"
-                                outerRadius="50%"
+                                innerRadius={isLarge ? "35%" : "30%"}
+                                outerRadius={isLarge ? "50%" : "45%"}
                                 dataKey="value"
-                                stroke="rgba(0,0,0,0.2)"
-                                strokeWidth={2}
+                                stroke="rgba(0,0,0,0.1)"
+                                strokeWidth={1}
                             >
                                 {innerData.map((entry, index) => (
                                     <Cell key={`inner-${index}`} fill={entry.color} />
                                 ))}
                             </Pie>
 
-                            {/* OUTER RING: SECTORS / CURRENCIES */}
                             <Pie
                                 data={outerData}
                                 cx="50%"
                                 cy="50%"
-                                innerRadius="55%"
-                                outerRadius="85%"
+                                innerRadius={isLarge ? "55%" : "50%"}
+                                outerRadius={isLarge ? "85%" : "80%"}
                                 dataKey="value"
                                 stroke="none"
-                                paddingAngle={2}
+                                paddingAngle={isLarge ? 2 : 1}
                             >
                                 {outerData.map((entry, index) => (
                                     <Cell
@@ -165,14 +162,14 @@ export default function SectorAllocationChart({
                                         const data = payload[0].payload;
                                         const percentage = (data.value / totalPortfolioValue) * 100;
                                         return (
-                                            <div className="bg-card/95 backdrop-blur-2xl border border-white/10 p-4 rounded-2xl shadow-2xl ring-1 ring-white/5">
-                                                <p className="text-foreground font-black mb-1 flex items-center gap-2">
-                                                    <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: data.color }}></div>
+                                            <div className="bg-card/95 backdrop-blur-2xl border border-white/10 p-3 rounded-xl shadow-2xl ring-1 ring-white/5 z-50">
+                                                <p className="text-foreground font-black text-xs mb-1 flex items-center gap-2">
+                                                    <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: data.color }}></div>
                                                     {data.name}
                                                 </p>
-                                                <p className="text-secondary text-base font-black">{formatCurrency(data.value, currency)}</p>
-                                                <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest mt-1">
-                                                    {percentage.toFixed(1)}% of Net Worth
+                                                <p className="text-primary text-sm font-black">{formatCurrency(data.value, currency)}</p>
+                                                <p className="text-muted-foreground text-[9px] font-black uppercase tracking-widest mt-1">
+                                                    {percentage.toFixed(1)}% of Portfolio
                                                 </p>
                                             </div>
                                         );
@@ -184,8 +181,8 @@ export default function SectorAllocationChart({
                     </ResponsiveContainer>
 
                     <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                        <span className="text-muted-foreground text-[9px] font-black uppercase tracking-widest opacity-60">Total Value</span>
-                        <div className={`text-xl font-black text-foreground`}>
+                        <span className="text-muted-foreground text-[8px] font-black uppercase tracking-widest opacity-60">Total</span>
+                        <div className={`${isLarge ? 'text-lg' : 'text-[10px]'} font-black text-foreground truncate max-w-full px-2`}>
                             {formatCurrency(totalPortfolioValue, currency)}
                         </div>
                     </div>
@@ -193,29 +190,29 @@ export default function SectorAllocationChart({
             </div>
 
             {/* Legend with Progress Bars */}
-            <div className="w-full space-y-4 max-h-[380px] overflow-y-auto pr-3 custom-scrollbar">
-                <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 mb-2 border-b border-border/50 pb-2">
-                    Allocation Breakdown
-                </div>
+            <div className={`${isLarge ? 'w-full' : 'w-1/2'} space-y-3 ${isLarge ? 'max-h-[380px]' : 'max-h-full'} overflow-y-auto pr-1 custom-scrollbar`}>
+                {!isLarge && (
+                    <div className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50 border-b border-border/40 pb-1 mb-2">
+                        Sectors
+                    </div>
+                )}
                 {outerData.map((item, index) => (
                     <div key={item.name} className="group cursor-default">
-                        <div className="flex items-center justify-between mb-1.5">
-                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
                                 <div
-                                    className="w-2.5 h-2.5 rounded-[3px] flex-shrink-0"
+                                    className="w-2 h-2 rounded-[2px] flex-shrink-0"
                                     style={{ backgroundColor: item.color }}
                                 />
-                                <span className="text-xs font-bold text-muted-foreground group-hover:text-foreground transition-colors truncate">
+                                <span className={`font-bold text-muted-foreground truncate ${isLarge ? 'text-xs' : 'text-[9px]'}`}>
                                     {item.name}
                                 </span>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <span className="text-xs font-black text-foreground">
-                                    {((item.value / totalPortfolioValue) * 100).toFixed(1)}%
-                                </span>
-                            </div>
+                            <span className={`font-black text-foreground ${isLarge ? 'text-xs' : 'text-[9px]'}`}>
+                                {((item.value / totalPortfolioValue) * 100).toFixed(1)}%
+                            </span>
                         </div>
-                        <div className="h-1.5 w-full bg-muted/30 rounded-full overflow-hidden">
+                        <div className={`w-full bg-muted/30 rounded-full overflow-hidden ${isLarge ? 'h-1.5' : 'h-1'}`}>
                             <motion.div
                                 initial={{ width: 0 }}
                                 animate={{ width: `${(item.value / totalPortfolioValue) * 100}%` }}
@@ -223,10 +220,12 @@ export default function SectorAllocationChart({
                                 style={{ backgroundColor: item.color }}
                             />
                         </div>
-                        <div className="text-[10px] text-muted-foreground/60 font-bold mt-1 ml-5.5 flex justify-between">
-                            <span>{item.type}</span>
-                            <span>{formatCurrency(item.value, currency)}</span>
-                        </div>
+                        {isLarge && (
+                            <div className="text-[10px] text-muted-foreground/60 font-bold mt-1 ml-4 flex justify-between">
+                                <span>{item.type}</span>
+                                <span>{formatCurrency(item.value, currency)}</span>
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>

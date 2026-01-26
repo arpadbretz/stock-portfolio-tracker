@@ -176,10 +176,10 @@ export default function AssetAllocationChart({
     })).sort((a, b) => b.value - a.value);
 
     return (
-        <div className={`h-full flex flex-col ${isLarge ? 'lg:grid lg:grid-cols-2 lg:gap-10' : ''} items-center`}>
+        <div className={`h-full flex ${isLarge ? 'flex-col lg:grid lg:grid-cols-2 lg:gap-10' : 'flex-row gap-4'} items-center`}>
             {/* Chart Container */}
-            <div className="w-full flex items-center justify-center">
-                <div className={`relative w-full ${isLarge ? 'max-w-[340px]' : 'max-w-[240px]'} aspect-square`}>
+            <div className={`${isLarge ? 'w-full' : 'w-1/2'} flex items-center justify-center`}>
+                <div className={`relative w-full ${isLarge ? 'max-w-[340px]' : 'max-w-[180px]'} aspect-square`}>
                     <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                             {isLarge ? (
@@ -224,16 +224,16 @@ export default function AssetAllocationChart({
                                     data={flatData}
                                     cx="50%"
                                     cy="50%"
-                                    innerRadius="55%"
-                                    outerRadius="85%"
-                                    paddingAngle={4}
+                                    innerRadius="50%"
+                                    outerRadius="80%"
+                                    paddingAngle={3}
                                     dataKey="value"
                                     stroke="none"
                                 >
                                     {flatData.map((entry, index) => (
                                         <Cell
                                             key={`cell-${index}`}
-                                            fill={entry.color || COLORS[index % COLORS.length]}
+                                            fill={entry.color}
                                             className="hover:opacity-80 transition-opacity cursor-pointer"
                                         />
                                     ))}
@@ -246,13 +246,13 @@ export default function AssetAllocationChart({
                                         const percentage = (data.value / totalValue) * 100;
                                         return (
                                             <div className="bg-card/95 backdrop-blur-xl border border-border/50 p-3 rounded-xl shadow-2xl z-50 ring-1 ring-white/10">
-                                                <p className="text-foreground font-black mb-1 flex items-center gap-2">
-                                                    <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: data.color }}></div>
+                                                <p className="text-foreground font-black text-xs mb-1 flex items-center gap-2">
+                                                    <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: data.color }}></div>
                                                     {data.name}
-                                                    {data.parent && <span className="text-[10px] text-muted-foreground font-bold">({data.parent})</span>}
+                                                    {data.parent && <span className="text-[9px] text-muted-foreground font-bold">({data.parent})</span>}
                                                 </p>
                                                 <p className="text-primary text-sm font-black">{formatCurrency(data.value, currency)}</p>
-                                                <p className="text-muted-foreground text-[10px] font-black uppercase tracking-widest mt-1">
+                                                <p className="text-muted-foreground text-[9px] font-black uppercase tracking-widest mt-1">
                                                     {percentage.toFixed(1)}% Weight
                                                 </p>
                                             </div>
@@ -265,58 +265,71 @@ export default function AssetAllocationChart({
                     </ResponsiveContainer>
 
                     <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                        <span className="text-muted-foreground text-[10px] font-black uppercase tracking-widest opacity-60">
+                        <span className="text-muted-foreground text-[8px] font-black uppercase tracking-widest opacity-60">
                             {isLarge ? 'Portfolio' : 'Tickers'}
                         </span>
-                        <span className={`font-black text-foreground ${isLarge ? 'text-lg' : 'text-xl'}`}>
+                        <span className={`font-black text-foreground ${isLarge ? 'text-lg' : 'text-xs'}`}>
                             {isLarge ? formatCurrency(totalValue, currency) : flatData.length}
                         </span>
                     </div>
                 </div>
             </div>
 
-            {/* Legend - Detailed for large size */}
-            {isLarge ? (
-                <div className="w-full space-y-4 max-h-[380px] overflow-y-auto pr-3 custom-scrollbar lg:mt-0 mt-6">
-                    <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 border-b border-border/40 pb-2">
-                        Asset & Sector Hierarchy
-                    </div>
-                    {sortedSectors.map((sector) => (
-                        <div key={sector.name} className="space-y-1.5 border-l-2 border-border/20 pl-3 ml-1">
-                            <div className="flex items-center justify-between group">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: sector.color }} />
-                                    <span className="text-xs font-black uppercase tracking-tight text-foreground/80">{sector.name}</span>
+            {/* Legend */}
+            <div className={`${isLarge ? 'w-full' : 'w-1/2'} space-y-3 ${isLarge ? 'max-h-[380px]' : 'max-h-full'} overflow-y-auto pr-1 custom-scrollbar`}>
+                {isLarge ? (
+                    <>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 border-b border-border/40 pb-2">
+                            Asset & Sector Hierarchy
+                        </div>
+                        {sortedSectors.map((sector) => (
+                            <div key={sector.name} className="space-y-1.5 border-l-2 border-border/20 pl-3 ml-1">
+                                <div className="flex items-center justify-between group">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: sector.color }} />
+                                        <span className="text-[10px] font-black uppercase tracking-tight text-foreground/80">{sector.name}</span>
+                                    </div>
+                                    <span className="text-[9px] font-black text-muted-foreground">
+                                        {((sector.value / totalValue) * 100).toFixed(1)}%
+                                    </span>
                                 </div>
-                                <span className="text-[10px] font-black text-muted-foreground">
-                                    {((sector.value / totalValue) * 100).toFixed(1)}%
+                                <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 mt-1">
+                                    {sector.tickers.sort((a, b) => b.value - a.value).map(ticker => (
+                                        <div key={ticker.name} className="flex items-center justify-between py-0.5">
+                                            <span className="text-[9px] font-bold text-muted-foreground truncate mr-2">{ticker.name}</span>
+                                            <span className="text-[8px] font-black text-foreground/40 italic">
+                                                {((ticker.value / totalValue) * 100).toFixed(1)}%
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </>
+                ) : (
+                    <>
+                        <div className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50 border-b border-border/40 pb-1 mb-2">
+                            Top Weights
+                        </div>
+                        {flatData.slice(0, 8).map((item) => (
+                            <div key={item.name} className="flex items-center justify-between py-0.5 border-b border-border/10 last:border-0 border-dashed">
+                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                                    <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
+                                    <span className="text-[10px] font-black text-foreground/80 truncate">{item.name}</span>
+                                </div>
+                                <span className="text-[9px] font-black text-primary flex-shrink-0 ml-2">
+                                    {((item.value / totalValue) * 100).toFixed(1)}%
                                 </span>
                             </div>
-                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-1">
-                                {sector.tickers.sort((a, b) => b.value - a.value).map(ticker => (
-                                    <div key={ticker.name} className="flex items-center justify-between py-0.5">
-                                        <span className="text-[10px] font-bold text-muted-foreground truncate mr-2">{ticker.name}</span>
-                                        <span className="text-[9px] font-black text-foreground/40 italic">
-                                            {((ticker.value / totalValue) * 100).toFixed(1)}%
-                                        </span>
-                                    </div>
-                                ))}
+                        ))}
+                        {flatData.length > 8 && (
+                            <div className="text-[8px] font-bold text-muted-foreground/60 text-center pt-1 italic">
+                                +{flatData.length - 8} more positions
                             </div>
-                        </div>
-                    ))}
-                </div>
-            ) : (
-                <div className="w-full mt-4 flex flex-wrap justify-center gap-2">
-                    {/* For medium size, maybe just show top 5 in small badges or nothing to keep it clean */}
-                    {flatData.slice(0, 6).map((item, idx) => (
-                        <div key={item.name} className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/30 border border-border/30">
-                            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: item.color }} />
-                            <span className="text-[9px] font-black">{item.name}</span>
-                        </div>
-                    ))}
-                    {flatData.length > 6 && <span className="text-[9px] font-bold text-muted-foreground flex items-center">+{flatData.length - 6} more</span>}
-                </div>
-            )}
+                        )}
+                    </>
+                )}
+            </div>
         </div>
     );
 }
