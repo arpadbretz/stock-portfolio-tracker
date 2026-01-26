@@ -123,12 +123,15 @@ export interface PortfolioSummary {
   totalGain: number;  // Unrealized gain
   totalGainPercent: number;
   cashBalance: number;  // Available cash in portfolio
-  cashBalances?: Record<string, number>; // Breakdown by currency
+  cashBalances?: Record<CurrencyCode, number>; // Breakdown by currency
   totalPortfolioValue: number;  // Market value + cash balance
   realizedGain?: number;  // Total realized P/L from closed positions
   totalReturn?: number;  // Unrealized + Realized gains
   holdings: Holding[];
   exchangeRates: Record<CurrencyCode, number>;
+  dailyPnL?: number;
+  dailyPnLPercent?: number;
+  fxPnL?: number;
 }
 
 export type TradeFormData = Omit<Trade, 'id' | 'timestamp' | 'totalCost'>;

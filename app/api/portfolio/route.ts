@@ -127,24 +127,25 @@ export async function GET(request: Request) {
 
         // 4. FETCH PRICES AND CALCULATE SUMMARY
         const tickers = [...new Set(trades.map(t => t.ticker.toUpperCase()))];
-        console.log('Fetching prices for tickers:', tickers);
+        const fxPairs = ['USDEUR=X', 'USDHUF=X'];
+        const allSymbols = [...tickers, ...fxPairs];
+
+        console.log('Fetching prices for:', allSymbols);
 
         const refresh = searchParams.get('refresh') === 'true';
-        let prices: Map<string, any>;
+        let allPrices: Map<string, any>;
 
         if (refresh) {
             const { getBatchPrices } = await import('@/lib/yahoo-finance');
-            prices = await getBatchPrices(tickers);
+            allPrices = await getBatchPrices(allSymbols);
         } else {
-            prices = await getCachedBatchPrices(tickers);
+            allPrices = await getCachedBatchPrices(allSymbols);
         }
 
-        const sets = ['USDEUR=X', 'USDHUF=X'];
-        const ratesData = await getCachedBatchPrices(sets);
         const exchangeRates = {
             USD: 1,
-            EUR: ratesData.get('USDEUR=X')?.currentPrice || 0.92,
-            HUF: ratesData.get('USDHUF=X')?.currentPrice || 350,
+            EUR: allPrices.get('USDEUR=X')?.currentPrice || 0.92,
+            HUF: allPrices.get('USDHUF=X')?.currentPrice || 350,
         };
 
         // Fetch multi-currency cash balance for the portfolio
@@ -155,7 +156,10 @@ export async function GET(request: Request) {
 
             if (balanceData && Array.isArray(balanceData)) {
                 balanceData.forEach((row: any) => {
-                    cashBalances[row.currency] = Number(row.balance) || 0;
+                    const curr = row.currency as string;
+                    if (curr === 'USD' || curr === 'EUR' || curr === 'HUF') {
+                        cashBalances[curr] = Number(row.balance) || 0;
+                    }
                 });
             }
         } catch (e) {
@@ -178,9 +182,9 @@ export async function GET(request: Request) {
             console.log('Realized P/L not available (table may not exist yet):', e);
         }
 
-        // Aggregate and calculate (now with multi-currency cash balance)
-        const holdings = aggregateHoldings(trades, prices);
-        const summary = calculatePortfolioSummary(holdings, exchangeRates, cashBalances);
+        // Aggregate and calculate (now with multi-currency cash balance and FX price data)
+        const holdings = aggregateHoldings(trades, allPrices);
+        const summary = calculatePortfolioSummary(holdings, exchangeRates, cashBalances, allPrices);
 
         // Add realized P/L to summary
         const enhancedSummary = {

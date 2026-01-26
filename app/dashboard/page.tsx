@@ -211,15 +211,10 @@ export default function DashboardPage() {
   const rates = summary?.exchangeRates || { USD: 1, EUR: 0.92, HUF: 350, GBP: 0.79 };
   const holdings = summary?.holdings || [];
 
-  // Calculate Daily P&L from holdings
-  const dailyPnL = holdings.reduce((total, holding) => {
-    const dayChange = holding.dayChange || 0;
-    return total + (dayChange * holding.shares);
-  }, 0);
-
-  const dailyPnLPercent = summary?.totalMarketValue
-    ? (dailyPnL / (summary.totalMarketValue - dailyPnL)) * 100
-    : 0;
+  // Use pre-calculated Daily P&L from summary
+  const dailyPnL = summary?.dailyPnL || 0;
+  const dailyPnLPercent = summary?.dailyPnLPercent || 0;
+  const fxPnL = summary?.fxPnL || 0;
 
   // Prepare holdings data for performer widgets
   const holdingsForPerformers = holdings.map(h => ({

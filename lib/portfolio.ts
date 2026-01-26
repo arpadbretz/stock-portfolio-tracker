@@ -1,6 +1,6 @@
 // Portfolio calculation and aggregation utilities
 
-import { Trade, Holding, PortfolioSummary, PriceData } from '@/types/portfolio';
+import { Trade, Holding, PortfolioSummary, PriceData, CurrencyCode } from '@/types/portfolio';
 
 // Aggregate trades into current holdings
 export function aggregateHoldings(trades: Trade[], prices: Map<string, PriceData>): Holding[] {
@@ -73,7 +73,8 @@ export function aggregateHoldings(trades: Trade[], prices: Map<string, PriceData
 export function calculatePortfolioSummary(
     holdings: Holding[],
     exchangeRates: Record<string, number> = { USD: 1, EUR: 0.92, HUF: 350 },
-    cashBalance: number | Record<string, number> = 0
+    cashBalance: number | Record<string, number> = 0,
+    prices: Map<string, PriceData> = new Map()
 ): PortfolioSummary {
     const totalInvested = holdings.reduce((sum, h) => sum + h.totalInvested, 0);
     const totalMarketValue = holdings.reduce((sum, h) => sum + h.marketValue, 0);
@@ -84,23 +85,47 @@ export function calculatePortfolioSummary(
 
     // Handle cash balance which could be a single number (USD) or an object with multiple currencies
     let normalizedCashBalance = 0;
-    if (typeof cashBalance === 'number') {
-        normalizedCashBalance = cashBalance;
-    } else {
-        // Convert all cash balances to USD first or directly to the reporting currency?
-        // Since the summary expects totals, we should aim for consistency.
-        // Usually everything else is in USD internally for aggregation, then converted for display.
-        for (const [curr, amount] of Object.entries(cashBalance)) {
-            // Convert to USD (assuming USD is base 1 in rates)
-            const usdRate = exchangeRates[curr] || 1;
-            normalizedCashBalance += amount / usdRate;
+    const balancesObject = typeof cashBalance === 'object' ? cashBalance : { USD: cashBalance };
+
+    // Calculate Daily FX P&L from cash
+    let totalFxPnL = 0;
+
+    for (const [curr, amount] of Object.entries(balancesObject)) {
+        const rate = exchangeRates[curr] || 1;
+        normalizedCashBalance += amount / rate;
+
+        // Calculate FX impact for this currency if not USD
+        if (curr !== 'USD' && amount !== 0) {
+            const fxSymbol = `USD${curr}=X`;
+            const fxData = prices.get(fxSymbol);
+            if (fxData && fxData.changePercent) {
+                // RateToday = rate
+                // RatePrev = rate / (1 + changePercent/100)
+                // ValueToday = amount / rate
+                // ValuePrev = amount / ratePrev
+                const changeP = (fxData.changePercent || 0) / 100;
+                const prevRate = rate / (1 + changeP);
+                const valueToday = amount / rate;
+                const valuePrev = amount / prevRate;
+                totalFxPnL += (valueToday - valuePrev);
+            }
         }
     }
 
     // Total portfolio value includes cash balance
     const totalPortfolioValue = totalMarketValue + normalizedCashBalance;
 
-    // Calculate allocation percentages (based on total portfolio value, including cash)
+    // Calculate Stock Daily P&L
+    const stockDailyPnL = holdings.reduce((total, h) => {
+        return total + (h.dayChange || 0) * h.shares;
+    }, 0);
+
+    const dailyPnL = stockDailyPnL + totalFxPnL;
+    const dailyPnLPercent = (totalPortfolioValue - dailyPnL) > 0
+        ? (dailyPnL / (totalPortfolioValue - dailyPnL)) * 100
+        : 0;
+
+    // Calculate allocation percentages
     const holdingsWithAllocation = holdings.map(h => ({
         ...h,
         allocation: totalPortfolioValue > 0 ? (h.marketValue / totalPortfolioValue) * 100 : 0
@@ -112,10 +137,13 @@ export function calculatePortfolioSummary(
         totalGain,
         totalGainPercent,
         cashBalance: normalizedCashBalance,
-        cashBalances: typeof cashBalance === 'object' ? cashBalance : { USD: cashBalance },
+        cashBalances: balancesObject as Record<CurrencyCode, number>,
         totalPortfolioValue,
         holdings: holdingsWithAllocation,
         exchangeRates: exchangeRates as any,
+        dailyPnL,
+        dailyPnLPercent,
+        fxPnL: totalFxPnL,
     };
 }
 
