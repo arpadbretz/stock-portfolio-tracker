@@ -16,6 +16,7 @@ import {
     Search,
     Bell,
     Calculator,
+    History
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -30,6 +31,7 @@ const links = [
     { name: 'Price Alerts', href: '/dashboard/alerts', icon: <Bell size={20} />, status: 'active' },
     { name: 'DCF Calculator', href: '/dashboard/dcf', icon: <Calculator size={20} />, status: 'active' },
     { name: 'Portfolios', href: '/dashboard/portfolios/manage', icon: <Briefcase size={20} />, status: 'active' },
+    { name: 'Position Manager', href: '/dashboard/portfolios/manage/edit-positions', icon: <History size={20} />, status: 'active' },
     { name: 'Import Data', href: '/dashboard/import', icon: <Upload size={20} />, status: 'active' },
     { name: 'Account', href: '/dashboard/account', icon: <Settings size={20} />, status: 'active' },
 ];

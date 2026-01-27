@@ -28,7 +28,8 @@ import {
     MoreVertical,
     BarChart3,
     Eye,
-    EyeOff
+    EyeOff,
+    Wallet
 } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useUserPreferences } from '@/components/providers/UserPreferencesProvider';
@@ -360,6 +361,15 @@ function PortfolioCommandCenterContent() {
                                     <Plus size={18} />
                                     Add Trade
                                 </button>
+
+                                <Link
+                                    href={`/dashboard/portfolios/manage/edit-positions?id=${selectedPortfolio.id}`}
+                                    className="px-6 py-3 bg-blue-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-blue-500/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                                >
+                                    <Wallet size={18} />
+                                    Manage Positions
+                                </Link>
+
                                 <div className="flex items-center bg-card/30 backdrop-blur-xl border border-border rounded-2xl p-1.5">
                                     <button onClick={() => handleShare(selectedPortfolio)} title="Share Settings" className="p-2.5 hover:bg-muted rounded-xl text-muted-foreground hover:text-foreground transition-all">
                                         <Share2 size={18} />
@@ -519,11 +529,6 @@ function PortfolioCommandCenterContent() {
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
                             className="relative w-full max-w-2xl bg-card border border-border rounded-[40px] shadow-2xl p-2"
                         >
-                            <div className="absolute top-6 right-6 z-10">
-                                <button onClick={() => setShowAddTrade(false)} className="p-2 hover:bg-muted rounded-full transition-colors text-muted-foreground">
-                                    <X size={20} />
-                                </button>
-                            </div>
                             <div className="p-6">
                                 <AddTradeForm
                                     portfolioId={selectedPortfolioId}

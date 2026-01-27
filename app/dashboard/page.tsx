@@ -797,6 +797,14 @@ export default function DashboardPage() {
           Add Trade
         </button>
 
+        <button
+          onClick={() => setIsCashModalOpen(true)}
+          className="flex items-center gap-2 px-4 py-2.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 rounded-xl font-bold text-sm transition-all"
+        >
+          <Wallet size={16} />
+          Liquid Assets
+        </button>
+
         <Link
           href="/dashboard/report"
           className="flex items-center gap-2 px-4 py-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-500 rounded-xl font-bold text-sm transition-all"
@@ -867,6 +875,25 @@ export default function DashboardPage() {
           <ChevronRight size={24} />
           <div className="absolute bottom-0 right-0 p-4 opacity-10">
             <TrendingUp size={100} />
+          </div>
+        </button>
+
+        <button
+          onClick={() => setIsCashModalOpen(true)}
+          className="flex items-center justify-between p-8 bg-blue-600 text-white rounded-[32px] shadow-2xl shadow-blue-500/20 hover:scale-[1.01] active:scale-[0.99] transition-all group relative overflow-hidden"
+        >
+          <div className="relative z-10 flex items-center gap-6">
+            <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Wallet size={28} />
+            </div>
+            <div className="text-left">
+              <h3 className="font-black text-lg tracking-tight">Liquid Assets</h3>
+              <p className="text-xs text-blue-100/70 font-black uppercase tracking-widest">Cash management</p>
+            </div>
+          </div>
+          <ChevronRight size={24} />
+          <div className="absolute bottom-0 right-0 p-4 opacity-10">
+            <Activity size={100} />
           </div>
         </button>
       </div>

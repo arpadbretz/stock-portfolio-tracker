@@ -365,11 +365,6 @@ function EditPositionsContent() {
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
                             className="relative w-full max-w-2xl bg-card border border-border rounded-[40px] shadow-2xl p-2"
                         >
-                            <div className="absolute top-6 right-6 z-10">
-                                <button onClick={() => setIsAddTradeOpen(false)} className="p-2 hover:bg-muted rounded-full transition-colors text-muted-foreground">
-                                    <X size={20} />
-                                </button>
-                            </div>
                             <div className="p-6">
                                 <AddTradeForm
                                     portfolioId={portfolioId || ''}

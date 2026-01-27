@@ -536,6 +536,12 @@ export function QuickActionsWidget({ compact = false, onEditDashboard, onTradeAc
             onClick: onTradeAction,
         },
         {
+            label: 'Liquid Assets',
+            icon: Wallet,
+            color: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+            onClick: onCashAction,
+        },
+        {
             label: 'Manage Positions',
             icon: Settings2,
             color: 'bg-primary/10 text-primary border-primary/20',
