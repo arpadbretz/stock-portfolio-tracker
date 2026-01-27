@@ -7,7 +7,7 @@ import {
     formatNumber,
     convertCurrency
 } from '@/lib/portfolio';
-import { TrendingUp, TrendingDown, Minus, ChevronRight } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, ChevronRight, DollarSign } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 
@@ -19,6 +19,8 @@ interface HoldingsTableProps {
     compact?: boolean;
     cashBalance?: number; // Normalized USD
     cashBalances?: Record<string, number>;
+    onSellHolding?: (holding: Holding) => void;
+    onViewHistory?: (holding: Holding) => void;
 }
 
 export default function HoldingsTable({
@@ -28,7 +30,9 @@ export default function HoldingsTable({
     isLoading,
     compact = false,
     cashBalance = 0,
-    cashBalances = {}
+    cashBalances = {},
+    onSellHolding,
+    onViewHistory
 }: HoldingsTableProps) {
     if (isLoading) {
         return (
@@ -128,6 +132,7 @@ export default function HoldingsTable({
                             <th className="text-right py-5 px-8 text-xs font-black text-muted-foreground uppercase tracking-wider">Price</th>
                             <th className="text-right py-5 px-8 text-xs font-black text-muted-foreground uppercase tracking-wider">Value</th>
                             <th className="text-right py-5 px-8 text-xs font-black text-muted-foreground uppercase tracking-wider">Return</th>
+                            <th className="text-right py-5 px-8 text-xs font-black text-muted-foreground uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-border/30">
@@ -179,6 +184,24 @@ export default function HoldingsTable({
                                                 {isNegative && <TrendingDown size={14} className="text-rose-500" />}
                                                 {!isPositive && !isNegative && <Minus size={14} className="text-muted-foreground" />}
                                             </div>
+                                        </div>
+                                    </td>
+                                    <td className="py-5 px-8 text-right">
+                                        <div className="flex items-center justify-end gap-2">
+                                            <button
+                                                onClick={() => onSellHolding?.(holding)}
+                                                className="p-2 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl transition-all"
+                                                title="Close Position"
+                                            >
+                                                <DollarSign size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => onViewHistory?.(holding)}
+                                                className="p-2 bg-muted hover:bg-primary hover:text-white rounded-xl transition-all"
+                                                title="View History"
+                                            >
+                                                <ChevronRight size={16} />
+                                            </button>
                                         </div>
                                     </td>
                                 </motion.tr>

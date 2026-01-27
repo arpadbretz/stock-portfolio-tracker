@@ -20,6 +20,11 @@ import {
     Settings,
     Sparkles,
     Clock,
+    PlusCircle,
+    Wallet,
+    Settings2,
+    Download,
+    LayoutGrid,
     Zap,
 } from 'lucide-react';
 import { formatCurrency, convertCurrency } from '@/lib/portfolio';
@@ -519,51 +524,92 @@ interface QuickActionsProps {
     compact?: boolean;
     onEditDashboard?: () => void;
     onTradeAction?: () => void;
+    onCashAction?: () => void;
 }
 
-export function QuickActionsWidget({ compact = false, onEditDashboard, onTradeAction }: QuickActionsProps) {
+export function QuickActionsWidget({ compact = false, onEditDashboard, onTradeAction, onCashAction }: QuickActionsProps) {
     const actions = [
-        { icon: <Plus size={compact ? 14 : 16} />, label: 'Trade', onClick: onTradeAction, color: 'bg-emerald-500/10 text-emerald-500' },
-        { icon: <Search size={compact ? 14 : 16} />, label: 'Search', href: '/dashboard/stocks', color: 'bg-blue-500/10 text-blue-500' },
-        { icon: <Bell size={compact ? 14 : 16} />, label: 'Alerts', href: '/dashboard/alerts', color: 'bg-orange-500/10 text-orange-500' },
-        { icon: <FileText size={compact ? 14 : 16} />, label: 'Report', href: '/dashboard/report', color: 'bg-purple-500/10 text-purple-500' },
+        {
+            label: 'Add Trade',
+            icon: PlusCircle,
+            color: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+            onClick: onTradeAction,
+        },
+        {
+            label: 'Manage Positions',
+            icon: Settings2,
+            color: 'bg-primary/10 text-primary border-primary/20',
+            href: '/dashboard/portfolios/manage/edit-positions',
+        },
+        {
+            label: 'Edit Layout',
+            icon: LayoutGrid, // Using LayoutGrid for layout editing
+            color: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
+            onClick: onEditDashboard,
+        },
+        {
+            label: 'Reports',
+            icon: Download,
+            color: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
+            href: '/dashboard/report',
+        },
     ];
 
-    return (
-        <div className="flex flex-col h-full justify-center gap-3">
-            <div className={`grid ${compact ? 'grid-cols-4 gap-1' : 'grid-cols-2 gap-2'}`}>
-                {actions.map((action) => {
-                    const content = (
-                        <div className={`flex flex-col items-center justify-center h-full w-full ${compact ? 'p-2' : 'p-3'} rounded-xl ${action.color} hover:shadow-lg hover:shadow-current/5 transition-all active:scale-95 cursor-pointer`}>
-                            {action.icon}
-                            <span className={`${compact ? 'text-[9px]' : 'text-xs'} font-bold mt-1`}>{action.label}</span>
-                        </div>
-                    );
-
-                    if (action.href) {
-                        return (
-                            <Link key={action.label} href={action.href}>
-                                {content}
-                            </Link>
-                        );
-                    }
-
-                    return (
-                        <button key={action.label} onClick={action.onClick}>
-                            {content}
+    if (compact) {
+        return (
+            <div className="flex flex-wrap gap-2">
+                {actions.map((action) => (
+                    action.href ? (
+                        <Link
+                            key={action.label}
+                            href={action.href}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${action.color} text-xs font-bold transition-all hover:scale-105 active:scale-95`}
+                        >
+                            <action.icon size={14} />
+                            {action.label}
+                        </Link>
+                    ) : (
+                        <button
+                            key={action.label}
+                            onClick={action.onClick}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${action.color} text-xs font-bold transition-all hover:scale-105 active:scale-95`}
+                        >
+                            <action.icon size={14} />
+                            {action.label}
                         </button>
-                    );
-                })}
+                    )
+                ))}
             </div>
-            {!compact && onEditDashboard && (
-                <button
-                    onClick={onEditDashboard}
-                    className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-muted/20 border border-border/10 hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-all text-xs font-bold mt-auto"
-                >
-                    <Settings size={14} />
-                    <span>Customize Dashboard</span>
-                </button>
-            )}
+        );
+    }
+
+    return (
+        <div className="grid grid-cols-2 gap-3 h-full">
+            {actions.map((action) => (
+                action.href ? (
+                    <Link
+                        key={action.label}
+                        href={action.href}
+                        className={`flex flex-col items-center justify-center gap-2 p-4 rounded-3xl border ${action.color} hover:bg-current/[0.05] transition-all hover:scale-[1.02] active:scale-[0.98] group`}
+                    >
+                        <div className="w-12 h-12 rounded-2xl bg-current/[0.1] flex items-center justify-center transition-transform group-hover:scale-110">
+                            <action.icon size={24} />
+                        </div>
+                        <span className="text-xs font-black uppercase tracking-widest">{action.label}</span>
+                    </Link>
+                ) : (
+                    <button
+                        key={action.label}
+                        onClick={action.onClick}
+                        className={`flex flex-col items-center justify-center gap-2 p-4 rounded-3xl border ${action.color} hover:bg-current/[0.05] transition-all hover:scale-[1.02] active:scale-[0.98] group`}
+                    >
+                        <div className="w-12 h-12 rounded-2xl bg-current/[0.1] flex items-center justify-center transition-transform group-hover:scale-110">
+                            <action.icon size={24} />
+                        </div>
+                        <span className="text-xs font-black uppercase tracking-widest">{action.label}</span>
+                    </button>
+                )
+            ))}
         </div>
     );
 }

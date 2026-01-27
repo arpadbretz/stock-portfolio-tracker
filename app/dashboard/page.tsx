@@ -62,6 +62,9 @@ import {
 import { CashBalanceWidget } from '@/components/CashBalanceWidget';
 
 
+import { CashTransactionModal } from '@/components/CashTransactionModal';
+import { UnifiedTransaction } from '@/components/TradeHistory';
+
 export default function DashboardPage() {
   const [portfolio, setPortfolio] = useState<{
     id: string;
@@ -70,11 +73,13 @@ export default function DashboardPage() {
     lastUpdated: string;
   } | null>(null);
 
+  const [transactions, setTransactions] = useState<UnifiedTransaction[]>([]);
   const [lastSyncedAt, setLastSyncedAt] = useState<string>(new Date().toISOString());
   const [currency, setCurrency] = useState<CurrencyCode>('USD');
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isCashModalOpen, setIsCashModalOpen] = useState(false);
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null);
   const [isStealthMode, setIsStealthMode] = useState(false);
 
@@ -127,6 +132,18 @@ export default function DashboardPage() {
     }
   }, [user, authLoading, router]);
 
+  const fetchTransactions = useCallback(async (portfolioId: string) => {
+    try {
+      const res = await fetch(`/api/portfolio/transactions?portfolioId=${portfolioId}&limit=50`);
+      const result = await res.json();
+      if (result.success) {
+        setTransactions(result.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch transactions:', error);
+    }
+  }, []);
+
   const fetchPortfolio = useCallback(async (background = false, specificPortfolioId?: string) => {
     if (!background) setIsLoading(true);
     else setIsRefreshing(true);
@@ -140,6 +157,9 @@ export default function DashboardPage() {
 
       if (result.success) {
         setPortfolio(result.data);
+        if (result.data.id) {
+          fetchTransactions(result.data.id);
+        }
       }
     } catch (error) {
       console.error('Failed to fetch portfolio:', error);
@@ -147,7 +167,7 @@ export default function DashboardPage() {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [portfolio?.id]);
+  }, [portfolio?.id, fetchTransactions]);
 
   /**
    * Triggers the history sync engine to generate snapshots for the chart
@@ -197,10 +217,34 @@ export default function DashboardPage() {
     fetchPortfolio(false, newPortfolioId);
   };
 
-  const handleEditTrade = (trade: Trade) => {
+  const handleEditTrade = (trade: any) => {
     setEditingTrade(trade);
-    setIsFormOpen(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (trade.type === 'stock') {
+      setIsFormOpen(true);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      setIsCashModalOpen(true);
+    }
+  };
+
+  const handleCashTransaction = async (tx: any) => {
+    try {
+      const res = await fetch('/api/cash', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...tx,
+          portfolio_id: portfolio?.id
+        })
+      });
+      const result = await res.json();
+      if (result.success) {
+        setIsCashModalOpen(false);
+        fetchPortfolio(true);
+      }
+    } catch (err) {
+      console.error('Failed to add cash tx:', err);
+    }
   };
 
   if (authLoading || (isLoading && !portfolio) || !widgetsLoaded) {
@@ -487,7 +531,7 @@ export default function DashboardPage() {
         return (
           <div className="h-full overflow-auto -mx-2">
             <TradeHistory
-              trades={trades.slice(0, tradesLimit)}
+              transactions={transactions.slice(0, tradesLimit)}
               currency={currency}
               exchangeRates={rates}
               onTradeDeleted={() => fetchPortfolio(true)}
@@ -548,6 +592,7 @@ export default function DashboardPage() {
             compact={isSmall}
             onEditDashboard={() => setIsEditing(true)}
             onTradeAction={() => setIsFormOpen(true)}
+            onCashAction={() => setIsCashModalOpen(true)}
           />
         );
 
@@ -852,6 +897,21 @@ export default function DashboardPage() {
               />
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Cash Transaction Modal */}
+      <AnimatePresence>
+        {isCashModalOpen && (
+          <CashTransactionModal
+            onClose={() => {
+              setIsCashModalOpen(false);
+              setEditingTrade(null);
+            }}
+            onSubmit={handleCashTransaction}
+            currency={currency}
+            editTransaction={editingTrade}
+          />
         )}
       </AnimatePresence>
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { formatCurrency, formatNumber } from '@/lib/portfolio';
 import { Loader2, Plus, Edit2, X, Search } from 'lucide-react';
 import { Trade } from '@/types/portfolio';
 import { toast } from 'sonner';
@@ -26,16 +27,17 @@ type TradeFormValues = z.infer<typeof tradeSchema>;
 interface AddTradeFormProps {
     portfolioId: string;
     onTradeAdded: () => void;
-    editTrade?: Trade | null;
+    editTrade?: Trade | any | null; // Allow any to handle UnifiedTransaction
     onCancel?: () => void;
+    avgCostBasis?: number; // Add this
 }
 
-export default function AddTradeForm({ portfolioId, onTradeAdded, editTrade, onCancel }: AddTradeFormProps) {
+export default function AddTradeForm({ portfolioId, onTradeAdded, editTrade, onCancel, avgCostBasis }: AddTradeFormProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
 
-    const isEditing = !!editTrade;
+    const isEditing = !!editTrade && !!(editTrade as any).id;
 
     const {
         register,
@@ -59,7 +61,23 @@ export default function AddTradeForm({ portfolioId, onTradeAdded, editTrade, onC
         },
     });
 
+    const watchAction = watch('action');
+    const watchQuantity = watch('quantity') || 0;
+    const watchPrice = watch('pricePerShare') || 0;
+    const watchFees = watch('fees') || 0;
     const selectedCurrency = watch('currency');
+
+    const estimatedTotal = watchAction === 'BUY'
+        ? (watchQuantity * watchPrice) + watchFees
+        : (watchQuantity * watchPrice) - watchFees;
+
+    const estimatedPnL = watchAction === 'SELL' && avgCostBasis
+        ? (watchPrice - avgCostBasis) * watchQuantity - watchFees
+        : null;
+
+    const estimatedPnLPercent = watchAction === 'SELL' && avgCostBasis
+        ? (estimatedPnL! / (avgCostBasis * watchQuantity)) * 100
+        : null;
 
     useEffect(() => {
         if (editTrade) {
@@ -288,6 +306,43 @@ export default function AddTradeForm({ portfolioId, onTradeAdded, editTrade, onC
                         </div>
                     </label>
                 </div>
+
+                {/* Estimated Impact */}
+                {(watchQuantity > 0 && watchPrice > 0) && (
+                    <div className={`p-4 rounded-2xl border ${watchAction === 'BUY' ? 'bg-blue-500/5 border-blue-500/20' : 'bg-emerald-500/5 border-emerald-500/20'}`}>
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <span className="text-[10px] text-muted-foreground font-black uppercase tracking-widest block mb-1">
+                                    {watchAction === 'BUY' ? 'Total Cost' : 'Total Proceeds'}
+                                </span>
+                                <span className="text-lg font-black text-white">
+                                    {formatCurrency(estimatedTotal, selectedCurrency)}
+                                </span>
+                            </div>
+
+                            {estimatedPnL !== null && (
+                                <div className="text-right">
+                                    <span className="text-[10px] text-muted-foreground font-black uppercase tracking-widest block mb-1">
+                                        Estimated Realized P/L
+                                    </span>
+                                    <div className="flex items-center gap-2 justify-end">
+                                        <span className={`text-lg font-black ${estimatedPnL >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                            {estimatedPnL >= 0 ? '+' : ''}{formatCurrency(estimatedPnL, selectedCurrency)}
+                                        </span>
+                                        <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${estimatedPnL >= 0 ? 'bg-emerald-500/20 text-emerald-500' : 'bg-rose-500/20 text-rose-500'}`}>
+                                            {estimatedPnL >= 0 ? '+' : ''}{estimatedPnLPercent?.toFixed(2)}%
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        {avgCostBasis && watchAction === 'SELL' && (
+                            <div className="mt-2 text-[10px] text-muted-foreground font-bold">
+                                Based on Avg Cost Basis of {formatCurrency(avgCostBasis, selectedCurrency)} per share
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 <div>
                     <label className="block text-sm font-medium text-slate-300 mb-1.5">
