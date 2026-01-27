@@ -17,7 +17,8 @@ export function PostHogContextProvider({ children }: { children: React.ReactNode
             posthog.init(posthog_key, {
                 api_host: posthog_host,
                 person_profiles: 'identified_only',
-                capture_pageview: false
+                capture_pageview: false,
+                property_blacklist: ['$ip'], // Enhanced Privacy: Don't collect IP addresses
             })
         } else if (!preferences.analytics && posthog.isFeatureEnabled('any')) {
             // If consent is revoked, we opt out

@@ -26,6 +26,7 @@ export const metadata: Metadata = {
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import CookieConsent from "@/components/CookieConsent";
+import Footer from "@/components/Footer";
 import CommandPalette from "@/components/CommandPalette";
 import { Toaster } from "sonner";
 
@@ -44,7 +45,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#0f172a" />
       </head>
       <body
-        className={`${outfit.variable} ${inter.variable} font-inter antialiased bg-background text-foreground`}
+        className={`${outfit.variable} ${inter.variable} font-inter antialiased bg-background text-foreground min-h-screen flex flex-col`}
       >
         <AuthProvider>
           <ConsentProvider>
@@ -54,7 +55,10 @@ export default function RootLayout({
               </Suspense>
               <UserPreferencesProvider>
                 <ThemeProvider>
-                  {children}
+                  <main className="flex-1">
+                    {children}
+                  </main>
+                  <Footer />
                   <CookieConsent />
                   <CommandPalette />
                   <Toaster

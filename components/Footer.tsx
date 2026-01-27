@@ -1,86 +1,112 @@
+'use client';
+
 import Link from 'next/link';
-import { Mail, Phone, ExternalLink, ShieldCheck } from 'lucide-react';
+import { TrendingUp, Github, Twitter, Mail, ExternalLink, Shield, FileText, Building2 } from 'lucide-react';
+
+interface FooterLink {
+    name: string;
+    href: string;
+    external?: boolean;
+    icon?: React.ComponentType<{ size?: number; className?: string }>;
+}
 
 export default function Footer() {
+    const currentYear = new Date().getFullYear();
+
+    const sections: { title: string; links: FooterLink[] }[] = [
+        {
+            title: "Platform",
+            links: [
+                { name: "Dashboard", href: "/dashboard" },
+                { name: "Portfolios", href: "/dashboard/portfolios" },
+                { name: "Valuation Tools", href: "/dashboard/valuation" },
+                { name: "Research", href: "/dashboard/research" },
+            ]
+        },
+        {
+            title: "Legal & Privacy",
+            links: [
+                { name: "Privacy Policy", href: "/legal/privacy", icon: Shield },
+                { name: "Terms of Service", href: "/legal/terms", icon: FileText },
+                { name: "Impressum", href: "/legal/impressum", icon: Building2 },
+            ]
+        },
+        {
+            title: "Connect",
+            links: [
+                { name: "GitHub", href: "https://github.com", external: true, icon: Github },
+                { name: "Twitter", href: "https://twitter.com", external: true, icon: Twitter },
+                { name: "Support", href: "mailto:info@prometheusdigital.hu", icon: Mail },
+            ]
+        }
+    ];
+
     return (
-        <footer className="bg-card/50 backdrop-blur-md border-t border-border mt-auto">
-            <div className="container mx-auto px-6 py-12">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-                    {/* Brand/Company Info */}
-                    <div className="md:col-span-2">
-                        <div className="flex items-center gap-2 mb-6">
-                            <div className="p-1.5 bg-primary/20 rounded-lg">
-                                <ShieldCheck className="text-primary" size={24} />
+        <footer className="mt-auto border-t border-border/50 bg-card/30 backdrop-blur-sm">
+            <div className="max-w-7xl mx-auto px-6 py-12 md:py-16">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-12">
+                    {/* Brand Section */}
+                    <div className="lg:col-span-2 space-y-6">
+                        <Link href="/" className="flex items-center gap-3 group">
+                            <div className="p-2 bg-primary rounded-xl group-hover:rotate-12 transition-transform duration-300">
+                                <TrendingUp className="text-primary-foreground" size={24} />
                             </div>
-                            <span className="text-xl font-bold tracking-tight">StockTrackr.eu</span>
-                        </div>
-                        <h3 className="text-sm font-black text-foreground mb-4 uppercase tracking-widest">Prometheus Digital Kft.</h3>
-                        <div className="space-y-2 text-[11px] text-muted-foreground font-medium uppercase tracking-wider leading-relaxed">
-                            <p>1125 Budapest, Hableány utca 6/A</p>
-                            <p>Tax Number: 32910128-2-43</p>
-                            <p>Company Reg. No.: 01-09-434076</p>
-                        </div>
-                    </div>
-
-                    {/* Legal Links */}
-                    <div>
-                        <h3 className="text-[10px] font-black text-foreground mb-6 uppercase tracking-[0.2em]">Foundation</h3>
-                        <ul className="space-y-4">
-                            <li>
-                                <Link href="/legal/notice" className="text-xs text-muted-foreground hover:text-primary transition-colors font-bold uppercase tracking-widest">
-                                    Legal Notice
-                                </Link>
-                            </li>
-                            <li>
-                                <Link href="/legal/privacy" className="text-xs text-muted-foreground hover:text-primary transition-colors font-bold uppercase tracking-widest">
-                                    Privacy Policy
-                                </Link>
-                            </li>
-                            <li>
-                                <Link href="/legal/terms" className="text-xs text-muted-foreground hover:text-primary transition-colors font-bold uppercase tracking-widest">
-                                    Terms of Service
-                                </Link>
-                            </li>
-                        </ul>
-                    </div>
-
-                    {/* Contact */}
-                    <div>
-                        <h3 className="text-[10px] font-black text-foreground mb-6 uppercase tracking-[0.2em]">Contact Node</h3>
-                        <div className="space-y-4">
-                            <a
-                                href="mailto:info@prometheusdigital.hu"
-                                className="flex items-center gap-3 text-xs text-muted-foreground hover:text-primary transition-colors font-bold tracking-tight"
-                            >
-                                <div className="p-2 bg-muted rounded-xl">
-                                    <Mail size={14} />
-                                </div>
-                                info@prometheusdigital.hu
+                            <span className="text-xl font-black tracking-tighter text-foreground uppercase">
+                                Stock<span className="text-primary">Trackr</span>
+                            </span>
+                        </Link>
+                        <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
+                            Premium investment tracking and valuation tools for modern investors.
+                            Built for accuracy, privacy, and performance.
+                        </p>
+                        <div className="flex items-center gap-4">
+                            <a href="#" className="p-2 bg-muted hover:bg-primary/10 hover:text-primary rounded-lg transition-colors">
+                                <Twitter size={18} />
                             </a>
-                            <a
-                                href="tel:+36309222042"
-                                className="flex items-center gap-3 text-xs text-muted-foreground hover:text-primary transition-colors font-bold tracking-tight"
-                            >
-                                <div className="p-2 bg-muted rounded-xl">
-                                    <Phone size={14} />
-                                </div>
-                                +36 30 922 2042
+                            <a href="#" className="p-2 bg-muted hover:bg-primary/10 hover:text-primary rounded-lg transition-colors">
+                                <Github size={18} />
                             </a>
                         </div>
                     </div>
+
+                    {/* Links Sections */}
+                    {sections.map((section) => (
+                        <div key={section.title}>
+                            <h3 className="text-[10px] font-black uppercase tracking-widest text-primary mb-6">
+                                {section.title}
+                            </h3>
+                            <ul className="space-y-4">
+                                {section.links.map((link) => (
+                                    <li key={link.name}>
+                                        <Link
+                                            href={link.href}
+                                            target={link.external ? "_blank" : undefined}
+                                            className="text-sm font-bold text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2 group w-fit"
+                                        >
+                                            {link.icon && <link.icon size={14} className="group-hover:text-primary transition-colors" />}
+                                            {link.name}
+                                            {link.external && <ExternalLink size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />}
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    ))}
                 </div>
 
-                <div className="mt-12 pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-6">
-                    <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">
-                        © 2026 Prometheus Digital Kft. Secure Asset Management.
-                    </p>
+                <div className="pt-8 border-t border-border/50 flex flex-col md:flex-row justify-between items-center gap-6">
+                    <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                        © {currentYear} Prometheus Digital Kft. • Made in Budapest, EU
+                    </div>
+
                     <div className="flex items-center gap-6">
-                        <span className="text-[10px] text-muted-foreground font-black uppercase tracking-widest flex items-center gap-2">
-                            Infrastructure:
-                            <a href="https://vercel.com" target="_blank" rel="noopener noreferrer" className="text-foreground hover:text-primary transition-colors flex items-center gap-1">
-                                Vercel <ExternalLink size={10} />
-                            </a>
-                        </span>
+                        <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 rounded-full border border-emerald-500/20">
+                            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                            <span className="text-[10px] font-black text-emerald-500 uppercase tracking-tighter">Systems Operational</span>
+                        </div>
+                        <div className="text-[10px] font-bold text-muted-foreground/50 italic">
+                            v0.1.0-beta
+                        </div>
                     </div>
                 </div>
             </div>
