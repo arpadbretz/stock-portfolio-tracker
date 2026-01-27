@@ -118,37 +118,13 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Delete all user data (cascading deletes will handle related data)
-        // Order matters due to foreign key constraints
-        const { error: tradesError } = await supabase
-            .from('trades')
-            .delete()
-            .eq('user_id', user.id);
-
-        if (tradesError) {
-            console.error('Error deleting trades:', tradesError);
-        }
-
-        const { error: portfoliosError } = await supabase
-            .from('portfolios')
-            .delete()
-            .eq('user_id', user.id);
-
-        if (portfoliosError) {
-            console.error('Error deleting portfolios:', portfoliosError);
-        }
-
-        const { error: profileError } = await supabase
-            .from('profiles')
-            .delete()
-            .eq('id', user.id);
-
-        if (profileError) {
-            console.error('Error deleting profile:', profileError);
-        }
-
-        // Delete the auth user (this is the final step)
+        // Initialize Admin Client
         const supabaseAdmin = createAdminClient();
+
+        // ONE STEP TO RULE THEM ALL:
+        // Because your SQL tables use "ON DELETE CASCADE", deleting the Auth User
+        // automatically and instantly wipes their Profile, Portfolios, and Trades.
+        // This is safer because it's an atomic database operation.
         const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(user.id);
 
         if (authError) {
@@ -159,12 +135,12 @@ export async function DELETE(request: Request) {
             );
         }
 
-        // Sign out the user
+        // Sign out the user immediately
         await supabase.auth.signOut();
 
         return NextResponse.json({
             success: true,
-            message: 'Account successfully deleted'
+            message: 'Account and all data successfully deleted'
         });
     } catch (error) {
         console.error('Error deleting account:', error);
