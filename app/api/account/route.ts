@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { createHash } from 'crypto';
 
 export async function GET(request: Request) {
     try {
@@ -146,7 +148,8 @@ export async function DELETE(request: Request) {
         }
 
         // Delete the auth user (this is the final step)
-        const { error: authError } = await supabase.auth.admin.deleteUser(user.id);
+        const supabaseAdmin = createAdminClient();
+        const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(user.id);
 
         if (authError) {
             console.error('Error deleting auth user:', authError);
