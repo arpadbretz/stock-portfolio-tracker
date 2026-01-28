@@ -22,10 +22,10 @@ export default function Footer() {
 
     return (
         <footer className="mt-auto border-t border-border/50 bg-card/30 backdrop-blur-sm">
-            <div className="max-w-7xl mx-auto px-6 py-12">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 md:py-12">
+                <div className="flex flex-col md:flex-row md:justify-between gap-10 md:gap-12 items-start">
                     {/* Brand & Disclosure */}
-                    <div className="space-y-6">
+                    <div className="space-y-6 w-full md:max-w-md">
                         <Link href="/" className="flex items-center gap-3 group">
                             <div className="p-2 bg-primary rounded-xl group-hover:rotate-12 transition-transform duration-300">
                                 <TrendingUp className="text-primary-foreground" size={24} />
@@ -35,10 +35,10 @@ export default function Footer() {
                             </span>
                         </Link>
 
-                        <div className="space-y-4 max-w-md">
-                            <div className="flex gap-3 p-4 bg-amber-500/5 border border-amber-500/10 rounded-2xl">
+                        <div className="space-y-4">
+                            <div className="flex gap-3 p-4 bg-amber-500/5 border border-amber-500/10 rounded-2xl w-full">
                                 <AlertTriangle className="text-amber-500 shrink-0" size={18} />
-                                <p className="text-[11px] font-bold text-amber-500/80 leading-relaxed uppercase tracking-tight">
+                                <p className="text-[10px] sm:text-[11px] font-bold text-amber-500/80 leading-relaxed uppercase tracking-tight break-words">
                                     Financial Disclaimer: The information provided is for informational purposes only
                                     and does not constitute financial advice. / A feltüntetett információk kizárólag
                                     tájékoztató jellegűek, nem minősülnek befektetési tanácsadásnak.
@@ -48,18 +48,18 @@ export default function Footer() {
                     </div>
 
                     {/* Legal Links */}
-                    <div className="md:text-right flex flex-col md:items-end justify-center h-full">
-                        <h3 className="text-[10px] font-black uppercase tracking-widest text-primary mb-6">
+                    <div className="w-full md:w-auto flex flex-col items-start md:items-end md:text-right">
+                        <h3 className="text-[10px] font-black uppercase tracking-widest text-primary mb-4 md:mb-6">
                             Legal & Compliance
                         </h3>
-                        <ul className="flex flex-wrap gap-x-8 gap-y-4 md:justify-end items-center">
+                        <ul className="flex flex-wrap gap-x-6 gap-y-4 md:justify-end items-center">
                             {legalLinks.map((link) => (
                                 <li key={link.name}>
                                     <Link
                                         href={link.href}
-                                        className="text-sm font-bold text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2 group"
+                                        className="text-xs sm:text-sm font-bold text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2 group whitespace-nowrap"
                                     >
-                                        {link.icon && <link.icon size={14} className="group-hover:text-primary transition-colors" />}
+                                        {link.icon && <link.icon size={14} className="group-hover:text-primary transition-colors shrink-0" />}
                                         {link.name}
                                     </Link>
                                 </li>
@@ -67,9 +67,9 @@ export default function Footer() {
                             <li>
                                 <button
                                     onClick={() => setModalOpen(true)}
-                                    className="text-sm font-bold text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2 group"
+                                    className="text-xs sm:text-sm font-bold text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2 group whitespace-nowrap"
                                 >
-                                    <Settings size={14} className="group-hover:text-primary transition-colors" />
+                                    <Settings size={14} className="group-hover:text-primary transition-colors shrink-0" />
                                     Manage Cookies
                                 </button>
                             </li>

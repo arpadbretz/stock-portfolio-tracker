@@ -595,9 +595,9 @@ export default function WatchlistPage() {
                     </h1>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                     {/* View Mode Toggle */}
-                    <div className="flex items-center bg-muted rounded-xl p-1">
+                    <div className="flex items-center bg-muted rounded-xl p-1 shrink-0">
                         <button
                             onClick={() => setViewMode('grid')}
                             className={`p-2.5 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-card shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground'}`}
@@ -628,98 +628,104 @@ export default function WatchlistPage() {
                         </button>
                     </div>
 
-                    {/* Auto-Refresh Dropdown */}
-                    <div className="relative group">
-                        <button className={`p-3 rounded-xl transition-all flex items-center gap-1 ${autoRefreshInterval > 0 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}>
-                            <RefreshCw size={16} className={autoRefreshInterval > 0 ? 'animate-spin' : ''} />
-                            {autoRefreshInterval > 0 && <span className="text-xs font-bold">{autoRefreshInterval}s</span>}
-                        </button>
-                        <div className="absolute top-full right-0 mt-2 bg-card border border-border rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 min-w-[120px]">
-                            {[0, 30, 60, 300].map(sec => (
-                                <button
-                                    key={sec}
-                                    onClick={() => setAutoRefreshInterval(sec)}
-                                    className={`w-full px-4 py-2.5 text-left text-sm font-bold hover:bg-muted transition-colors first:rounded-t-xl last:rounded-b-xl ${autoRefreshInterval === sec ? 'text-primary' : ''}`}
-                                >
-                                    {sec === 0 ? 'Off' : sec === 60 ? '1 min' : sec === 300 ? '5 min' : `${sec}s`}
-                                </button>
-                            ))}
+                    {/* Auto-Refresh & Mode Controls */}
+                    <div className="flex items-center gap-3 flex-wrap">
+                        {/* Auto-Refresh Dropdown */}
+                        <div className="relative group">
+                            <button className={`p-3 rounded-xl transition-all flex items-center gap-1 ${autoRefreshInterval > 0 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}>
+                                <RefreshCw size={16} className={autoRefreshInterval > 0 ? 'animate-spin' : ''} />
+                                {autoRefreshInterval > 0 && <span className="text-xs font-bold">{autoRefreshInterval}s</span>}
+                            </button>
+                            <div className="absolute top-full right-0 mt-2 bg-card border border-border rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 min-w-[120px]">
+                                {[0, 30, 60, 300].map(sec => (
+                                    <button
+                                        key={sec}
+                                        onClick={() => setAutoRefreshInterval(sec)}
+                                        className={`w-full px-4 py-2.5 text-left text-sm font-bold hover:bg-muted transition-colors first:rounded-t-xl last:rounded-b-xl ${autoRefreshInterval === sec ? 'text-primary' : ''}`}
+                                    >
+                                        {sec === 0 ? 'Off' : sec === 60 ? '1 min' : sec === 300 ? '5 min' : `${sec}s`}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
+
+                        {/* Compare Mode Toggle */}
+                        <button
+                            onClick={() => {
+                                setIsCompareMode(!isCompareMode);
+                                if (isCompareMode) setCompareItems([]);
+                            }}
+                            className={`p-3 rounded-xl transition-all ${isCompareMode ? 'bg-amber-500 text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+                            title="Compare Stocks"
+                        >
+                            <BarChart3 size={18} />
+                        </button>
+
+                        {/* Select Mode Toggle */}
+                        <button
+                            onClick={() => {
+                                setIsSelectMode(!isSelectMode);
+                                if (isSelectMode) setSelectedItems(new Set());
+                            }}
+                            className={`p-3 rounded-xl transition-all ${isSelectMode ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+                            title="Bulk Select"
+                        >
+                            <CheckSquare size={18} />
+                        </button>
+
+                        {/* Custom Columns Dropdown (Table view only) */}
+                        {viewMode === 'table' && (
+                            <div className="relative">
+                                <button
+                                    onClick={() => setIsColumnsDropdownOpen(!isColumnsDropdownOpen)}
+                                    className={`p-3 rounded-xl transition-all ${isColumnsDropdownOpen ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+                                    title="Custom Columns"
+                                >
+                                    <Settings size={18} />
+                                </button>
+                                {isColumnsDropdownOpen && (
+                                    <>
+                                        <div className="fixed inset-0 z-40" onClick={() => setIsColumnsDropdownOpen(false)} />
+                                        <div className="absolute top-full right-0 mt-2 bg-card border border-border rounded-xl shadow-xl z-50 min-w-[160px] p-2">
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-2 py-1 mb-1">Show Columns</p>
+                                            {AVAILABLE_COLUMNS.map(col => (
+                                                <button
+                                                    key={col.key}
+                                                    onClick={() => toggleColumn(col.key)}
+                                                    className="w-full px-3 py-2 text-left text-sm font-bold hover:bg-muted transition-colors rounded-lg flex items-center gap-2"
+                                                >
+                                                    {visibleColumns.has(col.key) ? (
+                                                        <CheckSquare size={14} className="text-primary" />
+                                                    ) : (
+                                                        <Square size={14} className="text-muted-foreground" />
+                                                    )}
+                                                    {col.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        )}
                     </div>
 
-                    {/* Compare Mode Toggle */}
-                    <button
-                        onClick={() => {
-                            setIsCompareMode(!isCompareMode);
-                            if (isCompareMode) setCompareItems([]);
-                        }}
-                        className={`p-3 rounded-xl transition-all ${isCompareMode ? 'bg-amber-500 text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
-                        title="Compare Stocks"
-                    >
-                        <BarChart3 size={18} />
-                    </button>
-
-                    {/* Select Mode Toggle */}
-                    <button
-                        onClick={() => {
-                            setIsSelectMode(!isSelectMode);
-                            if (isSelectMode) setSelectedItems(new Set());
-                        }}
-                        className={`p-3 rounded-xl transition-all ${isSelectMode ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
-                        title="Bulk Select"
-                    >
-                        <CheckSquare size={18} />
-                    </button>
-
-                    {/* Custom Columns Dropdown (Table view only) */}
-                    {viewMode === 'table' && (
-                        <div className="relative">
-                            <button
-                                onClick={() => setIsColumnsDropdownOpen(!isColumnsDropdownOpen)}
-                                className={`p-3 rounded-xl transition-all ${isColumnsDropdownOpen ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
-                                title="Custom Columns"
-                            >
-                                <Settings size={18} />
-                            </button>
-                            {isColumnsDropdownOpen && (
-                                <>
-                                    <div className="fixed inset-0 z-40" onClick={() => setIsColumnsDropdownOpen(false)} />
-                                    <div className="absolute top-full right-0 mt-2 bg-card border border-border rounded-xl shadow-xl z-50 min-w-[160px] p-2">
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-2 py-1 mb-1">Show Columns</p>
-                                        {AVAILABLE_COLUMNS.map(col => (
-                                            <button
-                                                key={col.key}
-                                                onClick={() => toggleColumn(col.key)}
-                                                className="w-full px-3 py-2 text-left text-sm font-bold hover:bg-muted transition-colors rounded-lg flex items-center gap-2"
-                                            >
-                                                {visibleColumns.has(col.key) ? (
-                                                    <CheckSquare size={14} className="text-primary" />
-                                                ) : (
-                                                    <Square size={14} className="text-muted-foreground" />
-                                                )}
-                                                {col.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                    )}
-
-                    <button
-                        onClick={() => setIsGroupModalOpen(true)}
-                        className="flex items-center gap-2 px-6 py-3 bg-muted border border-border rounded-xl font-bold text-sm hover:bg-muted/80 transition-all active:scale-95"
-                    >
-                        <FolderPlus size={16} />
-                        New Group
-                    </button>
-                    <button
-                        onClick={() => fetchWatchlist(true)}
-                        disabled={isRefreshing}
-                        className="p-3 rounded-xl bg-card border border-border hover:bg-muted transition-all active:scale-95"
-                    >
-                        <RefreshCw size={18} className={isRefreshing ? 'animate-spin text-primary' : ''} />
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setIsGroupModalOpen(true)}
+                            className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-muted border border-border rounded-xl font-bold text-sm hover:bg-muted/80 transition-all active:scale-95 whitespace-nowrap"
+                        >
+                            <FolderPlus size={16} />
+                            <span className="hidden xs:inline">New Group</span>
+                            <span className="xs:hidden">Group</span>
+                        </button>
+                        <button
+                            onClick={() => fetchWatchlist(true)}
+                            disabled={isRefreshing}
+                            className="p-3 rounded-xl bg-card border border-border hover:bg-muted transition-all active:scale-95"
+                        >
+                            <RefreshCw size={18} className={isRefreshing ? 'animate-spin text-primary' : ''} />
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -1427,7 +1433,7 @@ export default function WatchlistPage() {
                             </div>
 
                             {/* Sector Heatmap Grid */}
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {sectors.map(sector => (
                                     <div key={sector.name} className="bg-card border border-border rounded-2xl overflow-hidden">
                                         <div className="p-4 border-b border-border">
@@ -1472,7 +1478,7 @@ export default function WatchlistPage() {
                 })()
             ) : (
                 /* GRID VIEW (default) */
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-10">
                     <AnimatePresence mode='popLayout'>
                         {sortedWatchlist.map((item, idx) => (
                             <motion.div
@@ -1493,40 +1499,28 @@ export default function WatchlistPage() {
                                                 </button>
                                             )}
                                             <Link href={`/dashboard/ticker/${item.symbol}`} className="flex-1">
-                                                <div className="flex items-center gap-3 mb-2">
-                                                    <h3 className="text-3xl font-black tracking-tighter group-hover:text-primary transition-colors">{item.symbol}</h3>
-                                                    {item.stage && item.stage !== 'researching' && (
-                                                        <span
-                                                            className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase"
-                                                            style={{
-                                                                backgroundColor: `${KANBAN_STAGES.find(s => s.id === item.stage)?.color || '#3b82f6'}20`,
-                                                                color: KANBAN_STAGES.find(s => s.id === item.stage)?.color || '#3b82f6'
-                                                            }}
-                                                        >
-                                                            {KANBAN_STAGES.find(s => s.id === item.stage)?.label || item.stage}
-                                                        </span>
-                                                    )}
-                                                    {(item.recentNewsCount ?? 0) > 0 && (
-                                                        <span className="flex items-center gap-1 px-2 py-0.5 bg-blue-500/20 text-blue-500 rounded-full text-[9px] font-bold" title={`${item.recentNewsCount} recent news`}>
-                                                            <Newspaper size={10} />
-                                                            {item.recentNewsCount}
-                                                        </span>
-                                                    )}
-                                                    {item.earningsDate && (() => {
-                                                        const earnings = new Date(item.earningsDate);
-                                                        const now = new Date();
-                                                        const daysUntil = Math.ceil((earnings.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-                                                        if (daysUntil > 0 && daysUntil <= 14) {
-                                                            return (
-                                                                <span className="flex items-center gap-1 px-2 py-0.5 bg-amber-500/20 text-amber-500 rounded-full text-[9px] font-bold" title={`Earnings: ${earnings.toLocaleDateString()}`}>
-                                                                    <CalendarDays size={10} />
-                                                                    {daysUntil}d
-                                                                </span>
-                                                            );
-                                                        }
-                                                        return null;
-                                                    })()}
-                                                    <ChevronRight size={18} className="text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                                                <div className="flex items-center gap-3 mb-2 min-w-0">
+                                                    <h3 className="text-2xl xs:text-3xl font-black tracking-tighter group-hover:text-primary transition-colors truncate min-w-0 flex-shrink">{item.symbol}</h3>
+                                                    <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                                                        {item.stage && item.stage !== 'researching' && (
+                                                            <span
+                                                                className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase whitespace-nowrap"
+                                                                style={{
+                                                                    backgroundColor: `${KANBAN_STAGES.find(s => s.id === item.stage)?.color || '#3b82f6'}20`,
+                                                                    color: KANBAN_STAGES.find(s => s.id === item.stage)?.color || '#3b82f6'
+                                                                }}
+                                                            >
+                                                                {KANBAN_STAGES.find(s => s.id === item.stage)?.label.split(' ')[0] || item.stage}
+                                                            </span>
+                                                        )}
+                                                        {(item.recentNewsCount ?? 0) > 0 && (
+                                                            <span className="flex items-center gap-1 px-2 py-0.5 bg-blue-500/20 text-blue-500 rounded-full text-[9px] font-bold" title={`${item.recentNewsCount} recent news`}>
+                                                                <Newspaper size={10} />
+                                                                {item.recentNewsCount}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <ChevronRight size={18} className="text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all shrink-0" />
                                                 </div>
                                                 <p className="text-[10px] font-black text-muted-foreground truncate uppercase tracking-[0.2em]">{item.name || 'Resolving...'}</p>
                                             </Link>

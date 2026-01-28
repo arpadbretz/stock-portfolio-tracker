@@ -492,8 +492,8 @@ export default function AccountPage() {
 
                         {/* Currency Preference */}
                         <section className="bg-card border border-border p-8 rounded-[40px] shadow-sm">
-                            <div className="flex items-start gap-6 mb-8">
-                                <div className="p-4 bg-emerald-500/10 rounded-2xl">
+                            <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6 mb-8">
+                                <div className="p-4 bg-emerald-500/10 rounded-2xl shrink-0">
                                     <DollarSign className="text-emerald-500" size={24} />
                                 </div>
                                 <div>
@@ -509,7 +509,7 @@ export default function AccountPage() {
                                         key={curr.code}
                                         onClick={() => handleCurrencyChange(curr.code)}
                                         disabled={savingCurrency}
-                                        className={`relative p-4 rounded-2xl border-2 transition-all ${currency === curr.code
+                                        className={`relative p-4 rounded-2xl border-2 transition-all flex flex-col items-center justify-center min-w-0 ${currency === curr.code
                                             ? 'bg-primary/10 border-primary'
                                             : 'bg-muted border-transparent hover:border-border'
                                             }`}
@@ -519,8 +519,8 @@ export default function AccountPage() {
                                                 <Check size={14} className="text-primary" />
                                             </div>
                                         )}
-                                        <div className="text-2xl font-black mb-1">{curr.symbol}</div>
-                                        <div className="text-xs font-bold text-muted-foreground">{curr.code}</div>
+                                        <div className="text-xl xs:text-2xl font-black mb-1 truncate w-full text-center">{curr.symbol}</div>
+                                        <div className="text-[10px] xs:text-xs font-bold text-muted-foreground truncate">{curr.code}</div>
                                     </button>
                                 ))}
                             </div>

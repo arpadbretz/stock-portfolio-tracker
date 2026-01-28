@@ -393,44 +393,44 @@ function PortfolioCommandCenterContent() {
                                     <div className="lg:col-span-7 space-y-8">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             {/* Liquidation Value */}
-                                            <div className="p-6 md:p-8 rounded-[40px] bg-card border border-border shadow-sm flex flex-col justify-between group overflow-hidden relative">
-                                                <div>
+                                            <div className="p-6 md:p-8 rounded-[40px] bg-card border border-border shadow-sm flex flex-col justify-between group overflow-hidden relative min-w-0 w-full">
+                                                <div className="min-w-0">
                                                     <div className="flex items-center gap-2 text-muted-foreground mb-4">
-                                                        <DollarSign size={16} />
-                                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap">Net Liquidation</span>
+                                                        <DollarSign size={16} className="shrink-0" />
+                                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] truncate">Net Liquidation</span>
                                                     </div>
-                                                    <div className="text-3xl lg:text-5xl font-black tracking-tighter mb-4 blur-stealth break-all md:break-normal">
+                                                    <div className="text-2xl xs:text-3xl sm:text-4xl lg:text-5xl font-black tracking-tighter mb-4 blur-stealth break-words min-w-0">
                                                         {formatCurrency(convertedMarketValue, currency)}
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-black text-xs ${convertedGain >= 0 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
-                                                        {convertedGain >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                                                        {formatCurrency(convertedGain, currency)}
+                                                <div className="flex flex-wrap items-center gap-3">
+                                                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-black text-xs whitespace-nowrap ${convertedGain >= 0 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
+                                                        {convertedGain >= 0 ? <TrendingUp size={14} className="shrink-0" /> : <TrendingDown size={14} className="shrink-0" />}
+                                                        <span className="truncate">{formatCurrency(convertedGain, currency)}</span>
                                                     </div>
-                                                    <div className={`font-black text-xs ${convertedGain >= 0 ? 'text-emerald-500/60' : 'text-rose-500/60'}`}>
+                                                    <div className={`font-black text-xs whitespace-nowrap ${convertedGain >= 0 ? 'text-emerald-500/60' : 'text-rose-500/60'}`}>
                                                         {formatPercentage(portfolioData.summary.totalGainPercent)}
                                                     </div>
                                                 </div>
-                                                <Activity size={100} className="absolute -right-4 -bottom-4 text-primary opacity-[0.03] group-hover:opacity-[0.08] transition-opacity rotate-12" />
+                                                <Activity size={100} className="absolute -right-4 -bottom-4 text-primary opacity-[0.03] group-hover:opacity-[0.08] transition-opacity rotate-12 pointer-events-none" />
                                             </div>
 
                                             {/* Asset Count */}
-                                            <div className="p-6 md:p-8 rounded-[40px] bg-card border border-border shadow-sm flex flex-col justify-between group">
-                                                <div>
+                                            <div className="p-6 md:p-8 rounded-[40px] bg-card border border-border shadow-sm flex flex-col justify-between group min-w-0 w-full">
+                                                <div className="min-w-0">
                                                     <div className="flex items-center gap-2 text-muted-foreground mb-4">
-                                                        <Zap size={16} />
-                                                        <span className="text-[10px] font-black uppercase tracking-[0.2em]">Asset Alpha</span>
+                                                        <Zap size={16} className="shrink-0" />
+                                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] truncate">Asset Alpha</span>
                                                     </div>
-                                                    <div className="text-3xl lg:text-5xl font-black tracking-tighter mb-4">
+                                                    <div className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tighter mb-4">
                                                         {portfolioData.holdings.length}
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-3">
-                                                    <div className="px-3 py-1.5 bg-primary/10 text-primary rounded-full font-black text-xs">
+                                                <div className="flex flex-wrap items-center gap-3">
+                                                    <div className="px-3 py-1.5 bg-primary/10 text-primary rounded-full font-black text-xs whitespace-nowrap">
                                                         {new Set(portfolioData.holdings.map(h => h.sector)).size || 1} Sectors
                                                     </div>
-                                                    <div className="text-muted-foreground font-black text-[10px] uppercase tracking-widest hidden md:block">
+                                                    <div className="text-muted-foreground font-black text-[10px] uppercase tracking-widest hidden sm:block truncate">
                                                         High Diversification
                                                     </div>
                                                 </div>

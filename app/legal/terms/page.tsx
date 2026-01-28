@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowLeft, FileText, AlertTriangle, Scale, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, FileText, AlertTriangle, Scale, CheckCircle2, Ban, Globe } from 'lucide-react';
 
 export default function TermsOfServicePage() {
     return (
@@ -34,15 +34,41 @@ export default function TermsOfServicePage() {
                             </div>
 
                             <section className="space-y-4">
-                                <h2 className="text-xl font-black text-white uppercase">1. Use of Service</h2>
+                                <h2 className="text-xl font-black text-white uppercase flex items-center gap-2">
+                                    <CheckCircle2 size={20} className="text-primary" />
+                                    1. Use of Service & Performance
+                                </h2>
                                 <p className="text-slate-300 text-sm leading-relaxed">
                                     By creating an account, you agree to provide accurate information and maintain the security of your credentials.
                                     Unauthorized commercial reproduction of the site's analytics or scraping of data is strictly prohibited.
                                 </p>
+                                <p className="text-slate-400 text-xs italic bg-slate-900/50 p-4 rounded-xl border border-slate-700/50">
+                                    By using the Service, you acknowledge that it constitutes digital content and you expressly consent to the immediate commencement of performance, thereby waiving your 14-day right of withdrawal for digital services once performance has begun.
+                                </p>
                             </section>
 
                             <section className="space-y-4">
-                                <h2 className="text-xl font-black text-white uppercase">2. Limitation of Liability</h2>
+                                <h2 className="text-xl font-black text-white uppercase flex items-center gap-2">
+                                    <Ban size={20} className="text-rose-400" />
+                                    2. Termination
+                                </h2>
+                                <p className="text-slate-300 text-sm leading-relaxed">
+                                    We reserve the right to suspend or terminate accounts that violate these terms, including but not limited to abusive API usage, automated scraping, or any activity that compromises platform stability.
+                                </p>
+                            </section>
+
+                            <section className="space-y-4">
+                                <h2 className="text-xl font-black text-white uppercase flex items-center gap-2">
+                                    <Globe size={20} className="text-blue-400" />
+                                    3. Jurisdiction
+                                </h2>
+                                <p className="text-slate-300 text-sm leading-relaxed">
+                                    These Terms are governed by the laws of Hungary. The courts of Budapest shall have exclusive jurisdiction over any disputes arising from or related to the use of this Service.
+                                </p>
+                            </section>
+
+                            <section className="space-y-4">
+                                <h2 className="text-xl font-black text-white uppercase">4. Limitation of Liability</h2>
                                 <p className="text-slate-300 text-sm leading-relaxed">
                                     StockTrackr.eu and Prometheus Digital Kft. shall not be liable for any financial losses incurred through the use of
                                     this application. All investment decisions are the sole responsibility of the user.
@@ -85,10 +111,20 @@ export default function TermsOfServicePage() {
                                     A regisztrációval Ön elfogadja, hogy valós adatokat ad meg és felelős saját belépési adatai biztonságáért.
                                     Az alkalmazás analitikáinak jogosulatlan kereskedelmi célú felhasználása vagy automatizált adatgyűjtése (scraping) tilos.
                                 </p>
+                                <p className="text-slate-400 text-xs italic bg-slate-900/50 p-4 rounded-xl border border-slate-700/50">
+                                    A szolgáltatás használatával Ön tudomásul veszi, hogy az digitális adattartalomnak minősül, és kifejezetten hozzájárul a teljesítés azonnali megkezdéséhez, amellyel elveszíti a 14 napos elállási jogát a teljesítés megkezdését követően.
+                                </p>
                             </section>
 
                             <section className="space-y-4">
-                                <h2 className="text-xl font-black text-white uppercase">2. Felelősség korlátozása</h2>
+                                <h2 className="text-xl font-black text-white uppercase">2. Felmondás</h2>
+                                <p className="text-slate-300 text-sm leading-relaxed">
+                                    Fenntartjuk a jogot a fiókok felfüggesztésére vagy törlésére, amennyiben a felhasználó megsérti a jelen feltételeket, beleértve az API-val való visszaélést, az automatizált adatgyűjtést vagy a platform stabilitását veszélyeztető tevékenységeket.
+                                </p>
+                            </section>
+
+                            <section className="space-y-4">
+                                <h2 className="text-xl font-black text-white uppercase">3. Felelősség korlátozása</h2>
                                 <p className="text-slate-300 text-sm leading-relaxed">
                                     A StockTrackr.eu és a Prometheus Digital Kft. nem vállal felelősséget az alkalmazás használata során
                                     esetlegesen keletkező pénzügyi veszteségekért. Minden befektetési döntés a felhasználó kizárólagos felelőssége.
@@ -97,12 +133,11 @@ export default function TermsOfServicePage() {
 
                             <div className="p-8 bg-slate-900/50 rounded-[32px] border border-slate-700/50 mt-12">
                                 <div className="flex items-center gap-3 mb-4">
-                                    <CheckCircle2 className="text-emerald-500" size={24} />
-                                    <h3 className="text-lg font-black text-white uppercase tracking-tight">Irányadó Jog</h3>
+                                    <Scale className="text-emerald-500" size={24} />
+                                    <h3 className="text-lg font-black text-white uppercase tracking-tight">Irányadó Jog és Illetékesség</h3>
                                 </div>
-                                <p className="text-sm text-slate-400">
-                                    A jelen feltételekre Magyarország és az Európai Unió jogszabályai az irányadóak. Jogvita esetén a magyarországi
-                                    bíróságok rendelkeznek illetékességgel.
+                                <p className="text-sm text-slate-400 leading-relaxed">
+                                    A jelen feltételekre Magyarország és az Európai Unió jogszabályai az irányadóak. Bármilyen, a szolgáltatással kapcsolatos jogvita esetén a felek alávetik magukat a budapesti székhelyű bíróságok kizárólagos illetékességének.
                                 </p>
                             </div>
                         </div>
@@ -110,7 +145,7 @@ export default function TermsOfServicePage() {
                 </div>
 
                 <div className="mt-12 text-center text-[10px] font-black uppercase tracking-widest text-slate-600">
-                    Last updated / Utoljára frissítve: January 27, 2026
+                    Last updated / Utoljára frissítve: January 28, 2026
                 </div>
             </div>
         </div>
