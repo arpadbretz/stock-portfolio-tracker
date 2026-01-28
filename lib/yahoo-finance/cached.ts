@@ -18,27 +18,25 @@ export const getCachedPrice = unstable_cache(
 );
 
 /**
+ * Internal worker for batch prices caching
+ */
+const getBatchPricesInternal = unstable_cache(
+    async (tickers: string[]): Promise<Record<string, PriceData>> => {
+        const resultMap = await getBatchPrices(tickers);
+        return Object.fromEntries(resultMap.entries());
+    },
+    ['batch-stock-prices'],
+    {
+        revalidate: 900,
+        tags: ['prices']
+    }
+);
+
+/**
  * Cached version of getBatchPrices
- * Note: Next.js unstable_cache serializes to JSON, so Map becomes plain object
- * We need to convert back to Map after caching
  */
 export const getCachedBatchPrices = async (tickers: string[]): Promise<Map<string, PriceData>> => {
-    // Use unstable_cache but convert Map to object for JSON serialization
-    const cachedFn = unstable_cache(
-        async (tickers: string[]): Promise<Record<string, PriceData>> => {
-            const resultMap = await getBatchPrices(tickers);
-            // Convert Map to plain object for JSON serialization
-            return Object.fromEntries(resultMap.entries());
-        },
-        ['batch-stock-prices'],
-        {
-            revalidate: 900,
-            tags: ['prices']
-        }
-    );
-
-    const resultObject = await cachedFn(tickers);
-    // Convert plain object back to Map
+    const resultObject = await getBatchPricesInternal(tickers);
     return new Map(Object.entries(resultObject));
 };
 

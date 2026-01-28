@@ -50,37 +50,32 @@ export default function Navigation() {
     // Fetch triggered alerts for notification bell
     useEffect(() => {
         const fetchTriggeredAlerts = async () => {
+            if (document.visibilityState !== 'visible') return;
+
             try {
                 const res = await fetch('/api/alerts');
-                const data = await res.json();
-                if (data.success) {
-                    // Check which alerts are triggered based on current price
-                    const alertsWithPrices = await Promise.all(
-                        data.data.map(async (alert: any) => {
-                            try {
-                                const priceRes = await fetch(`/api/stock/${alert.symbol}`);
-                                const priceResponse = await priceRes.json();
-                                // Handle new API format: { success: true, data: { ... } }
-                                const priceData = priceResponse.success ? priceResponse.data : priceResponse;
-                                const currentPrice = priceData?.price;
-                                const isTriggered = currentPrice && (alert.condition === 'above'
-                                    ? currentPrice >= alert.target_price
-                                    : currentPrice <= alert.target_price);
-                                return { ...alert, currentPrice, isTriggered };
-                            } catch {
-                                return { ...alert, isTriggered: false };
-                            }
-                        })
-                    );
-                    setTriggeredAlerts(alertsWithPrices.filter((a: any) => a.isTriggered));
+                const result = await res.json();
+
+                if (result.success && result.data) {
+                    // Prices are now attached in the backend, no more N+1 fetches!
+                    const triggered = result.data.filter((alert: any) => {
+                        const currentPrice = alert.currentPrice;
+                        if (!currentPrice) return false;
+
+                        return alert.condition === 'above'
+                            ? currentPrice >= alert.target_price
+                            : currentPrice <= alert.target_price;
+                    });
+                    setTriggeredAlerts(triggered);
                 }
             } catch (err) {
                 console.error('Failed to fetch alerts:', err);
             }
         };
+
         if (user) {
             fetchTriggeredAlerts();
-            const interval = setInterval(fetchTriggeredAlerts, 60000); // Check every minute
+            const interval = setInterval(fetchTriggeredAlerts, 15 * 60 * 1000); // 15 mins (was 1 min!)
             return () => clearInterval(interval);
         }
     }, [user]);

@@ -50,29 +50,25 @@ export async function GET(request: Request) {
 
         console.log(`Found ${alerts.length} active alerts to check`);
 
-        // 2. Get unique tickers and fetch current prices
+        // 2. Get unique tickers and fetch current prices in batch
         const uniqueTickers = [...new Set(alerts.map(a => a.symbol))];
-        const priceMap = new Map<string, number>();
+        const { getBatchPrices } = await import('@/lib/yahoo-finance');
+        const priceMap = await getBatchPrices(uniqueTickers);
 
-        for (const ticker of uniqueTickers) {
-            try {
-                const priceData = await getCurrentPrice(ticker);
-                if (priceData?.currentPrice) {
-                    priceMap.set(ticker, priceData.currentPrice);
-                }
-            } catch (e) {
-                console.error(`Failed to fetch price for ${ticker}:`, e);
-            }
-        }
+        // Convert to a simpler map for the logic below
+        const priceValueMap = new Map<string, number>();
+        priceMap.forEach((data, ticker) => {
+            if (data?.currentPrice) priceValueMap.set(ticker, data.currentPrice);
+        });
 
-        console.log(`Fetched prices for ${priceMap.size} tickers`);
+        console.log(`Fetched prices for ${priceValueMap.size} tickers`);
 
         // 3. Check each alert and trigger if conditions are met
         const triggeredAlerts: string[] = [];
         const emailsSent: string[] = [];
 
         for (const alert of alerts) {
-            const currentPrice = priceMap.get(alert.symbol);
+            const currentPrice = priceValueMap.get(alert.symbol);
             if (!currentPrice) continue;
 
             const shouldTrigger = alert.condition === 'above'

@@ -5,7 +5,16 @@ import { Trade } from '@/types/portfolio';
 export async function syncPortfolioHistory(portfolioId: string, userId: string) {
     const supabase = await createClient();
 
-    // 1. Get all trades and cash transactions for this portfolio
+    // 1. Get the latest sync point to see if we can do incremental sync
+    const { data: latestHistory } = await supabase
+        .from('portfolio_history')
+        .select('*')
+        .eq('portfolio_id', portfolioId)
+        .order('date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+    // 2. Get all trades and cash transactions (internal data, cheap to fetch all)
     const [{ data: trades, error: tradesError }, { data: cashTransactions, error: cashError }] = await Promise.all([
         supabase
             .from('trades')
@@ -22,31 +31,85 @@ export async function syncPortfolioHistory(portfolioId: string, userId: string) 
     if (tradesError) throw tradesError;
     if (cashError) throw cashError;
 
-    // 2. Identify timeframe
+    // 3. Identify timeframe and initial state
     let startTradeDate = trades && trades.length > 0 ? new Date(trades[0].date_traded) : null;
     let startCashDate = cashTransactions && cashTransactions.length > 0 ? new Date(cashTransactions[0].transaction_date) : null;
 
-    let startDate = startTradeDate;
-    if (!startDate || (startCashDate && startCashDate < startDate)) {
-        startDate = startCashDate;
+    let inceptionDate = startTradeDate;
+    if (!inceptionDate || (startCashDate && startCashDate < inceptionDate)) {
+        inceptionDate = startCashDate;
     }
 
-    if (!startDate) return { success: true, message: 'No activity found' };
+    if (!inceptionDate) return { success: true, message: 'No activity found' };
+
+    let startDate = inceptionDate;
+    let currentStockHoldings = new Map<string, number>();
+    let currentCashBalances = { USD: 0, EUR: 0, HUF: 0 } as Record<string, number>;
+    let totalInvested = 0;
+    let cumulativeTwr = 1;
+    let cumulativeBench = 1;
+    let prevTotalValue = 0;
+    let realizedPnl = 0;
+
+    // If we have history, recover state as of the last entry
+    if (latestHistory) {
+        startDate = new Date(latestHistory.date);
+
+        // Short-circuit if already synced today
+        const todayStr = new Date().toISOString().split('T')[0];
+        if (latestHistory.date === todayStr) {
+            // Check if any trades/cash were added/updated since this history entry was created
+            const lastSyncTime = new Date(latestHistory.created_at);
+            const hasNewActivity = [...(trades || []), ...(cashTransactions || [])].some(
+                t => new Date(t.created_at || t.updated_at) > lastSyncTime
+            );
+            if (!hasNewActivity) {
+                return { success: true, message: 'Already up to date', incremental: true };
+            }
+        }
+
+        // Fast-forward balances to the start date
+        for (const ct of (cashTransactions || [])) {
+            if (new Date(ct.transaction_date) > startDate) break;
+            currentCashBalances[ct.currency] = (currentCashBalances[ct.currency] || 0) + Number(ct.amount);
+            if (ct.transaction_type === 'DEPOSIT' || ct.transaction_type === 'WITHDRAWAL') {
+                // Approximate cost basis recovery if we didn't store it perfectly (though we do have it in history)
+                // but for simplicity we rely on history table values for metrics
+            }
+        }
+        for (const t of (trades || [])) {
+            if (new Date(t.date_traded) > startDate) break;
+            const qty = Number(t.quantity);
+            const current = currentStockHoldings.get(t.ticker) || 0;
+            currentStockHoldings.set(t.ticker, t.action === 'BUY' ? current + qty : Math.max(0, current - qty));
+        }
+
+        // Load metrics from history
+        totalInvested = Number(latestHistory.cost_basis);
+        realizedPnl = Number(latestHistory.realized_pnl || 0);
+        prevTotalValue = Number(latestHistory.total_value);
+        cumulativeTwr = Number(latestHistory.cumulative_twr) + 1;
+        cumulativeBench = Number(latestHistory.bench_cumulative) + 1;
+    }
 
     const endDate = new Date();
 
-    // 3. Get all unique tickers + FX pairs
+    // 4. Get unique tickers + FX pairs
     const uniqueTickers = [...new Set((trades || []).map((t: any) => t.ticker))];
     const fxPairs = ['USDEUR=X', 'USDHUF=X'];
 
-    // 4. Fetch historical prices + FX in parallel
+    // 5. Fetch historical prices for the gap
+    // Use startDate - 1 day to ensure we have the closing price for the previous day for TWR denominator
+    const fetchStart = new Date(startDate);
+    fetchStart.setDate(fetchStart.getDate() - 1);
+
     const priceCache = new Map<string, Map<string, number>>();
     const benchCache = new Map<string, number>();
 
     await Promise.all([
         ...uniqueTickers.map(async (ticker) => {
             try {
-                const prices = await getHistoricalPrices(ticker, startDate, endDate);
+                const prices = await getHistoricalPrices(ticker, fetchStart, endDate);
                 const tickerPriceMap = new Map<string, number>();
                 prices.forEach((p: any) => {
                     const dateStr = new Date(p.date).toISOString().split('T')[0];
@@ -59,7 +122,7 @@ export async function syncPortfolioHistory(portfolioId: string, userId: string) 
         }),
         ...fxPairs.map(async (pair) => {
             try {
-                const prices = await getHistoricalPrices(pair, startDate, endDate);
+                const prices = await getHistoricalPrices(pair, fetchStart, endDate);
                 const fxMap = new Map<string, number>();
                 prices.forEach((p: any) => {
                     const dateStr = new Date(p.date).toISOString().split('T')[0];
@@ -72,7 +135,7 @@ export async function syncPortfolioHistory(portfolioId: string, userId: string) 
         }),
         (async () => {
             try {
-                const benchData = await getHistoricalBenchmark(startDate, endDate);
+                const benchData = await getHistoricalBenchmark(fetchStart, endDate);
                 benchData.forEach((p: any) => {
                     const dateStr = new Date(p.date).toISOString().split('T')[0];
                     benchCache.set(dateStr, p.value);
@@ -83,67 +146,45 @@ export async function syncPortfolioHistory(portfolioId: string, userId: string) 
         })()
     ]);
 
-    // 5. Iterate day by day and calculate portfolio value + TWR
+    // 6. Iterate and calculate
     const historyEntries = [];
-    let currentStockHoldings = new Map<string, number>();
-    let currentCashBalances = { USD: 0, EUR: 0, HUF: 0 } as Record<string, number>;
-
-    let totalInvested = 0; // Cumulative net cash in (Deposits - Withdrawals)
-    let realizedPnl = 0;
-    let prevTotalValue = 0;
-    let cumulativeTwr = 1;
-    let initialBenchValue = benchmarkValueAtDate(startDate, benchCache);
-    let cumulativeBench = 1;
-
     const iterDate = new Date(startDate);
+
+    // If we're incremental, we move to the next day immediately
+    if (latestHistory) {
+        iterDate.setDate(iterDate.getDate() + 1);
+    }
+
+    const initialBenchValue = benchmarkValueAtDate(inceptionDate, benchCache);
 
     while (iterDate <= endDate) {
         const dateStr = iterDate.toISOString().split('T')[0];
 
-        // --- Process Cash Transactions (Direct Flows) ---
-        const dayCashFlows = (cashTransactions || []).filter((t: any) => new Date(t.transaction_date).toISOString().split('T')[0] === dateStr);
+        // Process Cash
+        const dayCashFlows = (cashTransactions || []).filter(t => new Date(t.transaction_date).toISOString().split('T')[0] === dateStr);
         let externalCashFlowUSD = 0;
 
         for (const ct of dayCashFlows) {
             const amount = Number(ct.amount);
-            const curr = ct.currency;
-
-            // Update currency-specific balance
-            currentCashBalances[curr as 'USD' | 'EUR' | 'HUF'] = (currentCashBalances[curr as 'USD' | 'EUR' | 'HUF'] || 0) + amount;
-
-            // External flows (capital injection/withdrawal) affect TWR denominator
+            currentCashBalances[ct.currency] = (currentCashBalances[ct.currency] || 0) + amount;
             if (ct.transaction_type === 'DEPOSIT' || ct.transaction_type === 'WITHDRAWAL') {
-                const rate = getPriceAtDate(curr === 'USD' ? 'USD' : `USD${curr}=X`, iterDate, priceCache) || 1;
-                const usdValue = curr === 'USD' ? amount : amount / rate;
+                const rate = getPriceAtDate(ct.currency === 'USD' ? 'USD' : `USD${ct.currency}=X`, iterDate, priceCache) || 1;
+                const usdValue = ct.currency === 'USD' ? amount : amount / rate;
                 externalCashFlowUSD += usdValue;
                 totalInvested += usdValue;
             }
         }
 
-        // --- Process Trades (Internal Flows + Stock Adjustments) ---
-        const dayTrades = (trades || []).filter((t: any) => new Date(t.date_traded).toISOString().split('T')[0] === dateStr);
+        // Process Trades
+        const dayTrades = (trades || []).filter(t => new Date(t.date_traded).toISOString().split('T')[0] === dateStr);
         for (const trade of dayTrades) {
             const qty = Number(trade.quantity);
-            const price = Number(trade.price_per_share);
-            const fees = Number(trade.fees || 0);
             const ticker = trade.ticker;
-
-            // Note: We don't adjust currentCashBalances here because we assume the cash_transaction 
-            // table already has matching entries for trades if the user has auto-sync enabled.
-            // If they DON'T have matching entries, then their cash history will be inaccurate, 
-            // but we can't double-count flows. 
-            // TODO: In future, if cash_transaction_id is missing on trade, we could simulate it.
-
-            if (trade.action === 'BUY') {
-                const existingQty = currentStockHoldings.get(ticker) || 0;
-                currentStockHoldings.set(ticker, existingQty + qty);
-            } else {
-                const existingQty = currentStockHoldings.get(ticker) || 0;
-                currentStockHoldings.set(ticker, Math.max(0, existingQty - qty));
-            }
+            const current = currentStockHoldings.get(ticker) || 0;
+            currentStockHoldings.set(ticker, trade.action === 'BUY' ? current + qty : Math.max(0, current - qty));
         }
 
-        // --- Calculate Total Portfolio Value (Stocks + Cash) ---
+        // Values
         let dailyMarketValueUSD = 0;
         for (const [ticker, quantity] of currentStockHoldings.entries()) {
             if (quantity <= 0) continue;
@@ -151,7 +192,6 @@ export async function syncPortfolioHistory(portfolioId: string, userId: string) 
             if (price !== undefined) dailyMarketValueUSD += quantity * price;
         }
 
-        // Calculate Cash Value in USD
         let dailyCashValueUSD = 0;
         for (const [curr, bal] of Object.entries(currentCashBalances)) {
             if (bal === 0) continue;
@@ -161,9 +201,7 @@ export async function syncPortfolioHistory(portfolioId: string, userId: string) 
 
         const totalValueUSD = dailyMarketValueUSD + dailyCashValueUSD;
 
-        // --- TWR Calculation ---
-        // R = (EV - (BV + CF)) / (BV + CF)
-        // CF here is ONLY external cash flows (Deposits/Withdrawals)
+        // TWR
         let dailyReturn = 0;
         const denominator = prevTotalValue + externalCashFlowUSD;
         if (denominator > 0) {
@@ -171,7 +209,7 @@ export async function syncPortfolioHistory(portfolioId: string, userId: string) 
             cumulativeTwr *= (1 + dailyReturn);
         }
 
-        // --- Benchmark Calculation ---
+        // Benchmark
         const currentBenchValue = benchmarkValueAtDate(iterDate, benchCache);
         if (initialBenchValue && currentBenchValue) {
             cumulativeBench = currentBenchValue / initialBenchValue;
@@ -183,7 +221,7 @@ export async function syncPortfolioHistory(portfolioId: string, userId: string) 
             date: dateStr,
             total_value: totalValueUSD,
             cost_basis: totalInvested,
-            realized_pnl: realizedPnl, // Still rough, need better tracking
+            realized_pnl: realizedPnl,
             daily_return: dailyReturn,
             cumulative_twr: cumulativeTwr - 1,
             bench_return: 0,
@@ -194,8 +232,7 @@ export async function syncPortfolioHistory(portfolioId: string, userId: string) 
         iterDate.setDate(iterDate.getDate() + 1);
     }
 
-    // 6. Upsert into database
-    if (historyEntries.length === 0) return { success: true, message: 'No history to sync' };
+    if (historyEntries.length === 0) return { success: true, message: 'No new gaps to sync' };
 
     const { error: upsertError } = await supabase
         .from('portfolio_history')
@@ -205,7 +242,7 @@ export async function syncPortfolioHistory(portfolioId: string, userId: string) 
 
     return {
         success: true,
-        message: `Synced ${historyEntries.length} days of history (Stocks + Cash)`,
+        message: `Incremental sync complete: ${historyEntries.length} days added.`,
         daysSynced: historyEntries.length
     };
 }

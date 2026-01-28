@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getCachedBatchPrices } from '@/lib/yahoo-finance/cached';
 
 export async function GET(request: NextRequest) {
     try {
@@ -30,7 +31,16 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Failed to fetch alerts' }, { status: 500 });
         }
 
-        return NextResponse.json({ success: true, data: alerts });
+        // Attach current prices in batch to avoid N+1 fetches in the frontend
+        const symbols = [...new Set((alerts || []).map(a => a.symbol))];
+        const prices = await getCachedBatchPrices(symbols);
+
+        const enrichedAlerts = (alerts || []).map(alert => ({
+            ...alert,
+            currentPrice: prices.get(alert.symbol)?.currentPrice || null
+        }));
+
+        return NextResponse.json({ success: true, data: enrichedAlerts });
     } catch (error) {
         console.error('Alerts error:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
