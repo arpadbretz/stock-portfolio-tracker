@@ -391,7 +391,7 @@ function PortfolioCommandCenterContent() {
                                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                                     {/* Stats & Tools Column */}
                                     <div className="lg:col-span-7 space-y-8">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                             {/* Liquidation Value */}
                                             <div className="p-6 md:p-8 rounded-[40px] bg-card border border-border shadow-sm flex flex-col justify-between group overflow-hidden relative min-w-0 w-full">
                                                 <div className="min-w-0">
@@ -399,7 +399,7 @@ function PortfolioCommandCenterContent() {
                                                         <DollarSign size={16} className="shrink-0" />
                                                         <span className="text-[10px] font-black uppercase tracking-[0.2em] truncate">Net Liquidation</span>
                                                     </div>
-                                                    <div className="text-2xl xs:text-3xl sm:text-4xl lg:text-5xl font-black tracking-tighter mb-4 blur-stealth break-words min-w-0">
+                                                    <div className="text-2xl md:text-3xl lg:text-4xl 2xl:text-5xl font-black tracking-tighter mb-4 blur-stealth whitespace-nowrap min-w-0 overflow-hidden text-ellipsis">
                                                         {formatCurrency(convertedMarketValue, currency)}
                                                     </div>
                                                 </div>
