@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { TrendingUp, Shield, FileText, Building2, AlertTriangle, Settings } from 'lucide-react';
 import { useConsent } from './providers/ConsentProvider';
+import { usePathname } from 'next/navigation';
 
 interface FooterLink {
     name: string;
@@ -13,6 +14,10 @@ interface FooterLink {
 export default function Footer() {
     const currentYear = new Date().getFullYear();
     const { setModalOpen } = useConsent();
+    const pathname = usePathname();
+
+    // Check if we are in dashboard area
+    const isDashboard = pathname?.startsWith('/dashboard');
 
     const legalLinks: FooterLink[] = [
         { name: "Privacy Policy", href: "/legal/privacy", icon: Shield },
@@ -21,8 +26,8 @@ export default function Footer() {
     ];
 
     return (
-        <footer className="mt-auto border-t border-border/50 bg-card/30 backdrop-blur-sm w-full">
-            <div className="w-full px-4 md:px-6 py-8 md:py-12">
+        <footer className={`mt-auto border-t border-border/50 bg-card/30 backdrop-blur-sm w-full transition-all duration-300 ${isDashboard ? 'lg:pl-72' : ''}`}>
+            <div className={`w-full px-4 md:px-6 py-8 md:py-12 ${isDashboard ? 'max-w-[1600px] mx-auto' : 'max-w-7xl mx-auto'}`}>
                 <div className="flex flex-col lg:flex-row lg:justify-between gap-10 lg:gap-12 items-start">
                     {/* Brand & Disclosure */}
                     <div className="space-y-6 w-full lg:max-w-md">
