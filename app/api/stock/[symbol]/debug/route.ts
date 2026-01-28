@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import YahooFinance from 'yahoo-finance2';
-
-const yf = new (YahooFinance as any)();
-
 export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ symbol: string }> }
 ) {
+    const { default: YahooFinance } = await import('yahoo-finance2');
+    const yf = new (YahooFinance as any)();
     const { symbol } = await params;
 
     if (!symbol) {

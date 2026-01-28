@@ -57,13 +57,7 @@ export function MarketOverviewWidget({ expanded = false }: { expanded?: boolean 
                     : ['^GSPC', '^IXIC', '^DJI', '^VIX'];
 
                 // Fetch all in one batch call to avoid N+1 requests
-                const res = await fetch(`/api/portfolio?refresh=false`); // Portfolio API already fetches these usually
-                // Alternatively, use a cleaner market pulse or dedicated batch price
-                const { getBatchPrices } = await import('@/lib/yahoo-finance');
-                // Wait, this is a client component, can't import server lib.
-                // We'll use a direct fetch to the batch handler if it exists, 
-                // but since we already have the portfolio API fetching prices, we can leverage it.
-                // For now, let's just use the existing logic but BATCHED in one actual internal API if possible.
+                const res = await fetch(`/api/portfolio?refresh=false`);
                 // Best fix: call the route once for IDs.
 
                 const responses = await Promise.all(symbols.map(s => fetch(`/api/stock/${encodeURIComponent(s)}`)));
