@@ -1,7 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import YahooFinance from 'yahoo-finance2';
-
-const yf = new (YahooFinance as any)();
 
 export async function GET(
     request: NextRequest,
@@ -11,65 +8,45 @@ export async function GET(
     const searchParams = request.nextUrl.searchParams;
     const range = searchParams.get('range') || '1mo';
 
-    if (!symbol) {
-        return NextResponse.json({ error: 'Symbol required' }, { status: 400 });
-    }
+    if (!symbol) return NextResponse.json({ error: 'Symbol required' }, { status: 400 });
+    const ticker = symbol.toUpperCase();
 
     try {
-        const ticker = symbol.toUpperCase();
+        const { default: YahooFinance } = await import('yahoo-finance2');
+        const yf = new (YahooFinance as any)();
 
-        // Map range to interval
+        // Intraday data is short-lived, so we don't cache it in DB for now
+        // but we apply a timeout to avoid hanging functions
         const intervalMap: Record<string, string> = {
-            '1d': '5m',
-            '5d': '15m',
-            '1mo': '1d',
-            '3mo': '1d',
-            '6mo': '1d',
-            '1y': '1wk',
-            '5y': '1mo',
-            'max': '1mo',
+            '1d': '5m', '5d': '15m', '1mo': '1d', '3mo': '1d', '6mo': '1d', '1y': '1wk', '5y': '1mo', 'max': '1mo',
         };
-
         const interval = intervalMap[range] || '1d';
 
-        const historical = await yf.chart(ticker, {
-            period1: getStartDate(range),
-            period2: new Date(),
-            interval,
-        });
+        const historical: any = await Promise.race([
+            yf.chart(ticker, { period1: getStartDate(range), period2: new Date(), interval }),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 4000))
+        ]);
 
-        if (!historical || !historical.quotes) {
-            return NextResponse.json({ error: 'No historical data' }, { status: 404 });
-        }
-
-        const data = historical.quotes
-            .filter((q: any) => q.close !== null)
-            .map((q: any) => ({
-                date: q.date,
-                open: q.open,
-                high: q.high,
-                low: q.low,
-                close: q.close,
-                volume: q.volume,
-            }));
+        if (!historical || !historical.quotes) return NextResponse.json({ error: 'No data' }, { status: 404 });
 
         return NextResponse.json({
             symbol: ticker,
             range,
             interval,
-            data,
+            data: historical.quotes.filter((q: any) => q.close !== null).map((q: any) => ({
+                date: q.date, open: q.open, high: q.high, low: q.low, close: q.close, volume: q.volume,
+            }))
         });
     } catch (error) {
-        console.error(`Error fetching chart for ${symbol}:`, error);
-        return NextResponse.json({ error: 'Failed to fetch chart data' }, { status: 500 });
+        return NextResponse.json({ error: 'Failed' }, { status: 500 });
     }
 }
 
 function getStartDate(range: string): Date {
     const now = new Date();
     switch (range) {
-        case '1d': return new Date(now.setDate(now.getDate() - 1));
-        case '5d': return new Date(now.setDate(now.getDate() - 5));
+        case '1d': return new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        case '5d': return new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000);
         case '1mo': return new Date(now.setMonth(now.getMonth() - 1));
         case '3mo': return new Date(now.setMonth(now.getMonth() - 3));
         case '6mo': return new Date(now.setMonth(now.getMonth() - 6));

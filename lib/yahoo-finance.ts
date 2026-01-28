@@ -1,34 +1,78 @@
 // Yahoo Finance API Service for fetching live stock prices
-import YahooFinance from 'yahoo-finance2';
 import { PriceData } from '@/types/portfolio';
+import { createAdminClient } from './supabase/admin';
+
+// CONFIG: How long real-time prices are valid (in minutes)
+const PRICE_CACHE_REVALIDATE_MINS = 15;
+// CONFIG: How long metadata (fundamentals, etc) is valid (in days)
+const METADATA_CACHE_REVALIDATE_DAYS = 7;
 
 /**
- * In yahoo-finance2 v3+, the default export is a CLASS that must be instantiated.
- * The class contains all modules (quote, search, etc.) on its prototype.
+ * Generic helper to fetch with patterns: Dynamic Import + Timeout
  */
-const yf = new (YahooFinance as any)();
+async function fetchWithYahooPattern<T>(fetcher: (yf: any) => Promise<T>, timeoutMs = 3000): Promise<T> {
+    const { default: YahooFinance } = await import('yahoo-finance2');
+    const yf = new (YahooFinance as any)({
+        suppressNotices: ['yahooSurvey'],
+        validation: { logErrors: false }
+    });
+
+    return await Promise.race([
+        fetcher(yf),
+        new Promise<T>((_, reject) =>
+            setTimeout(() => reject(new Error('Yahoo API Timeout')), timeoutMs)
+        )
+    ]);
+}
 
 /**
- * Fetch current price for a single ticker
+ * Fetch current price for a single ticker with "Fail-Fast" cache logic
  */
 export async function getCurrentPrice(ticker: string): Promise<PriceData | null> {
     if (!ticker) return null;
+    const symbol = ticker.trim().toUpperCase();
+    const adminClient = createAdminClient();
 
     try {
-        const symbol = ticker.trim().toUpperCase();
+        // 1. GUARD CLAUSE: CHECK CACHE BEFORE IMPORTING LIBRARY
+        const { data: cached } = await adminClient
+            .from('stock_cache')
+            .select('*')
+            .eq('symbol', symbol)
+            .eq('cache_key', 'price')
+            .maybeSingle();
 
-        // Fetch both quote and summary to get price and asset details
-        const [quote, summary] = await Promise.all([
-            yf.quote(symbol),
-            yf.quoteSummary(symbol, { modules: ['assetProfile'] }).catch(() => null)
-        ]);
+        if (cached) {
+            const lastUpdated = new Date(cached.last_updated);
+            const now = new Date();
+            const ageInMins = (now.getTime() - lastUpdated.getTime()) / (1000 * 60);
 
-        if (!quote || !quote.regularMarketPrice) {
-            console.warn(`No price data found for ${symbol}`);
-            return null;
+            if (ageInMins < PRICE_CACHE_REVALIDATE_MINS) {
+                return {
+                    ticker: symbol,
+                    currentPrice: Number(cached.price),
+                    change: Number(cached.price_change || 0),
+                    changePercent: Number(cached.price_change_percent || 0),
+                    lastUpdated: cached.last_updated,
+                    sector: cached.sector,
+                    industry: cached.industry,
+                };
+            }
         }
 
-        return {
+        // 2. FETCH FROM YAHOO
+        const [quote, summary] = await fetchWithYahooPattern(async (yf) => {
+            return await Promise.all([
+                yf.quote(symbol),
+                yf.quoteSummary(symbol, { modules: ['assetProfile'] }).catch(() => null)
+            ]);
+        });
+
+        if (!quote || !quote.regularMarketPrice) {
+            throw new Error('No price data found');
+        }
+
+        const priceData: PriceData = {
             ticker: symbol,
             currentPrice: quote.regularMarketPrice,
             change: quote.regularMarketChange || 0,
@@ -37,51 +81,198 @@ export async function getCurrentPrice(ticker: string): Promise<PriceData | null>
             sector: summary?.assetProfile?.sector,
             industry: summary?.assetProfile?.industry,
         };
-    } catch (error) {
-        console.error(`Error fetching price for ${ticker}:`, error);
+
+        // 3. ASYNC CACHE UPDATE (fire and forget)
+        adminClient.from('stock_cache').upsert({
+            symbol: symbol,
+            cache_key: 'price',
+            price: priceData.currentPrice,
+            price_change: priceData.change,
+            price_change_percent: priceData.changePercent,
+            sector: priceData.sector,
+            industry: priceData.industry,
+            last_updated: priceData.lastUpdated
+        }).then(({ error }) => {
+            if (error) console.error(`Error caching ${symbol}:`, error);
+        });
+
+        return priceData;
+    } catch (error: any) {
+        console.error(`Fetch failed for ${symbol}:`, error.message || error);
+
+        // FINAL FALLBACK: return STALE CACHE if available
+        try {
+            const { data: staleCache } = await adminClient
+                .from('stock_cache')
+                .select('*')
+                .eq('symbol', symbol)
+                .eq('cache_key', 'price')
+                .maybeSingle();
+
+            if (staleCache) {
+                return {
+                    ticker: symbol,
+                    currentPrice: Number(staleCache.price),
+                    change: Number(staleCache.price_change || 0),
+                    changePercent: Number(staleCache.price_change_percent || 0),
+                    lastUpdated: staleCache.last_updated,
+                    sector: staleCache.sector,
+                    industry: staleCache.industry,
+                };
+            }
+        } catch (fallbackError) {
+            console.error('Final fallback also failed:', fallbackError);
+        }
         return null;
     }
 }
 
 /**
- * Fetch current prices for multiple tickers
+ * Generic Fetcher with Caching (Fundamentals, QuoteSummary, etc.)
  */
+export async function getCachedData<T>(
+    symbol: string,
+    cacheKey: string,
+    revalidateDays: number,
+    fetcher: (yf: any) => Promise<T> // fetcher now expects yf instance
+): Promise<T | null> {
+    const adminClient = createAdminClient();
+    try {
+        // 1. Check Cache
+        const { data: cached } = await adminClient
+            .from('stock_cache')
+            .select('*')
+            .eq('symbol', symbol)
+            .eq('cache_key', cacheKey)
+            .maybeSingle();
+
+        if (cached) {
+            const lastUpdated = new Date(cached.last_updated);
+            const now = new Date();
+            const ageInDays = (now.getTime() - lastUpdated.getTime()) / (1000 * 60 * 60 * 24);
+
+            if (ageInDays < revalidateDays) {
+                return cached.data;
+            }
+        }
+
+        // 2. Fetch with Pattern
+        const result = await fetchWithYahooPattern(fetcher, 10000); // 10s for heavy data
+
+        if (result) {
+            // 3. Cache it
+            adminClient.from('stock_cache').upsert({
+                symbol: symbol,
+                cache_key: cacheKey,
+                data: result,
+                last_updated: new Date().toISOString()
+            }).then(({ error }) => {
+                if (error) console.error('Cache save error:', error);
+            });
+        }
+
+        return result;
+    } catch (error: any) {
+        console.error(`Fetch failed for ${symbol} (${cacheKey}):`, error.message || error);
+        const { data: stale } = await adminClient
+            .from('stock_cache')
+            .select('data')
+            .eq('symbol', symbol)
+            .eq('cache_key', cacheKey)
+            .maybeSingle();
+        return stale?.data || null;
+    }
+}
+
+/**
+ * Get quote summary with caching
+ */
+export async function getCachedQuoteSummary(ticker: string, modules: string[]) {
+    if (!ticker) return null;
+    const symbol = ticker.trim().toUpperCase();
+    const modulesKey = modules.sort().join(',');
+    return getCachedData(symbol, `summary:${modulesKey}`, METADATA_CACHE_REVALIDATE_DAYS, async (yf) => {
+        return await yf.quoteSummary(symbol, { modules });
+    });
+}
+
+/**
+ * Get fundamentals time series with caching
+ */
+export async function getCachedFundamentals(ticker: string) {
+    if (!ticker) return null;
+    const symbol = ticker.trim().toUpperCase();
+    return getCachedData(symbol, 'fundamentals:annual', METADATA_CACHE_REVALIDATE_DAYS, async (yf) => {
+        return await yf.fundamentalsTimeSeries(symbol, {
+            period1: new Date(new Date().getFullYear() - 10, 0, 1),
+            period2: new Date(),
+            type: 'annual',
+            module: 'all'
+        }, { validateResult: false });
+    });
+}
+
+/**
+ * Search/News with caching
+ */
+export async function getCachedSearch(query: string, options: any) {
+    const cacheKey = `search:${JSON.stringify(options)}:${query.toLowerCase()}`;
+    const adminClient = createAdminClient();
+
+    try {
+        const { data: cached } = await adminClient
+            .from('stock_cache')
+            .select('*')
+            .eq('symbol', '_SEARCH_')
+            .eq('cache_key', cacheKey)
+            .maybeSingle();
+
+        if (cached) {
+            const ageInMins = (new Date().getTime() - new Date(cached.last_updated).getTime()) / 60000;
+            // News/Search cache for 2 hours
+            if (ageInMins < 120) return cached.data;
+        }
+
+        const result = await fetchWithYahooPattern(async (yf) => yf.search(query, options), 3000);
+
+        if (result) {
+            adminClient.from('stock_cache').upsert({
+                symbol: '_SEARCH_',
+                cache_key: cacheKey,
+                data: result,
+                last_updated: new Date().toISOString()
+            }).then(({ error }) => {
+                if (error) console.error('Search cache error:', error);
+            });
+        }
+
+        return result;
+    } catch (error: any) {
+        console.error('Search failed:', error.message || error);
+        return null;
+    }
+}
+
 export async function getBatchPrices(tickers: string[]): Promise<Map<string, PriceData>> {
     const priceMap = new Map<string, PriceData>();
-
-    if (!tickers || tickers.length === 0) {
-        return priceMap;
-    }
-
+    if (!tickers || tickers.length === 0) return priceMap;
     const uniqueTickers = [...new Set(tickers.map(t => t?.trim().toUpperCase()).filter(Boolean))];
-
     const promises = uniqueTickers.map(async (ticker) => {
         const priceData = await getCurrentPrice(ticker);
-        if (priceData) {
-            priceMap.set(ticker, priceData);
-        }
+        if (priceData) priceMap.set(ticker, priceData);
     });
-
     await Promise.all(promises);
-
     return priceMap;
 }
 
-import { createAdminClient } from './supabase/admin';
-
-/**
- * Get historical prices for a ticker, checking the global database cache first.
- */
 export async function getHistoricalPrices(ticker: string, from: Date, to: Date = new Date()) {
     if (!ticker) return [];
-
     try {
         const symbol = ticker.trim().toUpperCase();
         const fromStr = from.toISOString().split('T')[0];
         const toStr = to.toISOString().split('T')[0];
-
-        // 1. Try to fetch from Supabase cache first
         const adminClient = createAdminClient();
+
         const { data: cachedData, error: cacheError } = await adminClient
             .from('daily_stock_prices')
             .select('date, price')
@@ -91,72 +282,38 @@ export async function getHistoricalPrices(ticker: string, from: Date, to: Date =
             .order('date', { ascending: true });
 
         if (!cacheError && cachedData && cachedData.length > 0) {
-            // Check if we have most of the requested range (rough heuristic)
-            // If the start date in cache is close to requested from date, use it
-            const firstCachedDate = new Date(cachedData[0].date);
-            const daysDiff = Math.abs((firstCachedDate.getTime() - from.getTime()) / (1000 * 60 * 60 * 24));
-
-            // Also check if we have the latest data (yesterday or today)
             const lastCachedDate = new Date(cachedData[cachedData.length - 1].date);
             const isUpToDate = lastCachedDate.getTime() >= new Date().setHours(0, 0, 0, 0) - (24 * 60 * 60 * 1000);
-
-            if (daysDiff < 5 && isUpToDate) {
-                console.log(`Using DB cache for ${symbol} history (${cachedData.length} days)`);
-                return cachedData.map(item => ({
-                    date: new Date(item.date),
-                    close: Number(item.price)
-                }));
+            if (isUpToDate) {
+                return cachedData.map(item => ({ date: new Date(item.date), close: Number(item.price) }));
             }
         }
 
-        // 2. Fetch from Yahoo Finance if cache is missing or stale
-        console.log(`Fetching ${symbol} history from Yahoo Finance...`);
-        const queryOptions = {
-            period1: from,
-            period2: to,
-            interval: '1d' as any,
-        };
+        const result = await fetchWithYahooPattern(async (yf) =>
+            yf.historical(symbol, { period1: from, period2: to, interval: '1d' as any }), 5000);
 
-        const result = await yf.historical(symbol, queryOptions);
-        const prices = result.map((item: any) => ({
-            date: item.date,
-            close: item.close || item.adjClose || 0,
-        }));
+        const prices = result.map((item: any) => ({ date: item.date, close: item.close || item.adjClose || 0 }));
 
-        // 3. Save to cache asynchronously (fire and forget)
         if (prices.length > 0) {
             const cacheEntries = prices.map((p: any) => ({
                 symbol,
                 date: p.date.toISOString().split('T')[0],
                 price: p.close
             }));
-
-            adminClient
-                .from('daily_stock_prices')
-                .upsert(cacheEntries, { onConflict: 'symbol,date' })
-                .then(({ error }) => {
-                    if (error) console.error(`Failed to cache prices for ${symbol}:`, error);
-                    else console.log(`Cached ${cacheEntries.length} prices for ${symbol}`);
-                });
+            adminClient.from('daily_stock_prices').upsert(cacheEntries, { onConflict: 'symbol,date' }).then(({ error }) => {
+                if (error) console.error('Price cache error:', error);
+            });
         }
-
         return prices;
-    } catch (error) {
-        console.error(`Error fetching historical prices for ${ticker}:`, error);
+    } catch (error: any) {
+        console.error(`Historical fetch error for ${ticker}:`, error.message || error);
         return [];
     }
 }
 
-/**
- * Get historical benchmark data (S&P 500)
- */
 export async function getHistoricalBenchmark(from: Date, to: Date = new Date()) {
-    // ^GSPC is the symbol for S&P 500
     const data = await getHistoricalPrices('^GSPC', from, to);
-
     if (data.length === 0) return [];
-
-    // Normalize data: First entry = 100%
     const startValue = data[0].close;
     return data.map((item: any) => ({
         date: item.date,
@@ -165,30 +322,6 @@ export async function getHistoricalBenchmark(from: Date, to: Date = new Date()) 
     }));
 }
 
-/**
- * Get quote summary with more details
- */
 export async function getQuoteSummary(ticker: string) {
-    if (!ticker) return null;
-
-    try {
-        const symbol = ticker.trim().toUpperCase();
-        const quote = await yf.quote(symbol);
-        return {
-            ticker: symbol,
-            name: quote.shortName || quote.longName || symbol,
-            price: quote.regularMarketPrice || 0,
-            previousClose: quote.regularMarketPreviousClose || 0,
-            open: quote.regularMarketOpen || 0,
-            dayHigh: quote.regularMarketDayHigh || 0,
-            dayLow: quote.regularMarketDayLow || 0,
-            volume: quote.regularMarketVolume || 0,
-            marketCap: quote.marketCap || 0,
-            fiftyTwoWeekHigh: quote.fiftyTwoWeekHigh || 0,
-            fiftyTwoWeekLow: quote.fiftyTwoWeekLow || 0,
-        };
-    } catch (error) {
-        console.error(`Error fetching quote summary for ${ticker}:`, error);
-        return null;
-    }
+    return getCachedQuoteSummary(ticker, ['price', 'summaryDetail']);
 }

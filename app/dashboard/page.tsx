@@ -201,11 +201,19 @@ export default function DashboardPage() {
     if (user) {
       fetchPortfolio();
     }
-    // Refresh prices every 5 minutes
-    const interval = setInterval(() => fetchPortfolio(true), 5 * 60 * 1000);
+    // Refresh prices every 15 minutes - but only if user is active/tab is focused
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetchPortfolio(true);
+      }
+    }, 15 * 60 * 1000);
 
     // Refresh history snapshots every hour while app is open
-    const historyInterval = setInterval(() => syncHistory(), 60 * 60 * 1000);
+    const historyInterval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        syncHistory();
+      }
+    }, 60 * 60 * 1000);
 
     return () => {
       clearInterval(interval);
