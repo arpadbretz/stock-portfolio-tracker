@@ -50,10 +50,10 @@ export default function PortfolioComposition({ holdings, currency, exchangeRates
                     const convertedGain = convertCurrency(holding.unrealizedGain, currency, exchangeRates);
 
                     return (
-                        <div key={holding.ticker} className="flex items-center justify-between gap-3 group px-2 md:px-4">
+                        <div key={holding.ticker} className="flex items-center justify-between gap-4 group px-2 md:px-4">
                             {/* Asset Info */}
                             <div className="flex-1 flex items-center gap-3 min-w-0">
-                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center text-primary font-black text-xs shrink-0 group-hover:scale-110 transition-transform shadow-sm">
+                                <div className="w-16 h-10 rounded-xl bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center text-primary font-black text-xs flex-shrink-0 group-hover:scale-110 transition-transform shadow-sm">
                                     {holding.ticker}
                                 </div>
                                 <div className="min-w-0 flex-1">

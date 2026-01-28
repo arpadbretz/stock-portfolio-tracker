@@ -207,7 +207,7 @@ function EditPositionsContent() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -20 }}
-                            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                            className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-6"
                         >
                             {filteredHoldings.map((holding) => (
                                 <div key={holding.ticker} className="bg-card border border-border rounded-[32px] p-6 group hover:border-primary/30 transition-all shadow-sm relative overflow-hidden">
@@ -217,12 +217,12 @@ function EditPositionsContent() {
                                                 {holding.ticker}
                                             </div>
                                             <div>
-                                                <div className="font-black text-lg">{holding.ticker}</div>
+                                                <div className="font-black text-lg truncate min-w-0">{holding.ticker}</div>
                                                 <div className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">Active Position</div>
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <div className="font-black text-xl">{formatCurrency(convertCurrency(holding.marketValue, currency, exchangeRates), currency)}</div>
+                                            <div className="font-black text-xl truncate">{formatCurrency(convertCurrency(holding.marketValue, currency, exchangeRates), currency)}</div>
                                             <div className={`text-[10px] font-black uppercase ${holding.unrealizedGain >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
                                                 {formatPercentage(holding.unrealizedGainPercent)} Return
                                             </div>
@@ -232,7 +232,7 @@ function EditPositionsContent() {
                                     <div className="grid grid-cols-2 gap-3 mb-6">
                                         <div className="bg-muted/50 p-3 rounded-2xl">
                                             <div className="text-[8px] text-muted-foreground font-black uppercase tracking-widest mb-1">Quantity</div>
-                                            <div className="font-bold text-sm">{formatNumber(holding.shares, 3)}</div>
+                                            <div className="font-bold text-sm truncate">{formatNumber(holding.shares, 3)}</div>
                                         </div>
                                         <div className="bg-muted/50 p-3 rounded-2xl">
                                             <div className="text-[8px] text-muted-foreground font-black uppercase tracking-widest mb-1">Avg Cost</div>

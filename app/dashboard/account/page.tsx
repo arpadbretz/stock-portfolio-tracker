@@ -433,13 +433,13 @@ export default function AccountPage() {
                                     <Edit3 size={12} />
                                     Display Name
                                 </label>
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 min-w-0">
                                     <input
                                         type="text"
                                         value={displayName}
                                         onChange={(e) => setDisplayName(e.target.value)}
                                         placeholder="Your name"
-                                        className="flex-1 px-3 py-2 bg-muted border border-border rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                        className="flex-1 w-full max-w-full px-3 py-2 bg-muted border border-border rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 min-w-0"
                                     />
                                     <button
                                         type="submit"
@@ -503,13 +503,13 @@ export default function AccountPage() {
                                     </p>
                                 </div>
                             </div>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <div className="flex flex-wrap gap-3">
                                 {CURRENCIES.map((curr) => (
                                     <button
                                         key={curr.code}
                                         onClick={() => handleCurrencyChange(curr.code)}
                                         disabled={savingCurrency}
-                                        className={`relative p-4 rounded-2xl border-2 transition-all flex flex-col items-center justify-center min-w-0 ${currency === curr.code
+                                        className={`relative p-4 rounded-2xl border-2 transition-all flex flex-col items-center justify-center flex-1 min-w-[80px] sm:min-w-[100px] ${currency === curr.code
                                             ? 'bg-primary/10 border-primary'
                                             : 'bg-muted border-transparent hover:border-border'
                                             }`}

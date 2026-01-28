@@ -1478,7 +1478,7 @@ export default function WatchlistPage() {
                 })()
             ) : (
                 /* GRID VIEW (default) */
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-10">
+                <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-6 md:gap-10">
                     <AnimatePresence mode='popLayout'>
                         {sortedWatchlist.map((item, idx) => (
                             <motion.div
@@ -1490,9 +1490,9 @@ export default function WatchlistPage() {
                                 transition={{ delay: idx * 0.05 }}
                                 className={`bg-card border rounded-[40px] p-1 shadow-sm hover:shadow-2xl hover:shadow-primary/5 group ${selectedItems.has(item.symbol) ? 'border-primary bg-primary/5' : 'border-border'}`}
                             >
-                                <div className="p-8">
+                                <div className="p-8 relative">
                                     <div className="flex items-start justify-between mb-8">
-                                        <div className="flex items-start gap-3">
+                                        <div className="flex items-start gap-3 pr-24">
                                             {isSelectMode && (
                                                 <button onClick={() => toggleSelectItem(item.symbol)} className="mt-1">
                                                     {selectedItems.has(item.symbol) ? <CheckSquare size={20} className="text-primary" /> : <Square size={20} className="text-muted-foreground" />}
@@ -1526,7 +1526,7 @@ export default function WatchlistPage() {
                                             </Link>
                                         </div>
 
-                                        <div className="flex items-center gap-2">
+                                        <div className="absolute top-6 right-6 flex items-center gap-2">
                                             {isCompareMode && (
                                                 <button
                                                     onClick={() => toggleCompareItem(item.symbol)}

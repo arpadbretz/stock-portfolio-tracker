@@ -344,7 +344,7 @@ function PortfolioCommandCenterContent() {
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-3 self-end lg:self-auto">
+                            <div className="flex flex-wrap items-center gap-3 self-end lg:self-auto">
                                 <button
                                     onClick={() => selectedPortfolioId && syncPortfolio(selectedPortfolioId)}
                                     disabled={isSyncing}
