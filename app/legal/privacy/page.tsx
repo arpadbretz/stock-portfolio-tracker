@@ -139,9 +139,9 @@ export default function PrivacyPolicyPage() {
                                     To exercise your rights (access, deletion, export), please use the "Account" settings page or contact our Data Protection Officer at:
                                     / Jogainak gyakorlásához (hozzáférés, törlés, adathordozhatóság) kérjük használja a "Fiók" beállításokat vagy vegye fel a kapcsolatot adatvédelmi tisztségviselőnkkel:
                                 </p>
-                                <a href="mailto:privacy@prometheusdigital.hu" className="flex items-center gap-2 text-primary hover:text-primary/80 text-base font-black transition-colors w-fit">
+                                <a href="mailto:info@prometheusdigital.hu" className="flex items-center gap-2 text-primary hover:text-primary/80 text-base font-black transition-colors w-fit">
                                     <Mail size={18} />
-                                    privacy@prometheusdigital.hu
+                                    info@prometheusdigital.hu
                                 </a>
                             </div>
 
