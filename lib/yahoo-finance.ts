@@ -253,6 +253,73 @@ export async function getCachedSearch(query: string, options: any) {
     }
 }
 
+/**
+ * Get insider data with caching
+ */
+export async function getCachedInsiders(ticker: string) {
+    if (!ticker) return null;
+    const symbol = ticker.trim().toUpperCase();
+    return getCachedQuoteSummary(symbol, ['insiderTransactions', 'insiderHolders']);
+}
+
+/**
+ * Get analyst data with caching
+ */
+export async function getCachedAnalysts(ticker: string) {
+    if (!ticker) return null;
+    const symbol = ticker.trim().toUpperCase();
+    return getCachedQuoteSummary(symbol, [
+        'recommendationTrend',
+        'upgradeDowngradeHistory',
+        'financialData'
+    ]);
+}
+
+/**
+ * Get chart data with caching
+ */
+export async function getCachedChart(ticker: string, range: string, interval: string) {
+    if (!ticker) return null;
+    const symbol = ticker.trim().toUpperCase();
+    const cacheKey = `chart:${range}:${interval}`;
+
+    // Intraday (1d, 5d) - cache for 15 mins (shared with price cache)
+    // Daily/Weekly - cache for 24 hours
+    const revalidateDays = (range === '1d' || range === '5d') ? (15 / 1440) : 1;
+
+    return getCachedData(symbol, cacheKey, revalidateDays, async (yf) => {
+        const now = new Date();
+        let startDate: Date;
+
+        switch (range) {
+            case '1d': startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000); break;
+            case '5d': startDate = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000); break;
+            case '1mo': startDate = new Date(now.setMonth(now.getMonth() - 1)); break;
+            case '3mo': startDate = new Date(now.setMonth(now.getMonth() - 3)); break;
+            case '6mo': startDate = new Date(now.setMonth(now.getMonth() - 6)); break;
+            case '1y': startDate = new Date(now.setFullYear(now.getFullYear() - 1)); break;
+            case '5y': startDate = new Date(now.setFullYear(now.getFullYear() - 5)); break;
+            case 'max': startDate = new Date('1970-01-01'); break;
+            default: startDate = new Date(now.setMonth(now.getMonth() - 1));
+        }
+
+        const result = await yf.chart(symbol, {
+            period1: startDate,
+            period2: new Date(),
+            interval
+        });
+
+        return result?.quotes?.filter((q: any) => q.close !== null).map((q: any) => ({
+            date: q.date,
+            open: q.open,
+            high: q.high,
+            low: q.low,
+            close: q.close,
+            volume: q.volume,
+        })) || [];
+    });
+}
+
 export async function getBatchPrices(tickers: string[]): Promise<Map<string, PriceData>> {
     const priceMap = new Map<string, PriceData>();
     if (!tickers || tickers.length === 0) return priceMap;

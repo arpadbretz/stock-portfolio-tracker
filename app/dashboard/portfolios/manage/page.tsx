@@ -113,6 +113,20 @@ function PortfolioCommandCenterContent() {
         }
     }, [selectedPortfolioId]);
 
+    // Auto-refresh logic (compliant with "User Active Only")
+    useEffect(() => {
+        if (!selectedPortfolioId || !user) return;
+
+        const interval = setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                console.log(`🔄 Auto-refreshing portfolio ${selectedPortfolioId}...`);
+                fetchPortfolioDetails(selectedPortfolioId, true);
+            }
+        }, 15 * 60 * 1000); // 15 minutes
+
+        return () => clearInterval(interval);
+    }, [selectedPortfolioId, user]);
+
     // -- Data Fetching --
 
     const fetchPortfolios = async () => {

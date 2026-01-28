@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import YahooFinance from 'yahoo-finance2';
-
-const yf = new (YahooFinance as any)();
+import { getCachedInsiders } from '@/lib/yahoo-finance';
 
 export async function GET(
     request: NextRequest,
@@ -15,18 +13,11 @@ export async function GET(
 
     try {
         const ticker = symbol.toUpperCase();
+        console.log(`Fetching insider data for ${ticker} (Cached)...`);
 
-        console.log(`Fetching insider data for ${ticker}...`);
-
-        const summary = await yf.quoteSummary(ticker, {
-            modules: ['insiderTransactions', 'insiderHolders']
-        }).catch((e: any) => {
-            console.error('Yahoo Finance insider error:', e);
-            return null;
-        });
+        const summary = await getCachedInsiders(ticker);
 
         if (!summary) {
-            console.log('No summary data returned for insiders');
             return NextResponse.json({
                 success: true,
                 data: {
@@ -38,12 +29,8 @@ export async function GET(
             });
         }
 
-        console.log('Insider data keys:', Object.keys(summary));
-
         const transactions = summary?.insiderTransactions?.transactions || [];
         const holders = summary?.insiderHolders?.holders || [];
-
-        console.log(`Found ${transactions.length} transactions, ${holders.length} holders`);
 
         // Process transactions
         const recentTransactions = transactions.slice(0, 20).map((txn: any) => ({

@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import YahooFinance from 'yahoo-finance2';
-
-const yf = new (YahooFinance as any)();
+import { getCachedChart } from '@/lib/yahoo-finance';
 
 export async function GET(
     request: NextRequest,
@@ -18,72 +16,31 @@ export async function GET(
     try {
         const ticker = symbol.toUpperCase();
 
-        // Map common range formats to yahoo finance formats
+        // Map common range formats (case variations)
         const rangeMap: Record<string, string> = {
-            '1D': '1d',
-            '5D': '5d',
-            '1M': '1mo',
-            '3M': '3mo',
-            '6M': '6mo',
-            '1Y': '1y',
-            '5Y': '5y',
+            '1D': '1d', '5D': '5d', '1M': '1mo', '3M': '3mo', '6M': '6mo', '1Y': '1y', '5Y': '5y',
+            '1d': '1d', '5d': '5d', '1mo': '1mo', '3mo': '3mo', '6mo': '6mo', '1y': '1y', '5y': '5y',
         };
 
-        // Map range to interval for optimal data points
         const intervalMap: Record<string, string> = {
-            '1D': '5m',
-            '5D': '15m',
-            '1M': '1d',
-            '3M': '1d',
-            '6M': '1d',
-            '1Y': '1wk',
-            '5Y': '1mo',
+            '1d': '5m', '5d': '15m', '1mo': '1d', '3mo': '1d', '6mo': '1d', '1y': '1wk', '5y': '1mo',
         };
 
         const yahooRange = rangeMap[range] || '1mo';
-        const interval = intervalMap[range] || '1d';
+        const interval = intervalMap[yahooRange] || '1d';
 
-        const historical = await yf.chart(ticker, {
-            period1: getStartDate(range),
-            period2: new Date(),
-            interval,
-        });
+        const chartData = await getCachedChart(ticker, yahooRange, interval);
 
-        if (!historical || !historical.quotes) {
+        if (!chartData) {
             return NextResponse.json({ success: false, error: 'No historical data' }, { status: 404 });
         }
 
-        const data = historical.quotes
-            .filter((q: any) => q.close !== null)
-            .map((q: any) => ({
-                date: q.date,
-                close: q.close,
-                open: q.open,
-                high: q.high,
-                low: q.low,
-                volume: q.volume,
-            }));
-
         return NextResponse.json({
             success: true,
-            data,
+            data: chartData,
         });
     } catch (error) {
         console.error(`Error fetching history for ${symbol}:`, error);
-        return NextResponse.json({ success: false, error: 'Failed to fetch historical data' }, { status: 500 });
-    }
-}
-
-function getStartDate(range: string): Date {
-    const now = new Date();
-    switch (range) {
-        case '1D': return new Date(now.setDate(now.getDate() - 1));
-        case '5D': return new Date(now.setDate(now.getDate() - 5));
-        case '1M': return new Date(now.setMonth(now.getMonth() - 1));
-        case '3M': return new Date(now.setMonth(now.getMonth() - 3));
-        case '6M': return new Date(now.setMonth(now.getMonth() - 6));
-        case '1Y': return new Date(now.setFullYear(now.getFullYear() - 1));
-        case '5Y': return new Date(now.setFullYear(now.getFullYear() - 5));
-        default: return new Date(now.setMonth(now.getMonth() - 1));
+        return NextResponse.json({ success: false, error: 'Failed' }, { status: 500 });
     }
 }

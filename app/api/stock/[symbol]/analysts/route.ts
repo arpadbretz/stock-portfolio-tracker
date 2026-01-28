@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import YahooFinance from 'yahoo-finance2';
-
-const yf = new (YahooFinance as any)();
+import { getCachedAnalysts } from '@/lib/yahoo-finance';
 
 export async function GET(
     request: NextRequest,
@@ -15,14 +13,7 @@ export async function GET(
 
     try {
         const ticker = symbol.toUpperCase();
-
-        const summary = await yf.quoteSummary(ticker, {
-            modules: [
-                'recommendationTrend',
-                'upgradeDowngradeHistory',
-                'financialData',
-            ]
-        }).catch(() => null);
+        const summary = await getCachedAnalysts(ticker);
 
         if (!summary) {
             return NextResponse.json({ success: false, error: 'No analyst data' }, { status: 404 });

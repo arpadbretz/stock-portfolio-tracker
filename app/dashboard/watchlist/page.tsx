@@ -304,7 +304,11 @@ export default function WatchlistPage() {
     // Auto-refresh effect
     useEffect(() => {
         if (autoRefreshInterval <= 0 || !user) return;
-        const interval = setInterval(() => fetchWatchlist(true), autoRefreshInterval * 1000);
+        const interval = setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                fetchWatchlist(true);
+            }
+        }, autoRefreshInterval * 1000);
         return () => clearInterval(interval);
     }, [autoRefreshInterval, user, fetchWatchlist]);
 
