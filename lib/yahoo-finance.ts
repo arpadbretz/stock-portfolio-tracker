@@ -28,7 +28,7 @@ async function fetchWithYahooPattern<T>(fetcher: (yf: any) => Promise<T>, timeou
 /**
  * Fetch current price for a single ticker with "Fail-Fast" cache logic
  */
-export async function getCurrentPrice(ticker: string): Promise<PriceData | null> {
+export async function getCurrentPrice(ticker: string, force = false): Promise<PriceData | null> {
     if (!ticker) return null;
     const symbol = ticker.trim().toUpperCase();
     const adminClient = createAdminClient();
@@ -47,7 +47,7 @@ export async function getCurrentPrice(ticker: string): Promise<PriceData | null>
             const now = new Date();
             const ageInMins = (now.getTime() - lastUpdated.getTime()) / (1000 * 60);
 
-            if (ageInMins < PRICE_CACHE_REVALIDATE_MINS) {
+            if (!force && ageInMins < PRICE_CACHE_REVALIDATE_MINS) {
                 return {
                     ticker: symbol,
                     currentPrice: Number(cached.price),
@@ -320,12 +320,12 @@ export async function getCachedChart(ticker: string, range: string, interval: st
     });
 }
 
-export async function getBatchPrices(tickers: string[]): Promise<Map<string, PriceData>> {
+export async function getBatchPrices(tickers: string[], force = false): Promise<Map<string, PriceData>> {
     const priceMap = new Map<string, PriceData>();
     if (!tickers || tickers.length === 0) return priceMap;
     const uniqueTickers = [...new Set(tickers.map(t => t?.trim().toUpperCase()).filter(Boolean))];
     const promises = uniqueTickers.map(async (ticker) => {
-        const priceData = await getCurrentPrice(ticker);
+        const priceData = await getCurrentPrice(ticker, force);
         if (priceData) priceMap.set(ticker, priceData);
     });
     await Promise.all(promises);

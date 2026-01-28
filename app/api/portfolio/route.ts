@@ -137,7 +137,7 @@ export async function GET(request: Request) {
 
         if (refresh) {
             const { getBatchPrices } = await import('@/lib/yahoo-finance');
-            allPrices = await getBatchPrices(allSymbols);
+            allPrices = await getBatchPrices(allSymbols, true);
         } else {
             allPrices = await getCachedBatchPrices(allSymbols);
         }
@@ -205,7 +205,10 @@ export async function GET(request: Request) {
                 summary: enhancedSummary,
                 cashBalances,
                 realizedGain,
-                lastUpdated: new Date().toISOString(),
+                lastUpdated: Array.from(allPrices.values()).reduce((oldest, p) => {
+                    const current = new Date(p.lastUpdated);
+                    return current < oldest ? current : oldest;
+                }, new Date()).toISOString(),
             },
         });
 
