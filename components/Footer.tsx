@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { TrendingUp, Shield, FileText, Building2, AlertTriangle } from 'lucide-react';
+import { TrendingUp, Shield, FileText, Building2, AlertTriangle, Settings } from 'lucide-react';
+import { useConsent } from './providers/ConsentProvider';
 
 interface FooterLink {
     name: string;
@@ -11,6 +12,7 @@ interface FooterLink {
 
 export default function Footer() {
     const currentYear = new Date().getFullYear();
+    const { setModalOpen } = useConsent();
 
     const legalLinks: FooterLink[] = [
         { name: "Privacy Policy", href: "/legal/privacy", icon: Shield },
@@ -50,7 +52,7 @@ export default function Footer() {
                         <h3 className="text-[10px] font-black uppercase tracking-widest text-primary mb-6">
                             Legal & Compliance
                         </h3>
-                        <ul className="flex flex-wrap gap-x-8 gap-y-4 md:justify-end">
+                        <ul className="flex flex-wrap gap-x-8 gap-y-4 md:justify-end items-center">
                             {legalLinks.map((link) => (
                                 <li key={link.name}>
                                     <Link
@@ -62,6 +64,15 @@ export default function Footer() {
                                     </Link>
                                 </li>
                             ))}
+                            <li>
+                                <button
+                                    onClick={() => setModalOpen(true)}
+                                    className="text-sm font-bold text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2 group"
+                                >
+                                    <Settings size={14} className="group-hover:text-primary transition-colors" />
+                                    Manage Cookies
+                                </button>
+                            </li>
                         </ul>
                     </div>
                 </div>

@@ -12,6 +12,8 @@ interface ConsentContextType {
     preferences: ConsentPreferences;
     updateConsent: (prefs: Partial<ConsentPreferences>) => void;
     hasDetermined: boolean;
+    isModalOpen: boolean;
+    setModalOpen: (open: boolean) => void;
 }
 
 const ConsentContext = createContext<ConsentContextType | undefined>(undefined);
@@ -25,6 +27,7 @@ export function ConsentProvider({ children }: { children: React.ReactNode }) {
         analytics: false,
     });
     const [hasDetermined, setHasDetermined] = useState(false);
+    const [isModalOpen, setModalOpen] = useState(false);
 
     useEffect(() => {
         const saved = localStorage.getItem(STORAGE_KEY);
@@ -49,7 +52,7 @@ export function ConsentProvider({ children }: { children: React.ReactNode }) {
     };
 
     return (
-        <ConsentContext.Provider value={{ preferences, updateConsent, hasDetermined }}>
+        <ConsentContext.Provider value={{ preferences, updateConsent, hasDetermined, isModalOpen, setModalOpen }}>
             {children}
         </ConsentContext.Provider>
     );

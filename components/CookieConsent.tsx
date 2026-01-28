@@ -6,14 +6,15 @@ import { Shield, Settings, X, Check, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function CookieConsent() {
-    const { preferences, updateConsent, hasDetermined } = useConsent();
+    const { preferences, updateConsent, hasDetermined, isModalOpen, setModalOpen } = useConsent();
     const [showBanner, setShowBanner] = useState(false);
-    const [showManage, setShowManage] = useState(false);
 
     useEffect(() => {
         if (!hasDetermined) {
             const timer = setTimeout(() => setShowBanner(true), 1000);
             return () => clearTimeout(timer);
+        } else {
+            setShowBanner(false);
         }
     }, [hasDetermined]);
 
@@ -29,14 +30,14 @@ export default function CookieConsent() {
 
     const handleSaveManage = () => {
         setShowBanner(false);
-        setShowManage(false);
+        setModalOpen(false);
     };
 
-    if (!showBanner && !showManage) return null;
+    if (!showBanner && !isModalOpen) return null;
 
     return (
         <AnimatePresence>
-            {showBanner && !showManage && (
+            {showBanner && !isModalOpen && (
                 <motion.div
                     initial={{ y: 100, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
@@ -57,7 +58,7 @@ export default function CookieConsent() {
                             </div>
                             <div className="flex flex-wrap gap-3 w-full md:w-auto">
                                 <button
-                                    onClick={() => setShowManage(true)}
+                                    onClick={() => setModalOpen(true)}
                                     className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-2xl font-bold text-sm transition-all"
                                 >
                                     Manage
@@ -80,7 +81,7 @@ export default function CookieConsent() {
                 </motion.div>
             )}
 
-            {showManage && (
+            {isModalOpen && (
                 <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
                     <motion.div
                         initial={{ scale: 0.9, opacity: 0 }}
@@ -89,7 +90,7 @@ export default function CookieConsent() {
                     >
                         <div className="flex justify-between items-center mb-8">
                             <h2 className="text-2xl font-black text-white">Privacy Preferences</h2>
-                            <button onClick={() => setShowManage(false)} className="p-2 hover:bg-slate-800 rounded-full transition-colors">
+                            <button onClick={() => setModalOpen(false)} className="p-2 hover:bg-slate-800 rounded-full transition-colors">
                                 <X size={24} className="text-slate-400" />
                             </button>
                         </div>
