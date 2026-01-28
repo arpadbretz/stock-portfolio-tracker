@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import { ArrowLeft, Shield, Database, Lock, Eye, CheckCircle2, Mail, Cookie } from 'lucide-react';
 
