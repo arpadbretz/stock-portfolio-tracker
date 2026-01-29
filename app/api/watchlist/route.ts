@@ -33,7 +33,26 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Failed to fetch watchlist' }, { status: 500 });
         }
 
-        return NextResponse.json({ success: true, data: watchlist });
+        // Optimized: Fetch prices in batch for all watchlist items
+        if (watchlist && watchlist.length > 0) {
+            const { getCachedBatchPrices } = await import('@/lib/yahoo-finance/cached');
+            const symbols = watchlist.map(item => item.symbol);
+            const priceMap = await getCachedBatchPrices(symbols);
+
+            const watchlistWithPrices = watchlist.map(item => {
+                const priceData = priceMap.get(item.symbol);
+                return {
+                    ...item,
+                    price: priceData?.currentPrice || item.added_price,
+                    changePercent: priceData?.changePercent || 0,
+                    lastUpdated: priceData?.lastUpdated
+                };
+            });
+
+            return NextResponse.json({ success: true, data: watchlistWithPrices });
+        }
+
+        return NextResponse.json({ success: true, data: watchlist || [] });
     } catch (error) {
         console.error('Watchlist error:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

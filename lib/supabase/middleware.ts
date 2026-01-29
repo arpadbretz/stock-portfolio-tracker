@@ -40,7 +40,32 @@ export async function updateSession(request: NextRequest) {
     )
 
     // refreshing the auth token
-    await supabase.auth.getUser()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (user) {
+        // Optimization: Throttle profile activity updates using a cookie
+        const activityCookie = request.cookies.get('sb-activity-tracked');
+
+        if (!activityCookie) {
+            // Update updated_at to track activity for cron prioritization
+            // Fire and forget, but set a cookie to throttle subsequent updates
+            supabase
+                .from('profiles')
+                .update({ updated_at: new Date().toISOString() })
+                .eq('id', user.id)
+                .then(({ error }) => {
+                    if (error && error.code !== 'PGRST116') {
+                        console.error('Error updating profile activity:', error);
+                    }
+                });
+
+            // Set cookie for 15 minutes to throttle updates
+            supabaseResponse.cookies.set('sb-activity-tracked', 'true', {
+                maxAge: 60 * 15, // 15 minutes
+                path: '/',
+            });
+        }
+    }
 
     return supabaseResponse
 }

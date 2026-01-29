@@ -323,12 +323,121 @@ export async function getCachedChart(ticker: string, range: string, interval: st
 export async function getBatchPrices(tickers: string[], force = false): Promise<Map<string, PriceData>> {
     const priceMap = new Map<string, PriceData>();
     if (!tickers || tickers.length === 0) return priceMap;
+
     const uniqueTickers = [...new Set(tickers.map(t => t?.trim().toUpperCase()).filter(Boolean))];
-    const promises = uniqueTickers.map(async (ticker) => {
-        const priceData = await getCurrentPrice(ticker, force);
-        if (priceData) priceMap.set(ticker, priceData);
-    });
-    await Promise.all(promises);
+    const adminClient = createAdminClient();
+
+    // 1. Check cache for all tickers first
+    const missingTickers: string[] = [];
+
+    if (!force) {
+        const { data: cachedItems } = await adminClient
+            .from('stock_cache')
+            .select('*')
+            .in('symbol', uniqueTickers)
+            .eq('cache_key', 'price');
+
+        if (cachedItems) {
+            const now = new Date();
+            for (const symbol of uniqueTickers) {
+                const cached = cachedItems.find(item => item.symbol === symbol);
+                if (cached) {
+                    const lastUpdated = new Date(cached.last_updated);
+                    const ageInMins = (now.getTime() - lastUpdated.getTime()) / (1000 * 60);
+
+                    if (ageInMins < PRICE_CACHE_REVALIDATE_MINS) {
+                        priceMap.set(symbol, {
+                            ticker: symbol,
+                            currentPrice: Number(cached.price),
+                            change: Number(cached.price_change || 0),
+                            changePercent: Number(cached.price_change_percent || 0),
+                            lastUpdated: cached.last_updated,
+                            sector: cached.sector,
+                            industry: cached.industry,
+                        });
+                        continue;
+                    }
+                }
+                missingTickers.push(symbol);
+            }
+        } else {
+            missingTickers.push(...uniqueTickers);
+        }
+    } else {
+        missingTickers.push(...uniqueTickers);
+    }
+
+    if (missingTickers.length === 0) return priceMap;
+
+    // 2. Fetch missing tickers from Yahoo in batch
+    try {
+        const results = await fetchWithYahooPattern(async (yf) => {
+            // yf.quote can take an array of symbols
+            const quotes = await yf.quote(missingTickers);
+            return Array.isArray(quotes) ? quotes : [quotes];
+        }, 5000);
+
+        if (results && results.length > 0) {
+            const cacheUpdates: any[] = [];
+
+            for (const quote of results) {
+                if (!quote || !quote.symbol) continue;
+
+                const symbol = quote.symbol.toUpperCase();
+                const priceData: PriceData = {
+                    ticker: symbol,
+                    currentPrice: quote.regularMarketPrice || 0,
+                    change: quote.regularMarketChange || 0,
+                    changePercent: quote.regularMarketChangePercent || 0,
+                    lastUpdated: new Date().toISOString(),
+                };
+
+                priceMap.set(symbol, priceData);
+
+                cacheUpdates.push({
+                    symbol: symbol,
+                    cache_key: 'price',
+                    price: priceData.currentPrice,
+                    price_change: priceData.change,
+                    price_change_percent: priceData.changePercent,
+                    last_updated: priceData.lastUpdated
+                });
+            }
+
+            // 3. Update cache in bulk
+            if (cacheUpdates.length > 0) {
+                adminClient.from('stock_cache').upsert(cacheUpdates).then(({ error }) => {
+                    if (error) console.error(`Error batch caching:`, error);
+                });
+            }
+        }
+    } catch (error: any) {
+        console.error(`Batch fetch failed:`, error.message || error);
+
+        // Fallback: Use stale cache for all missing tickers
+        const { data: staleItems } = await adminClient
+            .from('stock_cache')
+            .select('*')
+            .in('symbol', missingTickers)
+            .eq('cache_key', 'price');
+
+        if (staleItems) {
+            for (const cached of staleItems) {
+                if (!priceMap.has(cached.symbol)) {
+                    priceMap.set(cached.symbol, {
+                        ticker: cached.symbol,
+                        currentPrice: Number(cached.price),
+                        change: Number(cached.price_change || 0),
+                        changePercent: Number(cached.price_change_percent || 0),
+                        lastUpdated: cached.last_updated,
+                        sector: cached.sector,
+                        industry: cached.industry,
+                    });
+                }
+            }
+        }
+    }
+
     return priceMap;
 }
 

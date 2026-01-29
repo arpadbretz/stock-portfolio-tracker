@@ -45,11 +45,19 @@ export async function GET(request: Request) {
             if (!portfolio) return NextResponse.json({ error: 'Portfolio not found' }, { status: 404 });
             targetPortfolios = [portfolio];
         } else {
-            // Backup/Cron sync for all active portfolios
-            // In a real app, we might only sync recently active users
-            const { data: portfolios } = await supabase
+            // Backup/Cron sync for active portfolios (users active in last 24h)
+            const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+            const { data: portfolios, error } = await supabase
                 .from('portfolios')
-                .select('id, user_id');
+                .select('id, user_id, profiles!inner(updated_at)')
+                .gt('profiles.updated_at', twentyFourHoursAgo)
+                .limit(50); // Safety limit
+
+            if (error) {
+                console.error('Error fetching active portfolios for sync:', error);
+                return NextResponse.json({ error: 'Database error' }, { status: 500 });
+            }
 
             targetPortfolios = portfolios || [];
         }

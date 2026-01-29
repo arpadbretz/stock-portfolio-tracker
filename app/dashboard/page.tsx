@@ -204,7 +204,7 @@ export default function DashboardPage() {
     // Refresh prices every 15 minutes - but only if user is active/tab is focused
     const interval = setInterval(() => {
       if (document.visibilityState === 'visible') {
-        fetchPortfolio(true);
+        fetchPortfolio(false); // Soft refresh: uses cache if valid (< 15 mins)
       }
     }, 15 * 60 * 1000);
 

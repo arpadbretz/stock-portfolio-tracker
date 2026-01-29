@@ -56,18 +56,16 @@ export function MarketOverviewWidget({ expanded = false }: { expanded?: boolean 
                     ? ['^GSPC', '^IXIC', '^DJI', '^VIX', 'USDEUR=X', 'USDHUF=X']
                     : ['^GSPC', '^IXIC', '^DJI', '^VIX'];
 
-                // Fetch all in one batch call to avoid N+1 requests
-                const res = await fetch(`/api/portfolio?refresh=false`);
-                // Best fix: call the route once for IDs.
+                // Optimized: Use the new batch stock API
+                const res = await fetch(`/api/stock/batch?symbols=${symbols.map(encodeURIComponent).join(',')}`);
+                const data = await res.json();
 
-                const responses = await Promise.all(symbols.map(s => fetch(`/api/stock/${encodeURIComponent(s)}`)));
-                // Actually, even Promise.all is still N requests. 
-                // I will update the code to use /api/market/pulse if possible or just much slower polling.
+                if (data.success && data.data) {
+                    const priceMap = data.data;
+                    const results = symbols.map(symbol => {
+                        const d = priceMap[symbol];
+                        if (!d) return null;
 
-                const results = await Promise.all(responses.map(async (r, i) => {
-                    const data = await r.json();
-                    const symbol = symbols[i];
-                    if (data.success && data.data?.price) {
                         let name = symbol;
                         if (symbol === '^GSPC') name = 'S&P 500';
                         else if (symbol === '^IXIC') name = 'NASDAQ';
@@ -75,14 +73,22 @@ export function MarketOverviewWidget({ expanded = false }: { expanded?: boolean 
                         else if (symbol === '^VIX') name = 'VIX';
                         else if (symbol === 'USDEUR=X') name = 'USD/EUR';
                         else if (symbol === 'USDHUF=X') name = 'USD/HUF';
-                        return { symbol, name, price: data.data.price, change: data.data.change || 0, changePercent: data.data.changePercent || 0 };
-                    }
-                    return null;
-                }));
 
-                const filtered = results.filter(Boolean) as MarketIndex[];
-                setIndices(filtered);
-                if (filtered.length === 0) setHasError(true);
+                        return {
+                            symbol,
+                            name,
+                            price: d.currentPrice,
+                            change: d.change || 0,
+                            changePercent: d.changePercent || 0
+                        };
+                    });
+
+                    const filtered = results.filter(Boolean) as MarketIndex[];
+                    setIndices(filtered);
+                    if (filtered.length === 0) setHasError(true);
+                } else {
+                    setHasError(true);
+                }
             } catch (e) {
                 console.error('Failed to fetch market indices:', e);
                 setHasError(true);
@@ -394,29 +400,8 @@ export function WatchlistMiniWidget({
                 const res = await fetch('/api/watchlist');
                 const data = await res.json();
                 if (data.success && data.data) {
-                    // Optimized: Don't do N+1 fetches here. The backend should handle batching
-                    // For now, we fetch them individually but we SHOULD refactor the watchlist API itself.
-                    // To stay within safety, we'll just not refresh this one automatically.
-                    const itemsWithPrices = await Promise.all(
-                        data.data.slice(0, limit).map(async (item: any) => {
-                            try {
-                                // If the backend doesn't support batching yet, we limit to the first few to avoid storming.
-                                const priceRes = await fetch(`/api/stock/${item.symbol}`);
-                                const priceData = await priceRes.json();
-                                return {
-                                    ...item,
-                                    price: priceData.data?.price || item.added_price,
-                                    changePercent: priceData.data?.changePercent || 0,
-                                    fiftyTwoWeekLow: priceData.data?.fiftyTwoWeekLow,
-                                    fiftyTwoWeekHigh: priceData.data?.fiftyTwoWeekHigh,
-                                    earningsDate: priceData.data?.earningsDate,
-                                };
-                            } catch {
-                                return item;
-                            }
-                        })
-                    );
-                    setWatchlist(itemsWithPrices);
+                    // API now returns prices and changePercent in batch!
+                    setWatchlist(data.data.slice(0, limit));
                 }
             } catch (e) {
                 console.error('Failed to fetch watchlist:', e);
