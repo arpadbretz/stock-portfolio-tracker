@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCachedQuoteSummary } from '@/lib/yahoo-finance';
+import { getCachedQuoteSummary, getCachedFundamentals } from '@/lib/yahoo-finance';
 
 export async function GET(
     request: NextRequest,
@@ -19,13 +19,14 @@ export async function GET(
             'defaultKeyStatistics',
             'earnings',
             'calendarEvents',
-            'incomeStatementHistory',
-            'balanceSheetHistory',
-            'cashflowStatementHistory',
         ];
 
-        // We also need quote for the real-time price, but getCachedQuoteSummary can handle that if we add 'price'
-        const summaryAndQuote = await getCachedQuoteSummary(ticker, [...modules, 'price']);
+        // 1. Fetch Metadata (Price, Quote, Profile)
+        // 2. Fetch High-Fidelity 10-Year Fundamentals
+        const [summaryAndQuote, annualData] = await Promise.all([
+            getCachedQuoteSummary(ticker, [...modules, 'price']),
+            getCachedFundamentals(ticker, 'annual')
+        ]);
 
         if (!summaryAndQuote) {
             return NextResponse.json({ success: false, error: 'Stock not found' }, { status: 404 });
@@ -40,85 +41,85 @@ export async function GET(
         const calendar = summaryAndQuote.calendarEvents || {};
         const price = summaryAndQuote.price || {};
 
-        // Helper to extract value from Yahoo's object format ({raw, fmt})
-        const extractYahooValue = (field: any): number | null => {
-            if (field === null || field === undefined) return null;
-            if (typeof field === 'number') return field;
-            if (typeof field === 'object') {
-                if ('raw' in field) return field.raw;
-                if ('value' in field) return field.value;
-            }
+        const cleanAnnual = Array.isArray(annualData) ? annualData : [];
+
+        // Helper to extract value (handles both fundamentalsTimeSeries direct props and quoteSummary raw objects)
+        const extractValue = (item: any, key: string) => {
+            if (!item) return null;
+            const val = item[key];
+            if (val === null || val === undefined) return null;
+            if (typeof val === 'number') return val;
+            if (typeof val === 'object' && 'raw' in val) return val.raw;
             return null;
         };
 
         const processIncomeStatement = (item: any) => {
-            if (!item || !item.endDate) return null;
+            const date = item.date || item.endDate;
+            if (!date) return null;
             return {
-                endDate: item.endDate,
-                totalRevenue: extractYahooValue(item.totalRevenue),
-                costOfRevenue: extractYahooValue(item.costOfRevenue),
-                grossProfit: extractYahooValue(item.grossProfit),
-                researchDevelopment: extractYahooValue(item.researchDevelopment),
-                sellingGeneralAdministrative: extractYahooValue(item.sellingGeneralAdministrative),
-                operatingExpenses: extractYahooValue(item.operatingExpenses),
-                operatingIncome: extractYahooValue(item.operatingIncome),
-                ebit: extractYahooValue(item.ebit),
-                ebitda: extractYahooValue(item.ebitda),
-                interestExpense: extractYahooValue(item.interestExpense),
-                incomeBeforeTax: extractYahooValue(item.incomeBeforeTax),
-                incomeTaxExpense: extractYahooValue(item.incomeTaxExpense),
-                netIncome: extractYahooValue(item.netIncome),
-                eps: extractYahooValue(item.dilutedEPS) || extractYahooValue(item.basicEPS),
+                endDate: date,
+                totalRevenue: extractValue(item, 'totalRevenue'),
+                costOfRevenue: extractValue(item, 'costOfRevenue'),
+                grossProfit: extractValue(item, 'grossProfit'),
+                researchDevelopment: extractValue(item, 'researchAndDevelopment') || extractValue(item, 'researchDevelopment'),
+                sellingGeneralAdministrative: extractValue(item, 'sellingGeneralAndAdministration') || extractValue(item, 'sellingGeneralAdministrative'),
+                operatingExpenses: extractValue(item, 'operatingExpense') || extractValue(item, 'operatingExpenses'),
+                operatingIncome: extractValue(item, 'operatingIncome') || extractValue(item, 'ebit'),
+                ebit: extractValue(item, 'ebit') || extractValue(item, 'operatingIncome'),
+                ebitda: extractValue(item, 'ebitda'),
+                interestExpense: extractValue(item, 'interestExpense'),
+                incomeBeforeTax: extractValue(item, 'pretaxIncome') || extractValue(item, 'incomeBeforeTax'),
+                incomeTaxExpense: extractValue(item, 'taxProvision') || extractValue(item, 'incomeTaxExpense'),
+                netIncome: extractValue(item, 'netIncome') || extractValue(item, 'netIncomeCommonStockholders'),
+                eps: extractValue(item, 'dilutedEPS') || extractValue(item, 'basicEPS') || extractValue(item, 'eps'),
             };
         };
 
         const processBalanceSheet = (item: any) => {
-            if (!item || !item.endDate) return null;
+            const date = item.date || item.endDate;
+            if (!date) return null;
             return {
-                endDate: item.endDate,
-                totalAssets: extractYahooValue(item.totalAssets),
-                totalCurrentAssets: extractYahooValue(item.totalCurrentAssets),
-                cash: extractYahooValue(item.cash) || extractYahooValue(item.cashAndCashEquivalents),
-                shortTermInvestments: extractYahooValue(item.shortTermInvestments),
-                netReceivables: extractYahooValue(item.netReceivables),
-                inventory: extractYahooValue(item.inventory),
-                totalNonCurrentAssets: extractYahooValue(item.totalNonCurrentAssets),
-                propertyPlantEquipment: extractYahooValue(item.propertyPlantEquipment) || extractYahooValue(item.netPPE),
-                goodwill: extractYahooValue(item.goodwill),
-                intangibleAssets: extractYahooValue(item.intangibleAssets),
-                totalLiabilities: extractYahooValue(item.totalLiabilitiesNetMinorityInterest) || extractYahooValue(item.totalLiabilities),
-                totalCurrentLiabilities: extractYahooValue(item.totalCurrentLiabilities),
-                accountsPayable: extractYahooValue(item.accountsPayable),
-                shortTermDebt: extractYahooValue(item.shortTermDebt) || extractYahooValue(item.currentDebt),
-                longTermDebt: extractYahooValue(item.longTermDebt),
-                totalDebt: extractYahooValue(item.totalDebt),
-                totalStockholderEquity: extractYahooValue(item.totalStockholderEquity),
-                retainedEarnings: extractYahooValue(item.retainedEarnings),
+                endDate: date,
+                totalAssets: extractValue(item, 'totalAssets'),
+                totalCurrentAssets: extractValue(item, 'currentAssets') || extractValue(item, 'totalCurrentAssets'),
+                cash: extractValue(item, 'cashAndCashEquivalents') || extractValue(item, 'cash'),
+                shortTermInvestments: extractValue(item, 'otherShortTermInvestments') || extractValue(item, 'shortTermInvestments'),
+                netReceivables: extractValue(item, 'receivables') || extractValue(item, 'accountsReceivable') || extractValue(item, 'netReceivables'),
+                inventory: extractValue(item, 'inventory'),
+                totalNonCurrentAssets: extractValue(item, 'totalNonCurrentAssets'),
+                propertyPlantEquipment: extractValue(item, 'netPPE') || extractValue(item, 'grossPPE') || extractValue(item, 'propertyPlantEquipment'),
+                goodwill: extractValue(item, 'goodwill'),
+                intangibleAssets: extractValue(item, 'intangibleAssets'),
+                totalLiabilities: extractValue(item, 'totalLiabilitiesNetMinorityInterest') || extractValue(item, 'totalLiabilities'),
+                totalCurrentLiabilities: extractValue(item, 'currentLiabilities') || extractValue(item, 'totalCurrentLiabilities'),
+                accountsPayable: extractValue(item, 'accountsPayable'),
+                shortTermDebt: extractValue(item, 'currentDebt') || extractValue(item, 'shortTermDebt'),
+                longTermDebt: extractValue(item, 'longTermDebt'),
+                totalDebt: extractValue(item, 'totalDebt'),
+                totalStockholderEquity: extractValue(item, 'stockholdersEquity') || extractValue(item, 'commonStockEquity') || extractValue(item, 'totalStockholderEquity'),
+                retainedEarnings: extractValue(item, 'retainedEarnings'),
             };
         };
 
         const processCashFlow = (item: any) => {
-            if (!item || !item.endDate) return null;
+            const date = item.date || item.endDate;
+            if (!date) return null;
             return {
-                endDate: item.endDate,
-                netIncome: extractYahooValue(item.netIncome),
-                depreciation: extractYahooValue(item.depreciation) || extractYahooValue(item.depreciationAndAmortization),
-                operatingCashflow: extractYahooValue(item.totalCashFromOperatingActivities) || extractYahooValue(item.operatingCashflow),
-                changeInWorkingCapital: extractYahooValue(item.changeInWorkingCapital),
-                capitalExpenditures: extractYahooValue(item.capitalExpenditures),
-                investingCashflow: extractYahooValue(item.totalCashflowsFromInvestingActivities) || extractYahooValue(item.investingCashflow),
-                financingCashflow: extractYahooValue(item.totalCashFromFinancingActivities) || extractYahooValue(item.financingCashflow),
-                dividendsPaid: extractYahooValue(item.dividendsPaid),
-                stockRepurchases: extractYahooValue(item.repurchaseOfStock),
-                debtRepayment: extractYahooValue(item.repurchaseOfDebt),
-                freeCashflow: extractYahooValue(item.freeCashflow),
-                netChangeInCash: extractYahooValue(item.netChangeInCash),
+                endDate: date,
+                netIncome: extractValue(item, 'netIncome'),
+                depreciation: extractValue(item, 'depreciationAndAmortization') || extractValue(item, 'depreciation'),
+                operatingCashflow: extractValue(item, 'operatingCashFlow') || extractValue(item, 'operatingCashflow'),
+                changeInWorkingCapital: extractValue(item, 'changeInWorkingCapital'),
+                capitalExpenditures: extractValue(item, 'capitalExpenditure') || extractValue(item, 'capitalExpenditures'),
+                investingCashflow: extractValue(item, 'investingCashFlow') || extractValue(item, 'investingCashflow'),
+                financingCashflow: extractValue(item, 'financingCashFlow') || extractValue(item, 'financingCashflow'),
+                dividendsPaid: extractValue(item, 'cashDividendsPaid') || extractValue(item, 'dividendsPaid'),
+                stockRepurchases: extractValue(item, 'repurchaseOfCapitalStock') || extractValue(item, 'stockRepurchases'),
+                debtRepayment: extractValue(item, 'repaymentOfDebt') || extractValue(item, 'debtRepayment'),
+                freeCashflow: extractValue(item, 'freeCashFlow') || extractValue(item, 'freeCashflow'),
+                netChangeInCash: extractValue(item, 'changesInCash') || extractValue(item, 'netChangeInCash'),
             };
         };
-
-        const incomeAnnual = summaryAndQuote.incomeStatementHistory?.incomeStatementHistory || [];
-        const balanceAnnual = summaryAndQuote.balanceSheetHistory?.balanceSheetStatements || [];
-        const cashflowAnnual = summaryAndQuote.cashflowStatementHistory?.cashflowStatements || [];
 
         const stockData = {
             symbol: ticker,
@@ -182,9 +183,9 @@ export async function GET(
             city: profile.city || null,
             earningsDate: calendar?.earnings?.earningsDate?.[0] || earnings?.earningsDate?.[0] || null,
             earningsQuarterlyGrowth: keyStats.earningsQuarterlyGrowth || null,
-            incomeStatement: incomeAnnual.map(processIncomeStatement).filter(Boolean),
-            balanceSheet: balanceAnnual.map(processBalanceSheet).filter(Boolean),
-            cashFlow: cashflowAnnual.map(processCashFlow).filter(Boolean),
+            incomeStatement: cleanAnnual.map(processIncomeStatement).filter(Boolean).sort((a: any, b: any) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime()),
+            balanceSheet: cleanAnnual.map(processBalanceSheet).filter(Boolean).sort((a: any, b: any) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime()),
+            cashFlow: cleanAnnual.map(processCashFlow).filter(Boolean).sort((a: any, b: any) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime()),
             lastUpdated: new Date().toISOString(),
         };
 
