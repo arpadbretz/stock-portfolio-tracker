@@ -301,3 +301,103 @@ export function transformNews(newsItems: any[]) {
         relatedTickers: item.relatedTickers || [],
     }));
 }
+/**
+ * Transforms complex 10-year Fundamentals TimeSeries into clean, chart-ready and statement-ready data.
+ * This is the "Better" version providing 10 years of data.
+ */
+export function transformFundamentals(symbol: string, rawData: any[], summary?: any) {
+    if (!rawData || !rawData.length) return null;
+
+    // Group all entries by date to reconstruct statements
+    const entriesByDate: Record<string, any> = {};
+
+    // Metrics we want for charts
+    const charts: Record<string, any[]> = {
+        revenue: [],
+        netIncome: [],
+        grossProfit: [],
+        operatingIncome: [],
+        freeCashflow: [],
+        operatingCashflow: [],
+        totalAssets: [],
+        totalDebt: [],
+        shareholderEquity: [],
+        eps: [],
+    };
+
+    // Metric mapping (Yahoo Type -> UI Key)
+    const mapping: Record<string, string> = {
+        annualTotalRevenue: 'revenue',
+        annualNetIncome: 'netIncome',
+        annualGrossProfit: 'grossProfit',
+        annualOperatingIncome: 'operatingIncome',
+        annualOperatingCashFlow: 'operatingCashflow',
+        annualCapitalExpenditure: 'capex',
+        annualTotalAssets: 'totalAssets',
+        annualLongTermDebt: 'totalDebt',
+        annualTotalStockholderEquity: 'shareholderEquity',
+    };
+
+    // Extract EPS history if summary available
+    if (summary?.earningsHistory?.history) {
+        charts.eps = summary.earningsHistory.history.map((item: any) => ({
+            date: item.quarter,
+            quarter: item.quarter ? new Date(item.quarter).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }) : null,
+            actual: extractYahooValue(item.epsActual),
+            estimate: extractYahooValue(item.epsEstimate),
+        })).filter((d: any) => d.actual !== null).reverse();
+    }
+
+    (rawData || []).forEach((entry: any) => {
+        const type = entry.type;
+        const date = entry.meta?.type?.split(',')?.pop() || entry.timestamp || entry.asOfDate;
+        const value = extractYahooValue(entry.reportedValue) || extractYahooValue(entry);
+
+        if (!date || value === null) return;
+
+        const dateStr = new Date(date).toISOString().split('T')[0];
+        if (!entriesByDate[dateStr]) entriesByDate[dateStr] = { endDate: dateStr };
+
+        const uiKey = mapping[type];
+        if (uiKey) {
+            entriesByDate[dateStr][uiKey] = value;
+
+            // Add to charts
+            if (uiKey !== 'capex') {
+                charts[uiKey].push({
+                    date: dateStr,
+                    year: new Date(dateStr).getFullYear(),
+                    value: value
+                });
+            }
+        } else {
+            // Unmapped fields go to statement
+            entriesByDate[dateStr][type] = value;
+        }
+    });
+
+    // Special case for FCF: OpCF + Capex (Capex is usually negative)
+    Object.values(entriesByDate).forEach((item: any) => {
+        if (item.operatingCashflow !== undefined && item.capex !== undefined) {
+            item.freeCashflow = item.operatingCashflow + item.capex;
+            charts.freeCashflow.push({
+                date: item.endDate,
+                year: new Date(item.endDate).getFullYear(),
+                value: item.freeCashflow
+            });
+        }
+    });
+
+    // Sort charts by date
+    Object.keys(charts).forEach(key => {
+        charts[key].sort((a, b) => a.date.localeCompare(b.date));
+    });
+
+    // Reconstruct statements (Sorted newest first)
+    const statements = Object.values(entriesByDate).sort((a: any, b: any) => b.endDate.localeCompare(a.endDate));
+
+    return {
+        charts,
+        statements,
+    };
+}

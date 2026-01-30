@@ -33,6 +33,9 @@ import TickerTabs, { TickerTab } from '@/components/ticker/TickerTabs';
 import OverviewTab from '@/components/ticker/OverviewTab';
 import FinancialsTab from '@/components/ticker/FinancialsTab';
 import ValuationTab from '@/components/ticker/ValuationTab';
+import TechnicalIndicators from '@/components/TechnicalIndicators';
+import PeerComparison from '@/components/PeerComparison';
+import FinancialHealthCharts from '@/components/FinancialHealthCharts';
 import TechnicalsTab from '@/components/ticker/TechnicalsTab';
 import FilingsTab from '@/components/ticker/FilingsTab';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -82,6 +85,8 @@ interface StockData {
     incomeStatement: any[];
     balanceSheet: any[];
     cashFlow: any[];
+    fundamentals?: any;
+    lastUpdated: string;
 }
 
 interface ChartDataPoint {
@@ -528,6 +533,18 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
                     </div>
                 </div>
             </div>
+
+            {/* Financial Health Visualizations */}
+            {stock?.fundamentals && (stock.fundamentals.revenue || stock.fundamentals.eps) && (
+                <div className="mb-8">
+                    <FinancialHealthCharts
+                        symbol={symbol}
+                        revenue={stock.fundamentals.revenue || []}
+                        netIncome={stock.fundamentals.netIncome || []}
+                        eps={stock.fundamentals.eps || []}
+                    />
+                </div>
+            )}
 
             {/* Tab Navigation */}
             <TickerTabs activeTab={activeTab} onTabChange={handleTabChange} />

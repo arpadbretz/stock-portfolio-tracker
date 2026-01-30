@@ -624,16 +624,18 @@ export async function getComprehensiveTickerData(ticker: string, force = false) 
         'earningsHistory'
     ];
 
-    const [summary, news] = await Promise.all([
+    const [summary, news, fundamentals] = await Promise.all([
         getCachedQuoteSummary(symbol, modules, force),
-        getCachedSearch(symbol, { newsCount: 5 })
+        getCachedSearch(symbol, { newsCount: 5 }),
+        getCachedFundamentals(symbol)
     ]);
 
     if (!summary) return null;
 
     return {
         summary,
-        news: news?.news || []
+        news: news?.news || [],
+        fundamentals: fundamentals || []
     };
 }
 
