@@ -2,29 +2,37 @@
 
 import { Trade, Holding, PortfolioSummary, PriceData, CurrencyCode } from '@/types/portfolio';
 
-// Aggregate trades into current holdings
-export function aggregateHoldings(trades: Trade[], prices: Map<string, PriceData>): Holding[] {
+// Aggregate trades into current holdings (Normalizing everything to USD)
+export function aggregateHoldings(
+    trades: Trade[],
+    prices: Map<string, PriceData>,
+    exchangeRates: Record<string, number> = { USD: 1, EUR: 1, HUF: 1 }
+): Holding[] {
     const holdingsMap = new Map<string, {
         shares: number;
-        totalCost: number;
+        totalCostUSD: number;
         buyQuantity: number;
     }>();
 
     // Process each trade
     for (const trade of trades) {
         const ticker = trade.ticker.toUpperCase();
-        const current = holdingsMap.get(ticker) || { shares: 0, totalCost: 0, buyQuantity: 0 };
+        const current = holdingsMap.get(ticker) || { shares: 0, totalCostUSD: 0, buyQuantity: 0 };
+        const tradeCurrency = (trade as any).currency || 'USD';
+        const rate = exchangeRates[tradeCurrency] || 1;
 
         if (trade.action === 'BUY') {
             current.shares += trade.quantity;
-            current.totalCost += trade.quantity * trade.pricePerShare + trade.fees;
+            // Convert trade cost to USD
+            const costInUSD = (trade.quantity * trade.pricePerShare + trade.fees) / rate;
+            current.totalCostUSD += costInUSD;
             current.buyQuantity += trade.quantity;
         } else if (trade.action === 'SELL') {
             current.shares -= trade.quantity;
-            // Reduce cost basis proportionally
+            // Reduce cost basis proportionally (already in USD)
             if (current.buyQuantity > 0) {
-                const avgCost = current.totalCost / current.buyQuantity;
-                current.totalCost -= trade.quantity * avgCost;
+                const avgCostUSD = current.totalCostUSD / current.buyQuantity;
+                current.totalCostUSD -= trade.quantity * avgCostUSD;
                 current.buyQuantity -= trade.quantity;
             }
         }
@@ -40,29 +48,37 @@ export function aggregateHoldings(trades: Trade[], prices: Map<string, PriceData
         if (data.shares <= 0) continue;
 
         const priceData = prices.get(ticker);
-        const currentPrice = priceData?.currentPrice || 0;
-        const avgCostBasis = data.buyQuantity > 0 ? data.totalCost / data.buyQuantity : 0;
-        const marketValue = data.shares * currentPrice;
-        const unrealizedGain = marketValue - (data.shares * avgCostBasis);
-        const unrealizedGainPercent = avgCostBasis > 0
-            ? ((currentPrice - avgCostBasis) / avgCostBasis) * 100
+        const localCurrentPrice = priceData?.currentPrice || 0;
+        const assetCurrency = (priceData?.currency || 'USD').toUpperCase();
+        const assetRate = exchangeRates[assetCurrency] || 1;
+
+        // Normalize prices to USD for consistent gain calculations
+        const currentPriceUSD = localCurrentPrice / assetRate;
+        const avgCostBasisUSD = data.buyQuantity > 0 ? data.totalCostUSD / data.buyQuantity : 0;
+
+        const marketValueUSD = data.shares * currentPriceUSD;
+        const totalInvestedUSD = data.shares * avgCostBasisUSD;
+        const unrealizedGainUSD = marketValueUSD - totalInvestedUSD;
+
+        const unrealizedGainPercent = avgCostBasisUSD > 0
+            ? ((currentPriceUSD - avgCostBasisUSD) / avgCostBasisUSD) * 100
             : 0;
 
         holdings.push({
             ticker,
             shares: data.shares,
-            avgCostBasis,
-            totalInvested: data.shares * avgCostBasis,
-            currentPrice,
-            marketValue,
-            unrealizedGain,
+            avgCostBasis: avgCostBasisUSD,
+            totalInvested: totalInvestedUSD,
+            currentPrice: currentPriceUSD,
+            marketValue: marketValueUSD,
+            unrealizedGain: unrealizedGainUSD,
             unrealizedGainPercent,
             allocation: 0, // Will be calculated in summary
             sector: priceData?.sector,
             industry: priceData?.industry,
-            dayChange: priceData?.change || 0,
+            dayChange: (priceData?.change || 0) / assetRate,
             dayChangePercent: priceData?.changePercent || 0,
-            currency: priceData?.currency || 'USD',
+            currency: assetCurrency,
         });
     }
 
@@ -70,13 +86,13 @@ export function aggregateHoldings(trades: Trade[], prices: Map<string, PriceData
     return holdings.sort((a, b) => b.marketValue - a.marketValue);
 }
 
-// Calculate portfolio summary
 export function calculatePortfolioSummary(
     holdings: Holding[],
     exchangeRates: Record<string, number> = { USD: 1, EUR: 0.92, HUF: 350 },
     cashBalance: number | Record<string, number> = 0,
     prices: Map<string, PriceData> = new Map()
 ): PortfolioSummary {
+    // Note: holdings marketValue and totalInvested are already normalized to USD by aggregateHoldings
     const totalInvested = holdings.reduce((sum, h) => sum + h.totalInvested, 0);
     const totalMarketValue = holdings.reduce((sum, h) => sum + h.marketValue, 0);
     const totalGain = totalMarketValue - totalInvested;
@@ -116,15 +132,9 @@ export function calculatePortfolioSummary(
     // Total portfolio value includes cash balance
     const totalPortfolioValue = totalMarketValue + normalizedCashBalance;
 
-    // Calculate Stock Daily P&L (Normalizing each holding's change back to USD)
+    // Calculate Stock Daily P&L (Holdings are already normalized to USD)
     const stockDailyPnL = holdings.reduce((total, h) => {
-        const change = h.dayChange || 0;
-        const currency = (h.currency || 'USD').toUpperCase();
-        const rate = exchangeRates[currency] || 1;
-
-        // Change is in local currency, convert to USD
-        const changeInUSD = change / rate;
-        return total + (changeInUSD * h.shares);
+        return total + (h.dayChange || 0) * h.shares;
     }, 0);
 
     const dailyPnL = stockDailyPnL + totalFxPnL;

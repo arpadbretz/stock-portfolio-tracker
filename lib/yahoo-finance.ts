@@ -378,14 +378,27 @@ export async function getBatchPrices(tickers: string[], force = false): Promise<
     try {
         const results = await fetchWithYahooPattern(async (yf) => {
             // yf.quote can take an array of symbols
-            const quotes = await yf.quote(missingTickers);
-            return Array.isArray(quotes) ? quotes : [quotes];
-        }, 5000);
+            // Also fetch assetProfile for metadata if missing
+            const [quotes, summaries] = await Promise.all([
+                yf.quote(missingTickers),
+                Promise.all(missingTickers.map(s =>
+                    yf.quoteSummary(s, { modules: ['assetProfile'] }).catch(() => null)
+                ))
+            ]);
+
+            const quoteArray = Array.isArray(quotes) ? quotes : [quotes];
+            return quoteArray.map((q, i) => ({
+                quote: q,
+                summary: summaries[i]
+            }));
+        }, 10000); // Increased timeout for metadata
 
         if (results && results.length > 0) {
             const cacheUpdates: any[] = [];
 
-            for (const quote of results) {
+            for (const item of results) {
+                const quote = item.quote;
+                const summary = item.summary;
                 if (!quote || !quote.symbol) continue;
 
                 const symbol = quote.symbol.toUpperCase();
@@ -396,6 +409,8 @@ export async function getBatchPrices(tickers: string[], force = false): Promise<
                     changePercent: quote.regularMarketChangePercent || 0,
                     lastUpdated: new Date().toISOString(),
                     currency: quote.currency || quote.financialCurrency || 'USD',
+                    sector: summary?.assetProfile?.sector,
+                    industry: summary?.assetProfile?.industry,
                 };
 
                 priceMap.set(symbol, priceData);
@@ -407,6 +422,8 @@ export async function getBatchPrices(tickers: string[], force = false): Promise<
                     price_change: priceData.change,
                     price_change_percent: priceData.changePercent,
                     currency: priceData.currency,
+                    sector: priceData.sector,
+                    industry: priceData.industry,
                     last_updated: priceData.lastUpdated
                 });
             }

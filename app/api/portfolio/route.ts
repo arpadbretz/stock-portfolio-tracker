@@ -123,6 +123,7 @@ export async function GET(request: Request) {
             notes: t.notes,
             timestamp: t.date_traded,
             date: t.date_traded,
+            currency: t.currency || 'USD',
         }));
 
         // 4. FETCH PRICES AND CALCULATE SUMMARY
@@ -183,7 +184,7 @@ export async function GET(request: Request) {
         }
 
         // Aggregate and calculate (now with multi-currency cash balance and FX price data)
-        const holdings = aggregateHoldings(trades, allPrices);
+        const holdings = aggregateHoldings(trades, allPrices, exchangeRates);
         const summary = calculatePortfolioSummary(holdings, exchangeRates, cashBalances, allPrices);
 
         // Add realized P/L to summary
