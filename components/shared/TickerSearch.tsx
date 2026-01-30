@@ -36,6 +36,11 @@ export default function TickerSearch({
     const searchRef = useRef<HTMLDivElement>(null);
     const hasSelectedRef = useRef(false);
 
+    // Sync query with initialValue if it changes
+    useEffect(() => {
+        setQuery(initialValue);
+    }, [initialValue]);
+
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             if (searchRef.current && !searchRef.current.contains(e.target as Node)) {

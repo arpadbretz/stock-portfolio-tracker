@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
                 type: quote.quoteType,
             }));
 
-        return NextResponse.json(quotes);
+        return NextResponse.json({ results: quotes });
     } catch (error: any) {
         console.error('Search API error:', error);
         return NextResponse.json({ error: 'Failed to search' }, { status: 500 });
