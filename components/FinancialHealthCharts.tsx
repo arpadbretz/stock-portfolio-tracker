@@ -44,7 +44,7 @@ export default function FinancialHealthCharts({ revenue, netIncome, eps, symbol 
             revenue: rev.value,
             netIncome: ni ? ni.value : 0,
         };
-    }).slice(-10); // Show last 10 years
+    }).slice(-5); // Show last 5 years
 
     const formatCurrency = (val: number) => {
         if (Math.abs(val) >= 1e12) return `$${(val / 1e12).toFixed(1)}T`;

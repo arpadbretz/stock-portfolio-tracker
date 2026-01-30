@@ -33,9 +33,6 @@ import TickerTabs, { TickerTab } from '@/components/ticker/TickerTabs';
 import OverviewTab from '@/components/ticker/OverviewTab';
 import FinancialsTab from '@/components/ticker/FinancialsTab';
 import ValuationTab from '@/components/ticker/ValuationTab';
-import TechnicalIndicators from '@/components/TechnicalIndicators';
-import PeerComparison from '@/components/PeerComparison';
-import FinancialHealthCharts from '@/components/FinancialHealthCharts';
 import TechnicalsTab from '@/components/ticker/TechnicalsTab';
 import FilingsTab from '@/components/ticker/FilingsTab';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -85,8 +82,6 @@ interface StockData {
     incomeStatement: any[];
     balanceSheet: any[];
     cashFlow: any[];
-    fundamentals?: any;
-    lastUpdated: string;
 }
 
 interface ChartDataPoint {
@@ -259,23 +254,17 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
         }
     };
 
-    // Fetch integrated stock data
+    // Fetch stock data
     useEffect(() => {
-        const fetchAllData = async () => {
+        const fetchStock = async () => {
             setIsLoading(true);
             try {
-                const res = await fetch(`/api/stock/${symbol}/comprehensive`);
+                const res = await fetch(`/api/stock/${symbol}`);
                 const data = await res.json();
-
                 if (data.success) {
                     setStock(data.data);
-                    setAnalysts(data.data.analysts);
-                    setInsiders(data.data.insiders);
-                    setNews(data.data.news);
-                    // Filings and Institutions still fetch separately if needed, 
-                    // or we could add them to comprehensive later
                 } else {
-                    setError(data.error || 'Failed to fetch stock data');
+                    setError(data.error || 'Failed to fetch stock');
                 }
             } catch (err) {
                 setError('Failed to load stock data');
@@ -283,26 +272,7 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
                 setIsLoading(false);
             }
         };
-
-        // Separate fetch for filings and institutions as they are heavy/lesser used
-        const fetchSecondaryData = async () => {
-            try {
-                const [instRes, filingsRes] = await Promise.all([
-                    fetch(`/api/stock/${symbol}/institutions`),
-                    fetch(`/api/stock/${symbol}/filings`)
-                ]);
-                const instData = await instRes.json();
-                const filingsData = await filingsRes.json();
-
-                if (instData.success) setInstitutions(instData.data);
-                if (filingsData.success) setFilings(filingsData.data);
-            } catch (err) {
-                console.error('Secondary data fetch error:', err);
-            }
-        };
-
-        fetchAllData();
-        fetchSecondaryData();
+        fetchStock();
     }, [symbol]);
 
     // Fetch chart data based on selected range
@@ -323,6 +293,38 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
         };
         fetchChart();
     }, [symbol, selectedRange]);
+
+    // Fetch additional data (analysts, news, etc.)
+    useEffect(() => {
+        const fetchAdditionalData = async () => {
+            try {
+                const [analystsRes, insidersRes, institutionsRes, newsRes, filingsRes] = await Promise.all([
+                    fetch(`/api/stock/${symbol}/analysts`),
+                    fetch(`/api/stock/${symbol}/insiders`),
+                    fetch(`/api/stock/${symbol}/institutions`),
+                    fetch(`/api/stock/${symbol}/news`),
+                    fetch(`/api/stock/${symbol}/filings`),
+                ]);
+
+                const [analystsData, insidersData, institutionsData, newsData, filingsData] = await Promise.all([
+                    analystsRes.json(),
+                    insidersRes.json(),
+                    institutionsRes.json(),
+                    newsRes.json(),
+                    filingsRes.json(),
+                ]);
+
+                if (analystsData.success) setAnalysts(analystsData.data);
+                if (insidersData.success) setInsiders(insidersData.data);
+                if (institutionsData.success) setInstitutions(institutionsData.data);
+                if (newsData.success) setNews(newsData.data);
+                if (filingsData.success) setFilings(filingsData.data);
+            } catch (err) {
+                console.error('Additional data fetch error:', err);
+            }
+        };
+        fetchAdditionalData();
+    }, [symbol]);
 
     // Calculate range change
     const rangeChange = chartData.length > 0
@@ -533,18 +535,6 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
                     </div>
                 </div>
             </div>
-
-            {/* Financial Health Visualizations */}
-            {stock?.fundamentals && (stock.fundamentals.revenue || stock.fundamentals.eps) && (
-                <div className="mb-8">
-                    <FinancialHealthCharts
-                        symbol={symbol}
-                        revenue={stock.fundamentals.revenue || []}
-                        netIncome={stock.fundamentals.netIncome || []}
-                        eps={stock.fundamentals.eps || []}
-                    />
-                </div>
-            )}
 
             {/* Tab Navigation */}
             <TickerTabs activeTab={activeTab} onTabChange={handleTabChange} />

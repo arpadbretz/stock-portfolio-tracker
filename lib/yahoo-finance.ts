@@ -601,44 +601,6 @@ export async function getHistoricalPrices(ticker: string, from: Date, to: Date =
     }
 }
 
-export async function getComprehensiveTickerData(ticker: string, force = false) {
-    if (!ticker) return null;
-    const symbol = ticker.trim().toUpperCase();
-
-    // Fetch all required modules in one go
-    const modules = [
-        'assetProfile',
-        'summaryDetail',
-        'financialData',
-        'defaultKeyStatistics',
-        'earnings',
-        'calendarEvents',
-        'price',
-        'insiderTransactions',
-        'insiderHolders',
-        'recommendationTrend',
-        'upgradeDowngradeHistory',
-        'incomeStatementHistory',
-        'balanceSheetHistory',
-        'cashflowStatementHistory',
-        'earningsHistory'
-    ];
-
-    const [summary, news, fundamentals] = await Promise.all([
-        getCachedQuoteSummary(symbol, modules, force),
-        getCachedSearch(symbol, { newsCount: 5 }),
-        getCachedFundamentals(symbol)
-    ]);
-
-    if (!summary) return null;
-
-    return {
-        summary,
-        news: news?.news || [],
-        fundamentals: fundamentals || []
-    };
-}
-
 export async function getHistoricalBenchmark(from: Date, to: Date = new Date()) {
     const data = await getHistoricalPrices('^GSPC', from, to);
     if (data.length === 0) return [];
