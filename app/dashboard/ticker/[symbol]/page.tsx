@@ -254,17 +254,23 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
         }
     };
 
-    // Fetch stock data
+    // Fetch integrated stock data
     useEffect(() => {
-        const fetchStock = async () => {
+        const fetchAllData = async () => {
             setIsLoading(true);
             try {
-                const res = await fetch(`/api/stock/${symbol}`);
+                const res = await fetch(`/api/stock/${symbol}/comprehensive`);
                 const data = await res.json();
+
                 if (data.success) {
                     setStock(data.data);
+                    setAnalysts(data.data.analysts);
+                    setInsiders(data.data.insiders);
+                    setNews(data.data.news);
+                    // Filings and Institutions still fetch separately if needed, 
+                    // or we could add them to comprehensive later
                 } else {
-                    setError(data.error || 'Failed to fetch stock');
+                    setError(data.error || 'Failed to fetch stock data');
                 }
             } catch (err) {
                 setError('Failed to load stock data');
@@ -272,7 +278,26 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
                 setIsLoading(false);
             }
         };
-        fetchStock();
+
+        // Separate fetch for filings and institutions as they are heavy/lesser used
+        const fetchSecondaryData = async () => {
+            try {
+                const [instRes, filingsRes] = await Promise.all([
+                    fetch(`/api/stock/${symbol}/institutions`),
+                    fetch(`/api/stock/${symbol}/filings`)
+                ]);
+                const instData = await instRes.json();
+                const filingsData = await filingsRes.json();
+
+                if (instData.success) setInstitutions(instData.data);
+                if (filingsData.success) setFilings(filingsData.data);
+            } catch (err) {
+                console.error('Secondary data fetch error:', err);
+            }
+        };
+
+        fetchAllData();
+        fetchSecondaryData();
     }, [symbol]);
 
     // Fetch chart data based on selected range
@@ -293,38 +318,6 @@ export default function TickerPage({ params }: { params: Promise<{ symbol: strin
         };
         fetchChart();
     }, [symbol, selectedRange]);
-
-    // Fetch additional data (analysts, news, etc.)
-    useEffect(() => {
-        const fetchAdditionalData = async () => {
-            try {
-                const [analystsRes, insidersRes, institutionsRes, newsRes, filingsRes] = await Promise.all([
-                    fetch(`/api/stock/${symbol}/analysts`),
-                    fetch(`/api/stock/${symbol}/insiders`),
-                    fetch(`/api/stock/${symbol}/institutions`),
-                    fetch(`/api/stock/${symbol}/news`),
-                    fetch(`/api/stock/${symbol}/filings`),
-                ]);
-
-                const [analystsData, insidersData, institutionsData, newsData, filingsData] = await Promise.all([
-                    analystsRes.json(),
-                    insidersRes.json(),
-                    institutionsRes.json(),
-                    newsRes.json(),
-                    filingsRes.json(),
-                ]);
-
-                if (analystsData.success) setAnalysts(analystsData.data);
-                if (insidersData.success) setInsiders(insidersData.data);
-                if (institutionsData.success) setInstitutions(institutionsData.data);
-                if (newsData.success) setNews(newsData.data);
-                if (filingsData.success) setFilings(filingsData.data);
-            } catch (err) {
-                console.error('Additional data fetch error:', err);
-            }
-        };
-        fetchAdditionalData();
-    }, [symbol]);
 
     // Calculate range change
     const rangeChange = chartData.length > 0

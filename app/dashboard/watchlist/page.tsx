@@ -223,50 +223,28 @@ export default function WatchlistPage() {
             const res = await fetch(url);
             const data = await res.json();
 
-            if (data.success) {
-                // Fetch current prices and sparklines for each item
-                const itemsWithData = await Promise.all(
-                    data.data.map(async (item: WatchlistItem) => {
-                        try {
-                            const [priceRes, chartRes] = await Promise.all([
-                                fetch(`/api/stock/${item.symbol}`),
-                                fetch(`/api/stock/${item.symbol}/chart?range=1mo&interval=1d`)
-                            ]);
+            if (data.success && data.data.length > 0) {
+                const symbols = data.data.map((item: any) => item.symbol).join(',');
+                const batchRes = await fetch(`/api/stock/batch?symbols=${symbols}&refresh=${background}`);
+                const batchData = await batchRes.json();
 
-                            const priceResponse = await priceRes.json();
-                            const chartData = await chartRes.json();
+                const itemsWithData = data.data.map((item: WatchlistItem) => {
+                    const priceInfo = batchData.data?.[item.symbol];
+                    const currentPrice = priceInfo?.price;
+                    const sinceAddedPercent = item.added_price && currentPrice
+                        ? ((currentPrice - item.added_price) / item.added_price) * 100
+                        : null;
 
-                            // Handle new API format: { success: true, data: { ... } }
-                            const priceData = priceResponse.success ? priceResponse.data : priceResponse;
-
-                            const currentPrice = priceData?.price;
-                            const sinceAddedPercent = item.added_price && currentPrice
-                                ? ((currentPrice - item.added_price) / item.added_price) * 100
-                                : null;
-
-                            return {
-                                ...item,
-                                currentPrice,
-                                change: priceData?.change,
-                                changePercent: priceData?.changePercent,
-                                name: priceData?.name || item.name,
-                                peRatio: priceData?.pe || priceData?.trailingPE || priceData?.forwardPE,
-                                marketCap: priceData?.marketCap,
-                                dividendYield: priceData?.dividendYield,
-                                fiftyTwoWeekHigh: priceData?.fiftyTwoWeekHigh,
-                                fiftyTwoWeekLow: priceData?.fiftyTwoWeekLow,
-                                beta: priceData?.beta,
-                                sector: priceData?.sector || 'Unknown',
-                                earningsDate: priceData?.earningsDate || priceData?.earningsTimestamp,
-                                recentNewsCount: priceData?.recentNewsCount || 0,
-                                sparklineData: chartData.data?.slice(-7).map((d: any) => ({ value: d.close })) || [],
-                                sinceAddedPercent,
-                            };
-                        } catch {
-                            return item;
-                        }
-                    })
-                );
+                    return {
+                        ...item,
+                        currentPrice,
+                        change: priceInfo?.change,
+                        changePercent: priceInfo?.changePercent,
+                        name: priceInfo?.name || item.name,
+                        sparklineData: priceInfo?.sparkline?.slice(-7).map((d: any) => ({ value: d.value })) || [],
+                        sinceAddedPercent,
+                    };
+                });
                 setWatchlist(itemsWithData);
 
                 // Initialize Kanban data from stage field in DB

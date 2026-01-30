@@ -475,6 +475,86 @@ export async function getBatchPrices(tickers: string[], force = false): Promise<
     return priceMap;
 }
 
+export async function getBatchDetails(tickers: string[], force = false) {
+    if (!tickers || tickers.length === 0) return new Map();
+    const uniqueTickers = [...new Set(tickers.map(t => t?.trim().toUpperCase()).filter(Boolean))];
+    const adminClient = createAdminClient();
+    const detailMap = new Map();
+
+    // 1. Concurrent Fetch: Batch Prices + Batch Sparklines (last 30 days)
+    try {
+        const results = await fetchWithYahooPattern(async (yf) => {
+            const endDate = new Date();
+            const startDate = new Date();
+            startDate.setDate(endDate.getDate() - 30);
+
+            // Fetch Quotes and historical charts in parallel
+            const [quotes, charts] = await Promise.all([
+                yf.quote(uniqueTickers),
+                Promise.all(uniqueTickers.map(s =>
+                    yf.chart(s, { period1: startDate, period2: endDate, interval: '1d' }).catch(() => null)
+                ))
+            ]);
+
+            const quoteArray = Array.isArray(quotes) ? quotes : [quotes];
+            return uniqueTickers.map((symbol, i) => {
+                const quote = quoteArray.find(q => q.symbol.toUpperCase() === symbol);
+                const chart = charts[i];
+                return {
+                    symbol,
+                    quote,
+                    sparkline: chart?.quotes?.filter((q: any) => q.close !== null).map((q: any) => ({
+                        date: q.date,
+                        value: q.close
+                    })) || []
+                };
+            });
+        }, 15000);
+
+        if (results) {
+            const cacheUpdates: any[] = [];
+            for (const item of results) {
+                const { symbol, quote, sparkline } = item;
+                if (!quote) continue;
+
+                const data = {
+                    symbol,
+                    name: quote.shortName || quote.longName || symbol,
+                    price: quote.regularMarketPrice || 0,
+                    change: quote.regularMarketChange || 0,
+                    changePercent: quote.regularMarketChangePercent || 0,
+                    currency: quote.currency || 'USD',
+                    sparkline,
+                    lastUpdated: new Date().toISOString()
+                };
+
+                detailMap.set(symbol, data);
+
+                // Update standard price cache
+                cacheUpdates.push({
+                    symbol: symbol,
+                    cache_key: 'price',
+                    price: data.price,
+                    price_change: data.change,
+                    price_change_percent: data.changePercent,
+                    currency: data.currency,
+                    last_updated: data.lastUpdated
+                });
+            }
+
+            if (cacheUpdates.length > 0) {
+                adminClient.from('stock_cache').upsert(cacheUpdates).then(({ error }) => {
+                    if (error) console.error(`Error batch caching details:`, error);
+                });
+            }
+        }
+    } catch (error: any) {
+        console.error(`Batch details fetch failed:`, error.message);
+    }
+
+    return detailMap;
+}
+
 export async function getHistoricalPrices(ticker: string, from: Date, to: Date = new Date()) {
     if (!ticker) return [];
     try {
@@ -519,6 +599,38 @@ export async function getHistoricalPrices(ticker: string, from: Date, to: Date =
         console.error(`Historical fetch error for ${ticker}:`, error.message || error);
         return [];
     }
+}
+
+export async function getComprehensiveTickerData(ticker: string, force = false) {
+    if (!ticker) return null;
+    const symbol = ticker.trim().toUpperCase();
+
+    // Fetch all required modules in one go
+    const modules = [
+        'assetProfile',
+        'summaryDetail',
+        'financialData',
+        'defaultKeyStatistics',
+        'earnings',
+        'calendarEvents',
+        'price',
+        'insiderTransactions',
+        'insiderHolders',
+        'recommendationTrend',
+        'upgradeDowngradeHistory'
+    ];
+
+    const [summary, news] = await Promise.all([
+        getCachedQuoteSummary(symbol, modules, force),
+        getCachedSearch(symbol, { newsCount: 5 })
+    ]);
+
+    if (!summary) return null;
+
+    return {
+        summary,
+        news: news?.news || []
+    };
 }
 
 export async function getHistoricalBenchmark(from: Date, to: Date = new Date()) {

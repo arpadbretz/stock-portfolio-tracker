@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCachedBatchPrices } from '@/lib/yahoo-finance/cached';
+import { getBatchDetails } from '@/lib/yahoo-finance';
 
 export async function GET(request: NextRequest) {
     try {
@@ -17,17 +17,11 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'No valid symbols provided' }, { status: 400 });
         }
 
-        // Limit batch size to prevent abuse
-        const limitedSymbols = symbols.slice(0, 20);
+        // Limit batch size to prevent abuse (30 symbols is reasonable for a watchlist)
+        const limitedSymbols = symbols.slice(0, 30);
 
-        let priceMap: Map<string, any>;
-        if (refresh) {
-            const { getBatchPrices } = await import('@/lib/yahoo-finance');
-            priceMap = await getBatchPrices(limitedSymbols, true);
-        } else {
-            priceMap = await getCachedBatchPrices(limitedSymbols);
-        }
-        const results = Object.fromEntries(priceMap.entries());
+        const detailMap = await getBatchDetails(limitedSymbols, refresh);
+        const results = Object.fromEntries(detailMap.entries());
 
         return NextResponse.json({
             success: true,
