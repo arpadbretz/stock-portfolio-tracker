@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getComprehensiveTickerData } from '@/lib/yahoo-finance';
-import { transformStockSummary } from '@/lib/transformers';
+import { transformStockSummary, transformAnalysts, transformInsiders, transformNews } from '@/lib/transformers';
 
 export async function GET(
     request: NextRequest,
@@ -20,22 +20,17 @@ export async function GET(
             return NextResponse.json({ success: false, error: 'Stock not found' }, { status: 404 });
         }
 
-        // Transform the main summary
+        // Transform everything using the centralized transformer
         const stockData = transformStockSummary(ticker, data.summary);
+        const analystData = transformAnalysts(ticker, data.summary);
+        const insiderData = transformInsiders(ticker, data.summary);
+        const newsData = transformNews(data.news);
 
-        // Add extra modules that aren't in the main summary transformer yet
         const extendedData = {
             ...stockData,
-            analysts: {
-                recommendationTrend: data.summary.recommendationTrend,
-                upgradeDowngradeHistory: data.summary.upgradeDowngradeHistory,
-                financialData: data.summary.financialData,
-            },
-            insiders: {
-                insiderTransactions: data.summary.insiderTransactions,
-                insiderHolders: data.summary.insiderHolders,
-            },
-            news: data.news,
+            analysts: analystData,
+            insiders: insiderData,
+            news: newsData,
         };
 
         return NextResponse.json({ success: true, data: extendedData });
