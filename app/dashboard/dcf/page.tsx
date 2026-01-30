@@ -200,7 +200,8 @@ function DCFCalculatorContent() {
 
         setIsLoading(true);
         try {
-            const res = await fetch(`/api/stock/${symbolToFetch.toUpperCase()}`);
+            // Force refresh when fetching for DCF (user expectation)
+            const res = await fetch(`/api/stock/${symbolToFetch.toUpperCase()}?refresh=true`);
             const response = await res.json();
 
             if (response.success && response.data) {

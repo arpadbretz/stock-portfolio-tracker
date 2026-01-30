@@ -138,25 +138,28 @@ export async function getCachedData<T>(
     symbol: string,
     cacheKey: string,
     revalidateDays: number,
-    fetcher: (yf: any) => Promise<T> // fetcher now expects yf instance
+    fetcher: (yf: any) => Promise<T>, // fetcher now expects yf instance
+    force = false
 ): Promise<T | null> {
     const adminClient = createAdminClient();
     try {
         // 1. Check Cache
-        const { data: cached } = await adminClient
-            .from('stock_cache')
-            .select('*')
-            .eq('symbol', symbol)
-            .eq('cache_key', cacheKey)
-            .maybeSingle();
+        if (!force) {
+            const { data: cached } = await adminClient
+                .from('stock_cache')
+                .select('*')
+                .eq('symbol', symbol)
+                .eq('cache_key', cacheKey)
+                .maybeSingle();
 
-        if (cached) {
-            const lastUpdated = new Date(cached.last_updated);
-            const now = new Date();
-            const ageInDays = (now.getTime() - lastUpdated.getTime()) / (1000 * 60 * 60 * 24);
+            if (cached) {
+                const lastUpdated = new Date(cached.last_updated);
+                const now = new Date();
+                const ageInDays = (now.getTime() - lastUpdated.getTime()) / (1000 * 60 * 60 * 24);
 
-            if (ageInDays < revalidateDays) {
-                return cached.data;
+                if (ageInDays < revalidateDays) {
+                    return cached.data;
+                }
             }
         }
 
@@ -191,13 +194,19 @@ export async function getCachedData<T>(
 /**
  * Get quote summary with caching
  */
-export async function getCachedQuoteSummary(ticker: string, modules: string[]) {
+export async function getCachedQuoteSummary(ticker: string, modules: string[], force = false) {
     if (!ticker) return null;
     const symbol = ticker.trim().toUpperCase();
     const modulesKey = modules.sort().join(',');
-    return getCachedData(symbol, `summary:${modulesKey}`, METADATA_CACHE_REVALIDATE_DAYS, async (yf) => {
+
+    // If modules include 'price', we should revalidate MUCH more often (15 mins = 0.01 days approx)
+    const revalidate = modules.includes('price')
+        ? (PRICE_CACHE_REVALIDATE_MINS / 1440)
+        : METADATA_CACHE_REVALIDATE_DAYS;
+
+    return getCachedData(symbol, `summary:${modulesKey}`, revalidate, async (yf) => {
         return await yf.quoteSummary(symbol, { modules });
-    });
+    }, force);
 }
 
 /**

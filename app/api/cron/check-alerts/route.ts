@@ -50,10 +50,10 @@ export async function GET(request: Request) {
 
         console.log(`Found ${alerts.length} active alerts to check`);
 
-        // 2. Get unique tickers and fetch current prices in batch
+        // 2. Get unique tickers and fetch current prices in batch (FORCE REFRESH for alerts)
         const uniqueTickers = [...new Set(alerts.map(a => a.symbol))];
         const { getBatchPrices } = await import('@/lib/yahoo-finance');
-        const priceMap = await getBatchPrices(uniqueTickers);
+        const priceMap = await getBatchPrices(uniqueTickers, true);
 
         // Convert to a simpler map for the logic below
         const priceValueMap = new Map<string, number>();

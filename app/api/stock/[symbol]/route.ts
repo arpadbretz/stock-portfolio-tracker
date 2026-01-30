@@ -9,6 +9,9 @@ export async function GET(
     if (!symbol) return NextResponse.json({ success: false, error: 'Symbol required' }, { status: 400 });
     const ticker = symbol.toUpperCase();
 
+    const { searchParams } = new URL(request.url);
+    const refresh = searchParams.get('refresh') === 'true';
+
     try {
         // 1. USE CENTRAL CACHED HELPER
         // This handles: DB-first, Dynamic Import, Timeout, 7-day Cache
@@ -22,7 +25,7 @@ export async function GET(
         ];
 
         // We also need quote for the real-time price, but getCachedQuoteSummary can handle that if we add 'price'
-        const summaryAndQuote = await getCachedQuoteSummary(ticker, [...modules, 'price']);
+        const summaryAndQuote = await getCachedQuoteSummary(ticker, [...modules, 'price'], refresh);
 
         if (!summaryAndQuote) {
             return NextResponse.json({ success: false, error: 'Stock not found' }, { status: 404 });
@@ -178,7 +181,7 @@ export async function GET(
             incomeStatement: [],
             balanceSheet: [],
             cashFlow: [],
-            lastUpdated: new Date().toISOString(),
+            lastUpdated: price.lastUpdated || price.regularMarketTime || new Date().toISOString(),
         };
 
         return NextResponse.json({ success: true, data: stockData });
