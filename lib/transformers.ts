@@ -60,6 +60,56 @@ export function transformStockSummary(symbol: string, summary: any) {
     const profile = summary.assetProfile || {};
     const earnings = summary.earnings || {};
     const calendar = summary.calendarEvents || {};
+    const incomeHistory = summary.incomeStatementHistory?.incomeStatementHistory || [];
+    const balanceHistory = summary.balanceSheetHistory?.balanceSheetStatements || [];
+    const cashflowHistory = summary.cashflowStatementHistory?.cashflowStatements || [];
+
+    const mapStatement = (item: any) => {
+        if (!item) return null;
+        let date = item.endDate;
+        if (typeof date === 'object' && date?.raw) date = new Date(date.raw * 1000).toISOString();
+        else if (typeof date === 'number') date = new Date(date * 1000).toISOString();
+        else if (date instanceof Date) date = date.toISOString();
+
+        return {
+            endDate: date,
+            // Income fields
+            totalRevenue: extractYahooValue(item.totalRevenue),
+            costOfRevenue: extractYahooValue(item.costOfRevenue),
+            grossProfit: extractYahooValue(item.grossProfit),
+            operatingExpenses: extractYahooValue(item.totalOperatingExpenses),
+            operatingIncome: extractYahooValue(item.operatingIncome),
+            netIncome: extractYahooValue(item.netIncome),
+            ebit: extractYahooValue(item.ebit),
+            ebitda: extractYahooValue(item.ebitda),
+            eps: extractYahooValue(item.dilutedEPS) || extractYahooValue(item.basicEPS),
+            researchDevelopment: extractYahooValue(item.researchDevelopment),
+            sellingGeneralAdministrative: extractYahooValue(item.sellingGeneralAdministrative),
+            interestExpense: extractYahooValue(item.interestExpense),
+            incomeTaxExpense: extractYahooValue(item.incomeTaxExpense),
+            // Balance fields
+            totalAssets: extractYahooValue(item.totalAssets),
+            totalCurrentAssets: extractYahooValue(item.totalCurrentAssets),
+            cash: extractYahooValue(item.cash) || extractYahooValue(item.cashAndCashEquivalents),
+            shortTermInvestments: extractYahooValue(item.shortTermInvestments),
+            netReceivables: extractYahooValue(item.netReceivables),
+            inventory: extractYahooValue(item.inventory),
+            totalLiabilities: extractYahooValue(item.totalLiabilitiesNetMinorityInterest) || extractYahooValue(item.totalLiabilities),
+            totalCurrentLiabilities: extractYahooValue(item.totalCurrentLiabilities),
+            accountsPayable: extractYahooValue(item.accountsPayable),
+            longTermDebt: extractYahooValue(item.longTermDebt),
+            totalDebt: extractYahooValue(item.totalDebt),
+            totalStockholderEquity: extractYahooValue(item.totalStockholderEquity),
+            // Cash flow fields
+            operatingCashflow: extractYahooValue(item.totalCashFromOperatingActivities) || extractYahooValue(item.operatingCashflow),
+            investingCashflow: extractYahooValue(item.totalCashflowsFromInvestingActivities) || extractYahooValue(item.investingCashflow),
+            financingCashflow: extractYahooValue(item.totalCashFromFinancingActivities) || extractYahooValue(item.financingCashflow),
+            freeCashflow: extractYahooValue(item.freeCashFlow),
+            capitalExpenditures: extractYahooValue(item.capitalExpenditures),
+            depreciation: extractYahooValue(item.depreciation),
+            dividendsPaid: extractYahooValue(item.dividendsPaid),
+        };
+    };
 
     return {
         symbol: symbol.toUpperCase(),
@@ -93,7 +143,7 @@ export function transformStockSummary(symbol: string, summary: any) {
         exDividendDate: formatYahooDate(details.exDividendDate) || null,
         payoutRatio: extractYahooValue(details.payoutRatio) || null,
         beta: extractYahooValue(keyStats.beta) || extractYahooValue(details.beta) || null,
-        eps: extractYahooValue(price.epsTrailingTwelveMonths) || null,
+        eps: extractYahooValue(price.epsTrailingTwelveMonths) || extractYahooValue(keyStats.trailingEps) || extractYahooValue(details.trailingEps) || null,
         forwardEps: extractYahooValue(keyStats.forwardEps) || null,
         revenueGrowth: extractYahooValue(financials.revenueGrowth) || null,
         earningsGrowth: extractYahooValue(financials.earningsGrowth) || null,
@@ -123,9 +173,9 @@ export function transformStockSummary(symbol: string, summary: any) {
         city: profile.city || null,
         earningsDate: formatYahooDate(calendar?.earnings?.earningsDate?.[0]) || formatYahooDate(earnings?.earningsDate?.[0]) || null,
         earningsQuarterlyGrowth: extractYahooValue(keyStats.earningsQuarterlyGrowth) || null,
-        incomeStatement: [],
-        balanceSheet: [],
-        cashFlow: [],
+        incomeStatement: incomeHistory.map(mapStatement).filter(Boolean),
+        balanceSheet: balanceHistory.map(mapStatement).filter(Boolean),
+        cashFlow: cashflowHistory.map(mapStatement).filter(Boolean),
         lastUpdated: formatYahooDate(price.regularMarketTime) || new Date().toISOString(),
     };
 }

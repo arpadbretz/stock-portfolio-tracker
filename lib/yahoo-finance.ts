@@ -617,7 +617,11 @@ export async function getComprehensiveTickerData(ticker: string, force = false) 
         'insiderTransactions',
         'insiderHolders',
         'recommendationTrend',
-        'upgradeDowngradeHistory'
+        'upgradeDowngradeHistory',
+        'incomeStatementHistory',
+        'balanceSheetHistory',
+        'cashflowStatementHistory',
+        'earningsHistory'
     ];
 
     const [summary, news] = await Promise.all([
