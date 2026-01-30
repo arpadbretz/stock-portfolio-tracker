@@ -62,6 +62,7 @@ export function aggregateHoldings(trades: Trade[], prices: Map<string, PriceData
             industry: priceData?.industry,
             dayChange: priceData?.change || 0,
             dayChangePercent: priceData?.changePercent || 0,
+            currency: priceData?.currency || 'USD',
         });
     }
 
@@ -115,9 +116,15 @@ export function calculatePortfolioSummary(
     // Total portfolio value includes cash balance
     const totalPortfolioValue = totalMarketValue + normalizedCashBalance;
 
-    // Calculate Stock Daily P&L
+    // Calculate Stock Daily P&L (Normalizing each holding's change back to USD)
     const stockDailyPnL = holdings.reduce((total, h) => {
-        return total + (h.dayChange || 0) * h.shares;
+        const change = h.dayChange || 0;
+        const currency = (h.currency || 'USD').toUpperCase();
+        const rate = exchangeRates[currency] || 1;
+
+        // Change is in local currency, convert to USD
+        const changeInUSD = change / rate;
+        return total + (changeInUSD * h.shares);
     }, 0);
 
     const dailyPnL = stockDailyPnL + totalFxPnL;

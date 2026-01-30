@@ -56,6 +56,7 @@ export async function getCurrentPrice(ticker: string, force = false): Promise<Pr
                     lastUpdated: cached.last_updated,
                     sector: cached.sector,
                     industry: cached.industry,
+                    currency: cached.currency,
                 };
             }
         }
@@ -80,6 +81,7 @@ export async function getCurrentPrice(ticker: string, force = false): Promise<Pr
             lastUpdated: new Date().toISOString(),
             sector: summary?.assetProfile?.sector,
             industry: summary?.assetProfile?.industry,
+            currency: quote.currency || quote.financialCurrency || 'USD',
         };
 
         // 3. ASYNC CACHE UPDATE (fire and forget)
@@ -91,6 +93,7 @@ export async function getCurrentPrice(ticker: string, force = false): Promise<Pr
             price_change_percent: priceData.changePercent,
             sector: priceData.sector,
             industry: priceData.industry,
+            currency: priceData.currency,
             last_updated: priceData.lastUpdated
         }).then(({ error }) => {
             if (error) console.error(`Error caching ${symbol}:`, error);
@@ -118,6 +121,7 @@ export async function getCurrentPrice(ticker: string, force = false): Promise<Pr
                     lastUpdated: staleCache.last_updated,
                     sector: staleCache.sector,
                     industry: staleCache.industry,
+                    currency: staleCache.currency,
                 };
             }
         } catch (fallbackError) {
@@ -354,6 +358,7 @@ export async function getBatchPrices(tickers: string[], force = false): Promise<
                             lastUpdated: cached.last_updated,
                             sector: cached.sector,
                             industry: cached.industry,
+                            currency: cached.currency,
                         });
                         continue;
                     }
@@ -390,6 +395,7 @@ export async function getBatchPrices(tickers: string[], force = false): Promise<
                     change: quote.regularMarketChange || 0,
                     changePercent: quote.regularMarketChangePercent || 0,
                     lastUpdated: new Date().toISOString(),
+                    currency: quote.currency || quote.financialCurrency || 'USD',
                 };
 
                 priceMap.set(symbol, priceData);
@@ -400,6 +406,7 @@ export async function getBatchPrices(tickers: string[], force = false): Promise<
                     price: priceData.currentPrice,
                     price_change: priceData.change,
                     price_change_percent: priceData.changePercent,
+                    currency: priceData.currency,
                     last_updated: priceData.lastUpdated
                 });
             }
@@ -432,6 +439,7 @@ export async function getBatchPrices(tickers: string[], force = false): Promise<
                         lastUpdated: cached.last_updated,
                         sector: cached.sector,
                         industry: cached.industry,
+                        currency: cached.currency,
                     });
                 }
             }

@@ -104,6 +104,7 @@ export interface Holding {
   beta?: number;
   dayChange?: number;
   dayChangePercent?: number;
+  currency?: string;
 }
 
 export interface PriceData {
@@ -115,6 +116,7 @@ export interface PriceData {
   sector?: string;
   industry?: string;
   beta?: number;
+  currency?: string;
 }
 
 export interface PortfolioSummary {
