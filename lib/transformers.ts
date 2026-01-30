@@ -401,3 +401,29 @@ export function transformFundamentals(symbol: string, rawData: any[], summary?: 
         statements,
     };
 }
+/**
+ * Merges detailed 4-year statements with long-range 10-year trends.
+ * Ensures we keep the high-fidelity fields from QuoteSummary while adding history from TimeSeries.
+ */
+export function mergeFinancials(detailed: any[], longRange: any[]) {
+    if (!detailed?.length) return longRange || [];
+    if (!longRange?.length) return detailed || [];
+
+    const mergedMap = new Map<string, any>();
+
+    // Start with long-range data as the skeleton
+    longRange.forEach(item => {
+        const year = new Date(item.endDate).getFullYear();
+        mergedMap.set(year.toString(), { ...item });
+    });
+
+    // Overwrite/Enrich with detailed data (Priority)
+    detailed.forEach(item => {
+        const year = new Date(item.endDate).getFullYear();
+        const existing = mergedMap.get(year.toString()) || {};
+        mergedMap.set(year.toString(), { ...existing, ...item });
+    });
+
+    // Return sorted newest first
+    return Array.from(mergedMap.values()).sort((a, b) => b.endDate.localeCompare(a.endDate));
+}

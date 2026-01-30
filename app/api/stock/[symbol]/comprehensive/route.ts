@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getComprehensiveTickerData } from '@/lib/yahoo-finance';
-import { transformStockSummary, transformAnalysts, transformInsiders, transformNews, transformFundamentals } from '@/lib/transformers';
+import { transformStockSummary, transformAnalysts, transformInsiders, transformNews, transformFundamentals, mergeFinancials } from '@/lib/transformers';
 
 export async function GET(
     request: NextRequest,
@@ -29,11 +29,11 @@ export async function GET(
 
         const extendedData = {
             ...stockData,
-            // Prioritize 10-year fundamentals for statements if available
-            incomeStatement: fundamentalData?.statements?.length ? fundamentalData.statements : stockData?.incomeStatement,
-            balanceSheet: fundamentalData?.statements?.length ? fundamentalData.statements : stockData?.balanceSheet,
-            cashFlow: fundamentalData?.statements?.length ? fundamentalData.statements : stockData?.cashFlow,
-            fundamentals: fundamentalData?.charts, // For the "Better" financial health charts
+            // Merge Detailed (4yr) with Long-Range (10yr) data
+            incomeStatement: mergeFinancials(stockData?.incomeStatement || [], fundamentalData?.statements || []),
+            balanceSheet: mergeFinancials(stockData?.balanceSheet || [], fundamentalData?.statements || []),
+            cashFlow: mergeFinancials(stockData?.cashFlow || [], fundamentalData?.statements || []),
+            fundamentals: fundamentalData?.charts, // Keep for high-impact charts
             analysts: analystData,
             insiders: insiderData,
             news: newsData,
