@@ -210,22 +210,6 @@ export async function getCachedQuoteSummary(ticker: string, modules: string[], f
 }
 
 /**
- * Get fundamentals time series with caching
- */
-export async function getCachedFundamentals(ticker: string) {
-    if (!ticker) return null;
-    const symbol = ticker.trim().toUpperCase();
-    return getCachedData(symbol, 'fundamentals:annual', METADATA_CACHE_REVALIDATE_DAYS, async (yf) => {
-        return await yf.fundamentalsTimeSeries(symbol, {
-            period1: new Date(new Date().getFullYear() - 10, 0, 1),
-            period2: new Date(),
-            type: 'annual',
-            module: 'all'
-        }, { validateResult: false });
-    });
-}
-
-/**
  * Search/News with caching
  */
 export async function getCachedSearch(query: string, options: any) {
