@@ -345,39 +345,36 @@ export async function getBatchPrices(tickers: string[], force = false): Promise<
     // 1. Check cache for all tickers first
     const missingTickers: string[] = [];
 
-    if (!force) {
-        const { data: cachedItems } = await adminClient
-            .from('stock_cache')
-            .select('*')
-            .in('symbol', uniqueTickers)
-            .eq('cache_key', 'price');
+    // 1. Check cache for all tickers first to get existing metadata and check staleness
+    const { data: cachedItems } = await adminClient
+        .from('stock_cache')
+        .select('*')
+        .in('symbol', uniqueTickers)
+        .eq('cache_key', 'price');
 
-        if (cachedItems) {
-            const now = new Date();
-            for (const symbol of uniqueTickers) {
-                const cached = cachedItems.find(item => item.symbol === symbol);
-                if (cached) {
-                    const lastUpdated = new Date(cached.last_updated);
-                    const ageInMins = (now.getTime() - lastUpdated.getTime()) / (1000 * 60);
+    if (cachedItems && !force) {
+        const now = new Date();
+        for (const symbol of uniqueTickers) {
+            const cached = cachedItems.find(item => item.symbol === symbol);
+            if (cached) {
+                const lastUpdated = new Date(cached.last_updated);
+                const ageInMins = (now.getTime() - lastUpdated.getTime()) / (1000 * 60);
 
-                    if (ageInMins < PRICE_CACHE_REVALIDATE_MINS) {
-                        priceMap.set(symbol, {
-                            ticker: symbol,
-                            currentPrice: Number(cached.price),
-                            change: Number(cached.price_change || 0),
-                            changePercent: Number(cached.price_change_percent || 0),
-                            lastUpdated: cached.last_updated,
-                            sector: cached.sector,
-                            industry: cached.industry,
-                            currency: cached.currency,
-                        });
-                        continue;
-                    }
+                if (ageInMins < PRICE_CACHE_REVALIDATE_MINS) {
+                    priceMap.set(symbol, {
+                        ticker: symbol,
+                        currentPrice: Number(cached.price),
+                        change: Number(cached.price_change || 0),
+                        changePercent: Number(cached.price_change_percent || 0),
+                        lastUpdated: cached.last_updated,
+                        sector: cached.sector,
+                        industry: cached.industry,
+                        currency: cached.currency,
+                    });
+                    continue;
                 }
-                missingTickers.push(symbol);
             }
-        } else {
-            missingTickers.push(...uniqueTickers);
+            missingTickers.push(symbol);
         }
     } else {
         missingTickers.push(...uniqueTickers);
@@ -388,18 +385,32 @@ export async function getBatchPrices(tickers: string[], force = false): Promise<
     // 2. Fetch missing tickers from Yahoo in batch
     try {
         const results = await fetchWithYahooPattern(async (yf) => {
-            // yf.quote can take an array of symbols
-            // Also fetch assetProfile for metadata if missing
-            // Optimized: Only fetch quotes. AssetProfile is separate and only fetched if really missing
-            const quotes = await yf.quote(missingTickers);
+            // Identify which symbols actually NEED metadata (sector/industry) or are new
+            const symbolsNeedingMetadata = missingTickers.filter(symbol => {
+                const cached = (cachedItems as any)?.find((c: any) => c.symbol === symbol);
+                return !cached?.sector || !cached?.industry;
+            });
+
+            // Fetch quotes for all missing tickers
+            // Fetch summaries ONLY for those missing metadata
+            const [quotes, summaries] = await Promise.all([
+                yf.quote(missingTickers),
+                Promise.all(symbolsNeedingMetadata.map(s =>
+                    yf.quoteSummary(s, { modules: ['assetProfile'] }).catch(() => null)
+                ))
+            ]);
+
             const quoteArray = Array.isArray(quotes) ? quotes : [quotes];
 
-            // Map quotes to PriceData objects
-            return quoteArray.map(quote => ({
-                quote,
-                summary: null // Skip summary for standard price updates
-            }));
-        }, 5000);
+            return quoteArray.map(quote => {
+                const summaryIndex = symbolsNeedingMetadata.indexOf(quote.symbol.toUpperCase());
+                const summary = summaryIndex > -1 ? summaries[summaryIndex] : null;
+                return {
+                    quote,
+                    summary
+                };
+            });
+        }, 8000);
 
         if (results && results.length > 0) {
             const cacheUpdates: any[] = [];
@@ -410,15 +421,17 @@ export async function getBatchPrices(tickers: string[], force = false): Promise<
                 if (!quote || !quote.symbol) continue;
 
                 const symbol = quote.symbol.toUpperCase();
+                const cached = cachedItems?.find(c => c.symbol === symbol);
+
                 const priceData: PriceData = {
                     ticker: symbol,
                     currentPrice: quote.regularMarketPrice || 0,
                     change: quote.regularMarketChange || 0,
                     changePercent: quote.regularMarketChangePercent || 0,
                     lastUpdated: new Date().toISOString(),
-                    currency: quote.currency || quote.financialCurrency || 'USD',
-                    sector: summary ? (summary as any).assetProfile?.sector : undefined,
-                    industry: summary ? (summary as any).assetProfile?.industry : undefined,
+                    currency: quote.currency || quote.financialCurrency || cached?.currency || 'USD',
+                    sector: summary ? (summary as any).assetProfile?.sector : cached?.sector,
+                    industry: summary ? (summary as any).assetProfile?.industry : cached?.industry,
                 };
 
                 priceMap.set(symbol, priceData);
@@ -480,6 +493,13 @@ export async function getBatchDetails(tickers: string[], expanded = false) {
     const adminClient = createAdminClient();
     const detailMap = new Map();
 
+    // 0. Load existing metadata from cache to preserve it
+    const { data: cachedItems } = await adminClient
+        .from('stock_cache')
+        .select('symbol, sector, industry, currency')
+        .in('symbol', uniqueTickers)
+        .eq('cache_key', 'price');
+
     // 1. Concurrent Fetch: Batch Prices + Batch Sparklines (last 30 days)
     try {
         const results = await fetchWithYahooPattern(async (yf) => {
@@ -533,7 +553,8 @@ export async function getBatchDetails(tickers: string[], expanded = false) {
 
                 detailMap.set(symbol, data);
 
-                // Update standard price cache
+                // Update standard price cache - preserve existing metadata
+                const cached = (cachedItems as any)?.find((c: any) => c.symbol === symbol);
                 cacheUpdates.push({
                     symbol: symbol,
                     cache_key: 'price',
@@ -541,6 +562,8 @@ export async function getBatchDetails(tickers: string[], expanded = false) {
                     price_change: data.change,
                     price_change_percent: data.changePercent,
                     currency: data.currency,
+                    sector: cached?.sector,
+                    industry: cached?.industry,
                     last_updated: data.lastUpdated
                 });
             }

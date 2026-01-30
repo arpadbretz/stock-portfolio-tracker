@@ -168,7 +168,7 @@ export const WIDGET_REGISTRY: WidgetConfig[] = [
         minH: 3,
     },
     // Market Widgets
-    {
+    /* {
         id: 'market-overview',
         title: 'Market Overview',
         description: 'Major indices status',
@@ -177,7 +177,7 @@ export const WIDGET_REGISTRY: WidgetConfig[] = [
         defaultSize: 'wide',
         minW: 4,
         minH: 3,
-    },
+    }, */
     {
         id: 'watchlist-mini',
         title: 'Watchlist',
@@ -199,7 +199,7 @@ export const WIDGET_REGISTRY: WidgetConfig[] = [
         minW: 2,
         minH: 2,
     },
-    {
+    /* {
         id: 'price-alerts',
         title: 'Price Alerts',
         description: 'Active price alerts',
@@ -208,7 +208,7 @@ export const WIDGET_REGISTRY: WidgetConfig[] = [
         defaultSize: 'medium',
         minW: 3,
         minH: 3,
-    },
+    }, */
     {
         id: 'recent-alerts',
         title: 'Recent Alerts',
@@ -259,7 +259,7 @@ export const WIDGET_REGISTRY: WidgetConfig[] = [
         minW: 3,
         minH: 3,
     },
-    {
+    /* {
         id: 'market-pulse',
         title: 'Market Pulse',
         description: 'Macro indices and global markets',
@@ -268,7 +268,7 @@ export const WIDGET_REGISTRY: WidgetConfig[] = [
         defaultSize: 'large',
         minW: 4,
         minH: 3,
-    },
+    }, */
     {
         id: 'portfolio-intelligence',
         title: 'Intelligence',
