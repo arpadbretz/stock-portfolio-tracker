@@ -230,6 +230,7 @@ export function TopPerformersWidget({
                         >
                             <Link
                                 href={`/dashboard/ticker/${holding.symbol}`}
+                                prefetch={false}
                                 className="flex items-center justify-between p-3 rounded-2xl bg-card/50 hover:bg-muted/30 border border-border/30 transition-all cursor-pointer group"
                             >
                                 <div className="flex items-center gap-3">
@@ -330,6 +331,7 @@ export function WorstPerformersWidget({
                         >
                             <Link
                                 href={`/dashboard/ticker/${holding.symbol}`}
+                                prefetch={false}
                                 className="flex items-center justify-between p-3 rounded-2xl bg-card/50 hover:bg-muted/30 border border-border/30 transition-all cursor-pointer group"
                             >
                                 <div className="flex items-center gap-3">
@@ -455,6 +457,7 @@ export function WatchlistMiniWidget({
                     <Link
                         key={item.symbol}
                         href={`/dashboard/ticker/${item.symbol}`}
+                        prefetch={false}
                         className="flex items-center justify-between p-2 rounded-xl hover:bg-muted/50 transition-colors group relative overflow-hidden"
                     >
                         <div className="flex items-center gap-2">
@@ -698,6 +701,7 @@ export function RecentAlertsWidget({ limit = 5 }: { limit?: number }) {
                     >
                         <Link
                             href={`/dashboard/ticker/${alert.ticker}`}
+                            prefetch={false}
                             className="flex items-start gap-4 p-4 rounded-2xl bg-card/50 hover:bg-muted/30 border border-border/30 transition-all cursor-pointer"
                         >
                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${alert.isPositive ? 'bg-emerald-500/10' : 'bg-rose-500/10'

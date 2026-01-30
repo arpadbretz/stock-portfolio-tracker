@@ -80,6 +80,7 @@ export default function HoldingsTable({
                         <Link
                             key={holding.ticker}
                             href={`/dashboard/ticker/${holding.ticker}`}
+                            prefetch={false}
                             className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors group"
                         >
                             <div className="flex items-center gap-3">
@@ -147,7 +148,7 @@ export default function HoldingsTable({
                                     className="transition-colors group"
                                 >
                                     <td className="py-5 px-8">
-                                        <Link href={`/dashboard/ticker/${holding.ticker}`} className="flex items-center gap-4">
+                                        <Link href={`/dashboard/ticker/${holding.ticker}`} prefetch={false} className="flex items-center gap-4">
                                             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center text-primary font-black text-sm group-hover:scale-110 transition-transform">
                                                 {holding.ticker}
                                             </div>
@@ -257,7 +258,7 @@ export default function HoldingsTable({
                     const isNegative = holding.unrealizedGain < 0;
 
                     return (
-                        <Link href={`/dashboard/ticker/${holding.ticker}`} key={holding.ticker} className="block p-6 active:bg-muted transition-colors">
+                        <Link href={`/dashboard/ticker/${holding.ticker}`} prefetch={false} key={holding.ticker} className="block p-6 active:bg-muted transition-colors">
                             <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center gap-4">
                                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center text-primary font-black text-sm">

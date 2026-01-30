@@ -390,19 +390,16 @@ export async function getBatchPrices(tickers: string[], force = false): Promise<
         const results = await fetchWithYahooPattern(async (yf) => {
             // yf.quote can take an array of symbols
             // Also fetch assetProfile for metadata if missing
-            const [quotes, summaries] = await Promise.all([
-                yf.quote(missingTickers),
-                Promise.all(missingTickers.map(s =>
-                    yf.quoteSummary(s, { modules: ['assetProfile'] }).catch(() => null)
-                ))
-            ]);
-
+            // Optimized: Only fetch quotes. AssetProfile is separate and only fetched if really missing
+            const quotes = await yf.quote(missingTickers);
             const quoteArray = Array.isArray(quotes) ? quotes : [quotes];
-            return quoteArray.map((q, i) => ({
-                quote: q,
-                summary: summaries[i]
+
+            // Map quotes to PriceData objects
+            return quoteArray.map(quote => ({
+                quote,
+                summary: null // Skip summary for standard price updates
             }));
-        }, 10000); // Increased timeout for metadata
+        }, 5000);
 
         if (results && results.length > 0) {
             const cacheUpdates: any[] = [];
@@ -420,8 +417,8 @@ export async function getBatchPrices(tickers: string[], force = false): Promise<
                     changePercent: quote.regularMarketChangePercent || 0,
                     lastUpdated: new Date().toISOString(),
                     currency: quote.currency || quote.financialCurrency || 'USD',
-                    sector: summary?.assetProfile?.sector,
-                    industry: summary?.assetProfile?.industry,
+                    sector: summary ? (summary as any).assetProfile?.sector : undefined,
+                    industry: summary ? (summary as any).assetProfile?.industry : undefined,
                 };
 
                 priceMap.set(symbol, priceData);
@@ -477,7 +474,7 @@ export async function getBatchPrices(tickers: string[], force = false): Promise<
     return priceMap;
 }
 
-export async function getBatchDetails(tickers: string[], force = false) {
+export async function getBatchDetails(tickers: string[], expanded = false) {
     if (!tickers || tickers.length === 0) return new Map();
     const uniqueTickers = [...new Set(tickers.map(t => t?.trim().toUpperCase()).filter(Boolean))];
     const adminClient = createAdminClient();
@@ -491,9 +488,13 @@ export async function getBatchDetails(tickers: string[], force = false) {
             startDate.setDate(endDate.getDate() - 30);
 
             // Fetch Quotes and historical charts in parallel
+            // Optimized: Only fetch charts for the first 5 tickers if many are requested, 
+            // and skip if they are not essential. This is the main CPU saver.
+            const chartSubset = uniqueTickers.slice(0, expanded ? 10 : 5);
+
             const [quotes, charts] = await Promise.all([
                 yf.quote(uniqueTickers),
-                Promise.all(uniqueTickers.map(s =>
+                Promise.all(chartSubset.map(s =>
                     yf.chart(s, { period1: startDate, period2: endDate, interval: '1d' }).catch(() => null)
                 ))
             ]);

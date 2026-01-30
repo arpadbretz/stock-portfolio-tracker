@@ -20,7 +20,8 @@ export async function GET(request: NextRequest) {
         // Limit batch size to prevent abuse (30 symbols is reasonable for a watchlist)
         const limitedSymbols = symbols.slice(0, 30);
 
-        const detailMap = await getBatchDetails(limitedSymbols, refresh);
+        const expanded = searchParams.get('expanded') === 'true';
+        const detailMap = await getBatchDetails(limitedSymbols, expanded);
         const results = Object.fromEntries(detailMap.entries());
 
         return NextResponse.json({
