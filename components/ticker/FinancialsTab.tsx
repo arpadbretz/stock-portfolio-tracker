@@ -43,8 +43,8 @@ export default function FinancialsTab({ symbol, stock }: FinancialsTabProps) {
         return `$${val.toFixed(0)}`;
     };
 
-    // Get income statement data (annual only now)
-    const revenueData = (stock?.incomeStatement || []).slice(0, 10).map((item: any) => ({
+    // Get income statement data (Limit to last 4 years)
+    const revenueData = (stock?.incomeStatement || []).slice(-4).map((item: any) => ({
         year: new Date(item.endDate).getFullYear(),
         revenue: item.totalRevenue,
         costOfRevenue: item.costOfRevenue,
@@ -61,8 +61,8 @@ export default function FinancialsTab({ symbol, stock }: FinancialsTabProps) {
         eps: item.eps,
     }));
 
-    // Get balance sheet data (annual only now)
-    const balanceData = (stock?.balanceSheet || []).slice(0, 10).map((item: any) => ({
+    // Get balance sheet data (Limit to last 4 years)
+    const balanceData = (stock?.balanceSheet || []).slice(-4).map((item: any) => ({
         year: new Date(item.endDate).getFullYear(),
         totalAssets: item.totalAssets,
         totalCurrentAssets: item.totalCurrentAssets,
@@ -83,8 +83,8 @@ export default function FinancialsTab({ symbol, stock }: FinancialsTabProps) {
         retainedEarnings: item.retainedEarnings,
     }));
 
-    // Get cash flow data (annual only now)
-    const cashFlowData = (stock?.cashFlow || []).slice(0, 10).map((item: any) => ({
+    // Get cash flow data (Limit to last 4 years)
+    const cashFlowData = (stock?.cashFlow || []).slice(-4).map((item: any) => ({
         year: new Date(item.endDate).getFullYear(),
         operatingCashflow: item.operatingCashflow,
         investingCashflow: item.investingCashflow,

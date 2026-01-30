@@ -85,7 +85,7 @@ export default function ValuationTab({ symbol, stock, currentPrice }: ValuationT
                 ebitda: income.ebitda,
                 freeCashFlow: cashFlow?.freeCashflow,
             };
-        }).filter((d: any) => d.pe || d.ps || d.pb || d.evEbitda);
+        }).filter((d: any) => d.pe || d.ps || d.pb || d.evEbitda).slice(-4);
     }, [stock, currentPrice]);
 
     // Calculate averages

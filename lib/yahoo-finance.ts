@@ -7,16 +7,18 @@ const PRICE_CACHE_REVALIDATE_MINS = 15;
 // CONFIG: How long metadata (fundamentals, etc) is valid (in days)
 const METADATA_CACHE_REVALIDATE_DAYS = 7;
 
-/**
- * Generic helper to fetch with patterns: Dynamic Import + Timeout
- */
-async function fetchWithYahooPattern<T>(fetcher: (yf: any) => Promise<T>, timeoutMs = 3000): Promise<T> {
-    const { default: YahooFinance } = await import('yahoo-finance2');
-    const yf = new (YahooFinance as any)({
-        suppressNotices: ['yahooSurvey'],
-        validation: { logErrors: false }
-    });
+import YahooFinance from 'yahoo-finance2';
 
+// Global singleton instance to avoid expensive dynamic imports and re-initialization on every request
+const yf = new (YahooFinance as any)({
+    suppressNotices: ['yahooSurvey'],
+    validation: { logErrors: false }
+});
+
+/**
+ * Generic helper to fetch with patterns: Timeout and Global Instance
+ */
+async function fetchWithYahooPattern<T>(fetcher: (yfInstance: any) => Promise<T>, timeoutMs = 3000): Promise<T> {
     return await Promise.race([
         fetcher(yf),
         new Promise<T>((_, reject) =>

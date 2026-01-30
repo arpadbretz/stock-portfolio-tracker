@@ -183,9 +183,9 @@ export async function GET(
             city: profile.city || null,
             earningsDate: calendar?.earnings?.earningsDate?.[0] || earnings?.earningsDate?.[0] || null,
             earningsQuarterlyGrowth: keyStats.earningsQuarterlyGrowth || null,
-            incomeStatement: cleanAnnual.map(processIncomeStatement).filter(Boolean).sort((a: any, b: any) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime()),
-            balanceSheet: cleanAnnual.map(processBalanceSheet).filter(Boolean).sort((a: any, b: any) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime()),
-            cashFlow: cleanAnnual.map(processCashFlow).filter(Boolean).sort((a: any, b: any) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime()),
+            incomeStatement: cleanAnnual.slice(-4).map(processIncomeStatement).filter(Boolean).sort((a: any, b: any) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime()),
+            balanceSheet: cleanAnnual.slice(-4).map(processBalanceSheet).filter(Boolean).sort((a: any, b: any) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime()),
+            cashFlow: cleanAnnual.slice(-4).map(processCashFlow).filter(Boolean).sort((a: any, b: any) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime()),
             lastUpdated: new Date().toISOString(),
         };
 
